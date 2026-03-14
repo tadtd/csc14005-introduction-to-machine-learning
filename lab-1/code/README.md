@@ -1,7 +1,5 @@
 # Dataset
 ## Regression
-- [BMW Global Sales & Market Data](https://www.kaggle.com/datasets/payaldhokane/bmw-global-sales-and-market-data)
-## Classification
 - 
 
 # Installation

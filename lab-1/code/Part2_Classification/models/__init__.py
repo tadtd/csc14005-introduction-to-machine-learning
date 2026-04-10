@@ -1,11 +1,14 @@
-from .lda import LDA
+from .base import Classification
 from .logistic_reg import LogisticRegression
-from .qda import QDA
 from .softmax_reg import SoftmaxRegression
+from .lda import LDA
+from .qda import QDA
+
 
 __all__ = [
-  "LDA",
+  "Classification",
   "LogisticRegression",
-  "QDA",
   "SoftmaxRegression",
+  "LDA",
+  "QDA",
 ]

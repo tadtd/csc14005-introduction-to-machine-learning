@@ -1,8 +1,6 @@
 import numpy as np
 
 from .base import Classification
-from ...config import LEARNING_RATE, EPS, MAX_ITER
-
 
 class SoftmaxRegression(Classification):
   """
@@ -12,9 +10,9 @@ class SoftmaxRegression(Classification):
 
   def __init__(
     self,
-    learning_rate: float = LEARNING_RATE,
-    eps: float = EPS,
-    max_iter: int = MAX_ITER,
+    learning_rate: float = 1e-4,
+    eps: float = 1e-6,
+    max_iter: int = 10_000,
     prior_precision: float = 1.0,
     penalize_bias: bool = False,
   ):

@@ -18,6 +18,7 @@ class Classification(ABC):
     self.theta: np.ndarray | None = None
     self.classes_: np.ndarray | None = None
 
+  # adding a bias term is common to all models
   @staticmethod
   def _augment(X: np.ndarray) -> np.ndarray:
     """Append a ones column to X: (n, d) -> (n, d+1)."""

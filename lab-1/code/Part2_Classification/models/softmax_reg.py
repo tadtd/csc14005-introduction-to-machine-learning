@@ -12,7 +12,7 @@ class SoftmaxRegression(Classification):
     self,
     learning_rate: float = 1e-4,
     eps: float = 1e-6,
-    max_iter: int = 10_000,
+    max_iter: int | None = None,
     prior_precision: float = 1.0,
     penalize_bias: bool = False,
   ):
@@ -63,7 +63,7 @@ class SoftmaxRegression(Classification):
   def _fit_gradient_descent(self, X: np.ndarray, y_encoded: np.ndarray) -> None:
     n_samples = X.shape[0]
     i = 0
-    while i < self.max_iter:
+    while True:
       scores = X @ self.theta
       probs = self._softmax(scores)
 
@@ -73,14 +73,15 @@ class SoftmaxRegression(Classification):
 
       update_norm = float(np.linalg.norm(update))
 
-      if i % 500 == 0:
+      if i % 50 == 0:
         loss = -np.mean(np.sum(y_encoded * np.log(probs + 1e-15), axis=1))
         print(f"Iteration {i}: Loss {loss:.4f}")
 
       if update_norm < self.eps:
-        print(
-          f"Converged at iteration {i}: update norm {update_norm:.6e} < eps {self.eps:.6e}"
-        )
+        print(f"Converged at iteration {i}: update norm {update_norm:.6e} < eps {self.eps:.6e}")
+        break
+      if self.max_iter is not None and i + 1 >= self.max_iter:
+        print(f"Stopped at iteration {i + 1}: reached max_iter={self.max_iter} before convergence.")
         break
       i += 1
 
@@ -91,7 +92,8 @@ class SoftmaxRegression(Classification):
     prior_diag = (self.prior_precision / n_samples) * prior_mask.ravel()
 
     hessian = None
-    for i in range(self.max_iter):
+    i = 0
+    while True:
       scores = X @ self.theta
       probs = self._softmax(scores)
 
@@ -123,6 +125,7 @@ class SoftmaxRegression(Classification):
       if step_norm < self.eps:
         print(f"Converged at iteration {i}: step norm {step_norm:.6e} < eps {self.eps:.6e}")
         break
+      i += 1
 
     if hessian is None:
       raise RuntimeError("Laplace fitting failed before computing Hessian.")

@@ -13,7 +13,7 @@ class LogisticRegression(Classification):
     self,
     learning_rate: float = 1e-4,
     eps: float = 1e-6,
-    max_iter: int = 10_000,
+    max_iter: int | None = None,
     prior_precision: float = 1.0,
     penalize_bias: bool = False,
   ):
@@ -56,7 +56,7 @@ class LogisticRegression(Classification):
       self._fit_gradient_descent(X_aug, y_binary)
     elif solver == 'newton_raphson' or solver == 'IRLS':
       self._fit_newton_raphson(X_aug, y_binary)
-    elif solver == 'laplace':
+    elif solver == 'laplace_approximation' or solver == 'laplace':
       self._fit_laplace(X_aug, y_binary)
     else:
       raise ValueError(f"Invalid solver: {solver}. Valid solvers are 'gradient_descent', 'newton_raphson', 'IRLS', and 'laplace'.")
@@ -65,7 +65,7 @@ class LogisticRegression(Classification):
     n_samples, n_features = X.shape
     self.theta = np.zeros(n_features)
     i = 0
-    while i < self.max_iter:
+    while True:
       z = X @ self.theta
       probs = self._sigmoid(z)
       d_theta = (1.0 / n_samples) * (X.T @ (probs - y))
@@ -77,6 +77,9 @@ class LogisticRegression(Classification):
         print(f"Iteration {i}: Loss {loss:.4f}")
       if update_norm < self.eps:
         print(f"Converged at iteration {i}: update norm {update_norm:.6e} < eps {self.eps:.6e}")
+        break
+      if self.max_iter is not None and i + 1 >= self.max_iter:
+        print(f"Stopped at iteration {i + 1}: reached max_iter={self.max_iter} before convergence.")
         break
       i += 1
 
@@ -90,7 +93,8 @@ class LogisticRegression(Classification):
     reg = self.prior_precision / n_samples
     hessian = None
 
-    for i in range(self.max_iter):
+    i = 0
+    while True:
       logits = X @ self.theta
       probs = self._sigmoid(logits)
       w = probs * (1.0 - probs)
@@ -111,6 +115,7 @@ class LogisticRegression(Classification):
       if step_norm < self.eps:
         print(f"Converged at iteration {i}: step norm {step_norm:.6e} < eps {self.eps:.6e}")
         break
+      i += 1
 
     if hessian is None:
       raise RuntimeError("Laplace fitting failed before computing Hessian.")

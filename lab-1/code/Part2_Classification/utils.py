@@ -1,4 +1,4 @@
-from models import Classification
+from .models import Classification
 # from sklearn.model_selection import learning_curve
 import numpy as np
 from matplotlib import pyplot as plt
@@ -9,7 +9,7 @@ def learning_curve(
   y_train: np.ndarray,
   X_val: np.ndarray,
   y_val: np.ndarray,
-  train_sizes: np.linspace = np.linspace(0.1, 1.0, 10),
+  train_sizes: np.ndarray = np.linspace(0.1, 1.0, 10),
   scoring: str = "accuracy",
   ) -> None:
   """

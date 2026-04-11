@@ -36,3 +36,17 @@ def learning_curve(
   plt.title("Learning Curve")
   plt.legend()
   plt.show()
+
+def loss_curve(
+  model: Classification,
+  X_train: np.ndarray,
+  y_train: np.ndarray,
+  X_val: np.ndarray,
+  y_val: np.ndarray,
+  max_iter: int = 1000,
+) -> None:
+  """
+  Return training and validation losses for each iteration of gradient descent.
+  Only works for models that implement ``self.loss_history`` during fitting.
+  """
+  raise NotImplementedError("loss_curve is not implemented yet.")

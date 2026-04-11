@@ -53,15 +53,6 @@ def reliability_diagram_multiclass(
   probs = np.asarray(probs, dtype=float)
   class_labels = np.asarray(class_labels)
 
-  if probs.ndim != 2:
-    raise ValueError("probs must have shape (n_samples, n_classes).")
-  if probs.shape[0] != y_true.shape[0]:
-    raise ValueError("y_true and probs must contain the same number of samples.")
-  if probs.shape[1] != class_labels.shape[0]:
-    raise ValueError("class_labels must match probs.shape[1].")
-  if n_bins < 1:
-    raise ValueError("n_bins must be at least 1.")
-
   pred_idx = np.argmax(probs, axis=1)
   confidences = probs[np.arange(probs.shape[0]), pred_idx]
   predictions = class_labels[pred_idx]

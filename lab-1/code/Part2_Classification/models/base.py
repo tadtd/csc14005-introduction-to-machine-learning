@@ -185,7 +185,7 @@ class Classification(ABC):
       raise ValueError("ROC requires at least two distinct classes in y_true.")
 
     if n_classes == 2:
-      fpr, tpr, _ = roc_curve(y_true, y_score)
+      fpr, tpr, _ = roc_curve(y_true, y_score, pos_label=classes[1])
     else:
       y_bin = label_binarize(y_true, classes=classes)
       if y_score.ndim != 2 or y_score.shape[1] != n_classes:

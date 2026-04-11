@@ -1,4 +1,4 @@
-# Folder strucure:
+# Folder structure:
 
 ```
 ├── README.md
@@ -28,6 +28,7 @@
 │   ├── processed/
 │   └── README.md
 ├── report/
+|   ├── README.md
 │   └── report.pdf
 ├── .python-version
 ├── pyproject.toml

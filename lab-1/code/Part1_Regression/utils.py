@@ -7,7 +7,7 @@ def learning_curve(
   y_train: np.ndarray,
   X_val: np.ndarray,
   y_val: np.ndarray,
-  train_sizes: np.linspace = np.linspace(0.1, 1.0, 10),
+  train_sizes: np.ndarray = np.linspace(0.1, 1.0, 10),
 ) -> None:
   """
   Return training and validation losses for each training set size in ``train_sizes``.

@@ -16,6 +16,6 @@ def load_data(file_path: str) -> pd.DataFrame:
         return data
     except Exception as e:
         print(f"Error loading data: {e}")
-        return None
+        raise RuntimeError(f"Failed to load data from {file_path}") from e
 
 

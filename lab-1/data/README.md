@@ -1,0 +1,3 @@
+# Dataset
+- Regression: [London Bike Sharing Dataset](https://www.kaggle.com/datasets/hmavrodiev/london-bike-sharing-dataset?fbclid=IwY2xjawRG3GBleHRuA2FlbQIxMABicmlkETFaT1RMZ2phVWxETHlpTGhwc3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHnVdKUSCrHON-2HQKOt7gRgJ7UVh0Zh8BWSy7qiyA9WaaWejsyXT--9dq8WB_aem_waz4w51i1NevSmgAJ6tQzQ)
+- Classification: [Dry Bean Dataset](https://www.kaggle.com/datasets/muratkokludataset/dry-bean-dataset?fbclid=IwY2xjawRG3JtleHRuA2FlbQIxMABicmlkETFaT1RMZ2phVWxETHlpTGhwc3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHn3vf10KundD-DKRxleiB_iVU_f56AIGdsnU-dkaOVcATwGz6KG4-bigiqBo_aem_3zO0RlPimnail2YhsASp_Q)

@@ -1,14 +1,37 @@
-# Dataset
-## Regression
-- 
+# Folder structure:
 
-# Installation
-```bash
-pip install -r requirements.txt
 ```
-
-## Register
-```bash
-.venv/Scripts/activate
-python -m ipykernel install --user --name lab-1 --display-name "Python (.venv)"
+├── README.md
+├── code/
+│   ├── Part1_Regression/
+│   │   ├── models/
+│   │   │   ├── base.py
+│   │   │   ├── linear_reg.py
+│   │   │   ├─... 
+│   │   ├── eda.py
+│   │   ├── eval.py
+│   │   ├── preprocessing.py
+│   │   ├── utils.py
+│   │   └── notebook.ipynb
+│   ├── Part2_Classification/
+│   │   ├── models/
+│   │   │   ├── base.py
+│   │   │   ├── logistic_reg.py
+│   │   │   ├─... 
+│   │   ├── eda.py
+│   │   ├── eval.py
+│   │   ├── preprocessing.py
+│   │   ├── utils.py
+│   │   └── notebook.ipynb
+├── data/
+│   ├── raw/
+│   ├── processed/
+│   └── README.md
+├── report/
+|   ├── README.md
+│   └── report.pdf
+├── .python-version
+├── pyproject.toml
+├── uv.lock
+└── requirements.txt
 ```

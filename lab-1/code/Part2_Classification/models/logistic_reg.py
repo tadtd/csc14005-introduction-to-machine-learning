@@ -93,6 +93,7 @@ class LogisticRegression(Classification):
     reg = self.prior_precision / n_samples
     hessian = None
 
+    # use Newton-Raphson updates to find the MAP estimate, then compute the posterior covariance at convergence
     i = 0
     while True:
       logits = X @ self.theta
@@ -120,7 +121,7 @@ class LogisticRegression(Classification):
     if hessian is None:
       raise RuntimeError("Laplace fitting failed before computing Hessian.")
     self.posterior_cov = np.linalg.pinv(hessian)
-    self.posterior_cov = 0.5 * (self.posterior_cov + self.posterior_cov.T)
+    self.posterior_cov = 0.5 * (self.posterior_cov + self.posterior_cov.T) # Ensure symmetry
 
   def predict(self, X: np.ndarray) -> np.ndarray:
     if self.theta is None or self.classes_ is None:
@@ -145,7 +146,7 @@ class LogisticRegression(Classification):
 
     if use_laplace and self.posterior_cov is not None:
       mean_logits = X_aug @ self.theta
-      var_logits = np.einsum("ij,jk,ik->i", X_aug, self.posterior_cov, X_aug)
+      var_logits = np.einsum("ij,jk,ik->i", X_aug, self.posterior_cov, X_aug) # sigma^2 = x^T Sigma x
       var_logits = np.maximum(var_logits, 0.0)
       scaled_logits = mean_logits / np.sqrt(1.0 + (np.pi / 8.0) * var_logits)
       p1 = self._sigmoid(scaled_logits)

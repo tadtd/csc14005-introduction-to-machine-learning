@@ -18,8 +18,9 @@ class LinearRegression(Regression):
         Convergence threshold: stop GD when ``||Δθ||₂ < eps``.
     max_iter : int or None
         Hard iteration cap for GD.  ``None`` means no cap.
-    random_state : int
-        Seed used to initialise GD weights.
+    random_state : int | None
+        Optional seed for reproducible GD initialization. If None, uses the
+        global NumPy RNG state (so notebook-level seeding is respected).
     """
 
     def __init__(
@@ -27,20 +28,17 @@ class LinearRegression(Regression):
         solver: str = "normal",
         learning_rate: float = 0.01,
         eps: float = 1e-6,
-        max_iter: int | None = 10_000,
-        random_state: int = 42,
+        max_iter: int | None = 50_000,
+        random_state: int | None = None,
     ) -> None:
-        super().__init__()
         self.solver = solver
         self.learning_rate = learning_rate
         self.eps = eps
         self.max_iter = max_iter
         self.random_state = random_state
         self.loss_history_: list[float] = []
-
-    # ------------------------------------------------------------------
-    # Public interface
-    # ------------------------------------------------------------------
+        self.theta_: np.ndarray | None = None
+        self.n_iter_: int = 0
 
     def fit(self, X: np.ndarray, y: np.ndarray, **kwargs) -> None:  # type: ignore[override]
         if self.solver == "normal":
@@ -54,9 +52,9 @@ class LinearRegression(Regression):
             )
 
     def predict(self, X: np.ndarray) -> np.ndarray:
-        if self.coef_ is None or self.intercept_ is None:
+        if self.theta_ is None:
             raise RuntimeError("Call fit before predict.")
-        return X @ self.coef_ + self.intercept_
+        return self._augment(X) @ self.theta_
 
     # ------------------------------------------------------------------
     # Solvers
@@ -66,32 +64,37 @@ class LinearRegression(Regression):
         """Closed-form: θ = (X̃ᵀX̃)⁻¹ X̃ᵀy  via lstsq for numerical safety."""
         X_b = self._augment(X)           # (n, d+1); bias appended last
         theta, _, _, _ = np.linalg.lstsq(X_b, y, rcond=None)
-        self.coef_ = theta[:-1]
-        self.intercept_ = float(theta[-1])
+        self.theta_ = np.asarray(theta, dtype=float).reshape(-1)
+        self.n_iter_ = 1
 
     def _fit_gradient_descent(self, X: np.ndarray, y: np.ndarray) -> None:
         """Batch GD with convergence check on the parameter update norm."""
-        np.random.seed(self.random_state)
-        n, d = X.shape
-        self.coef_ = np.random.randn(d) * 0.01
-        self.intercept_ = 0.0
+        X_b = self._augment(X)
+        n, d_aug = X_b.shape
+        
+        # Standardized init: respect global seed unless random_state is explicit.
+        if self.random_state is None:
+            theta = np.random.randn(d_aug) * 0.01
+        else:
+            rng = np.random.default_rng(self.random_state)
+            theta = rng.normal(loc=0.0, scale=0.01, size=d_aug)
         self.loss_history_ = []
+        max_steps = self.max_iter if self.max_iter is not None else 1_000_000
 
-        for i in range(self.max_iter if self.max_iter is not None else 10 ** 9):
-            error = X @ self.coef_ + self.intercept_ - y          # (n,)
-            grad_coef = (2.0 / n) * (X.T @ error)
-            grad_bias = (2.0 / n) * float(np.sum(error))
+        self.final_update_norm_ = None
+        self.n_iter_ = 0
 
-            delta_coef = self.learning_rate * grad_coef
-            delta_bias = self.learning_rate * grad_bias
-
-            self.coef_      -= delta_coef
-            self.intercept_ -= delta_bias
+        for step in range(1, max_steps + 1):
+            error = X_b @ theta - y
+            grad = (2.0 / n) * (X_b.T @ error)
+            delta = self.learning_rate * grad
+            theta -= delta
 
             self.loss_history_.append(float(np.mean(error ** 2)))
+            update_norm = float(np.linalg.norm(delta))
+            self.n_iter_ = step
 
-            update_norm = float(
-                np.sqrt(np.sum(delta_coef ** 2) + delta_bias ** 2)
-            )
             if update_norm < self.eps:
                 break
+
+        self.theta_ = np.asarray(theta, dtype=float).reshape(-1)

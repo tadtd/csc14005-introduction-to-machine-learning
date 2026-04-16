@@ -18,8 +18,8 @@ class RidgeRegression(Regression):
     """
 
     def __init__(self, alpha: float = 1.0) -> None:
-        super().__init__()
         self.alpha = alpha
+        self.theta_: np.ndarray | None = None
 
     def fit(self, X: np.ndarray, y: np.ndarray, **kwargs) -> None:  # type: ignore[override]
         X_b = self._augment(X)          # (n, d+1); bias appended last
@@ -33,11 +33,9 @@ class RidgeRegression(Regression):
         A = X_b.T @ X_b + reg
         b = X_b.T @ y
         theta = np.linalg.solve(A, b)
-
-        self.coef_      = theta[:-1]
-        self.intercept_ = float(theta[-1])
+        self.theta_ = np.asarray(theta, dtype=float).reshape(-1)
 
     def predict(self, X: np.ndarray) -> np.ndarray:
-        if self.coef_ is None or self.intercept_ is None:
+        if self.theta_ is None:
             raise RuntimeError("Call fit before predict.")
-        return X @ self.coef_ + self.intercept_
+        return self._augment(X) @ self.theta_

@@ -24,13 +24,10 @@ class KernelRidgeRegression(Regression):
         super().__init__()
         self.alpha = alpha
         self.gamma = gamma
-        self.dual_coef_: np.ndarray | None = None
+        self.dual_coef_: np.ndarray | None = None  
         self.X_fit_: np.ndarray | None = None
-
-    # ------------------------------------------------------------------
+    
     # Kernel
-    # ------------------------------------------------------------------
-
     def _rbf_kernel(self, X1: np.ndarray, X2: np.ndarray) -> np.ndarray:
         """Compute the (n1 × n2) RBF kernel matrix."""
         # ||x1 - x2||² = ||x1||² + ||x2||² - 2 x1·x2
@@ -41,10 +38,6 @@ class KernelRidgeRegression(Regression):
         )
         # Clamp numerical negatives from floating-point arithmetic
         return np.exp(-self.gamma * np.maximum(sq_dist, 0.0))
-
-    # ------------------------------------------------------------------
-    # Fit / predict
-    # ------------------------------------------------------------------
 
     def fit(self, X: np.ndarray, y: np.ndarray, **kwargs) -> None:  # type: ignore[override]
         self.X_fit_ = X.copy()

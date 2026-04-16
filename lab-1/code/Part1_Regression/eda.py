@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from typing import Sequence
+from models import RidgeRegression, LassoRegression   # local import to avoid circular deps
 
 
 # ---------------------------------------------------------------------------
@@ -102,10 +103,7 @@ def plot_feature_vs_target(
     plt.show()
 
 
-# ---------------------------------------------------------------------------
 # Regularization paths  (Ridge + Lasso side by side)
-# ---------------------------------------------------------------------------
-
 def plot_regularization_path(
     X: np.ndarray,
     y: np.ndarray,
@@ -127,7 +125,6 @@ def plot_regularization_path(
              ``np.logspace(-4, 4, 80)``.
     lasso_max_iter : coordinate-descent passes per alpha value.
     """
-    from models import RidgeRegression, LassoRegression   # local import to avoid circular deps
 
     if alphas is None:
         alphas = np.logspace(-4, 4, 80)

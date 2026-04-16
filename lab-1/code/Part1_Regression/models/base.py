@@ -4,39 +4,26 @@ from typing import Any, Dict
 
 from matplotlib import pyplot as plt
 import scipy.stats as scipy_stats
+from eval import regression_report
 
 
 class Regression(ABC):
     """Abstract base class for all regression models."""
-
-    def __init__(self) -> None:
-        self.coef_: np.ndarray | None = None
-        self.intercept_: float | None = None
-
-    # ------------------------------------------------------------------
-    # Utility shared across solvers that augment X with a bias column
-    # ------------------------------------------------------------------
 
     @staticmethod
     def _augment(X: np.ndarray) -> np.ndarray:
         """Append a column of ones: (n, d) → (n, d+1)."""
         return np.c_[X, np.ones(X.shape[0])]
 
-    # ------------------------------------------------------------------
-    # Core interface
-    # ------------------------------------------------------------------
-
     @abstractmethod
     def fit(self, X: np.ndarray, y: np.ndarray, **kwargs: Any) -> None:
         """Fit the model to (X, y)."""
+        raise NotImplementedError("fit method not implemented")
 
     @abstractmethod
     def predict(self, X: np.ndarray) -> np.ndarray:
         """Return predicted values for X."""
-
-    # ------------------------------------------------------------------
-    # Evaluation
-    # ------------------------------------------------------------------
+        raise NotImplementedError("predict method not implemented")
 
     def evaluate(
         self,
@@ -48,27 +35,7 @@ class Regression(ABC):
         Argument order follows notebook convention: predictions first, then
         ground truth.
         """
-        y_pred = np.asarray(y_pred, float)
-        y_true = np.asarray(y_true, float)
-
-        ss_res = float(np.sum((y_true - y_pred) ** 2))
-        ss_tot = float(np.sum((y_true - np.mean(y_true)) ** 2))
-
-        mse_val  = float(np.mean((y_pred - y_true) ** 2))
-        rmse_val = float(np.sqrt(mse_val))
-        mae_val  = float(np.mean(np.abs(y_pred - y_true)))
-        r2_val   = 1.0 - ss_res / (ss_tot + 1e-12)
-
-        return {
-            "MSE":  mse_val,
-            "RMSE": rmse_val,
-            "MAE":  mae_val,
-            "R2":   r2_val,
-        }
-
-    # ------------------------------------------------------------------
-    # Diagnostic plots
-    # ------------------------------------------------------------------
+        return regression_report(y_pred, y_true)
 
     def plot_residuals(
         self,

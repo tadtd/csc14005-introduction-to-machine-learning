@@ -18,7 +18,9 @@ class PerceptronRegression(Regression):
     max_iter : int
     alpha : float
         L2 regularization coefficient.
-    random_state : int
+    random_state : int | None
+        Optional seed for reproducible initialization. If None, uses the
+        global NumPy RNG state.
     """
 
     def __init__(
@@ -26,37 +28,51 @@ class PerceptronRegression(Regression):
         learning_rate: float = 0.01,
         max_iter: int = 5_000,
         alpha: float = 0.01,
-        random_state: int = 42,
+        tol: float = 1e-6,
+        random_state: int | None = None,
     ) -> None:
-        super().__init__()
         self.learning_rate = learning_rate
         self.max_iter = max_iter
         self.alpha = alpha
+        self.tol = tol
         self.random_state = random_state
         self.loss_history_: list[float] = []
+        self.theta_: np.ndarray | None = None
+        self.n_iter_: int = 0
 
     def fit(self, X: np.ndarray, y: np.ndarray, **kwargs) -> None:  # type: ignore[override]
-        np.random.seed(self.random_state)
-        n, d = X.shape
-        self.coef_      = np.random.randn(d) * 0.01
-        self.intercept_ = 0.0
+        X_b = self._augment(X)
+        n, d_aug = X_b.shape
+        if self.random_state is None:
+            theta = np.random.randn(d_aug) * 0.01
+        else:
+            rng = np.random.default_rng(self.random_state)
+            theta = rng.normal(loc=0.0, scale=0.01, size=d_aug)
         self.loss_history_ = []
+        self.n_iter_ = 0
 
-        for _ in range(self.max_iter):
-            error = X @ self.coef_ + self.intercept_ - y
+        reg_mask = np.ones(d_aug)
+        reg_mask[-1] = 0.0  # never penalise bias
 
-            # Gradient of MSE + L2 penalty wrt w (bias not regularised)
-            grad_coef = (2.0 / n) * (X.T @ error) + 2.0 * self.alpha * self.coef_
-            grad_bias  = (2.0 / n) * float(np.sum(error))
+        for step in range(1, self.max_iter + 1):
+            error = X_b @ theta - y
 
-            self.coef_      -= self.learning_rate * grad_coef
-            self.intercept_ -= self.learning_rate * grad_bias
+            grad = (2.0 / n) * (X_b.T @ error) + 2.0 * self.alpha * theta * reg_mask
+            delta = self.learning_rate * grad
+            theta -= delta
 
             # Track composite loss for convergence inspection
-            train_loss = float(np.mean(error ** 2)) + self.alpha * float(np.sum(self.coef_ ** 2))
+            train_loss = float(np.mean(error ** 2)) + self.alpha * float(np.sum((theta[:-1]) ** 2))
             self.loss_history_.append(train_loss)
+            update_norm = float(np.linalg.norm(delta))
+            self.n_iter_ = step
+
+            if update_norm < self.tol:
+                break
+
+        self.theta_ = np.asarray(theta, dtype=float).reshape(-1)
 
     def predict(self, X: np.ndarray) -> np.ndarray:
-        if self.coef_ is None or self.intercept_ is None:
+        if self.theta_ is None:
             raise RuntimeError("Call fit before predict.")
-        return X @ self.coef_ + self.intercept_
+        return self._augment(X) @ self.theta_

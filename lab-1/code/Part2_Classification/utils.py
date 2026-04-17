@@ -1,4 +1,4 @@
-from .models import Classification
+from models import Classification
 # from sklearn.model_selection import learning_curve
 import numpy as np
 from matplotlib import pyplot as plt

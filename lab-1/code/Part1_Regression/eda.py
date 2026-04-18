@@ -44,6 +44,56 @@ def plot_correlation_heatmap(
     plt.show()
 
 
+def summarize_dataset(df: pd.DataFrame) -> pd.DataFrame:
+    """Print high-level dataset diagnostics and return missing-value summary."""
+    print(f"Shape: {df.shape}")
+    print("\nDtypes:")
+    print(df.dtypes)
+
+    missing = df.isna().sum().sort_values(ascending=False)
+    missing = missing[missing > 0].rename("missing_count").to_frame()
+
+    if missing.empty:
+        print("\nMissing values: none")
+    else:
+        print("\nMissing values:")
+        print(missing)
+
+    return missing
+
+
+def summarize_numeric_statistics(
+    X: pd.DataFrame,
+    round_digits: int = 4,
+) -> pd.DataFrame:
+    """Return descriptive statistics for numeric columns in a table."""
+    numeric_df = X.select_dtypes(include=[np.number])
+    if numeric_df.empty:
+        print("No numeric columns found for descriptive statistics.")
+        return pd.DataFrame()
+
+    stats = numeric_df.describe(percentiles=[0.25, 0.5, 0.75]).T
+    stats = stats.rename(columns={"25%": "q1", "50%": "median", "75%": "q3"})
+    stats["iqr"] = stats["q3"] - stats["q1"]
+    stats["missing_count"] = numeric_df.isna().sum()
+    stats["missing_rate"] = numeric_df.isna().mean()
+
+    ordered_cols = [
+        "count",
+        "mean",
+        "std",
+        "min",
+        "q1",
+        "median",
+        "q3",
+        "max",
+        "iqr",
+        "missing_count",
+        "missing_rate",
+    ]
+    return stats[ordered_cols].sort_values("std", ascending=False).round(round_digits)
+
+
 def plot_target_distribution(
     y: np.ndarray,
     target_name: str = "Target",
@@ -94,7 +144,6 @@ def plot_feature_vs_target(
         axes[i].set_title(name)
         axes[i].grid(alpha=0.3, linestyle="--")
 
-    # Hide unused subplots
     for j in range(i + 1, len(axes)):
         axes[j].set_visible(False)
 

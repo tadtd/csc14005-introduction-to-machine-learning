@@ -5,6 +5,8 @@ from .lasso_reg import LassoRegression
 from .elastic_net import ElasticNetRegression
 from .perceptron_reg import PerceptronRegression
 from .kernel_ridge import KernelRidgeRegression
+from .robust_reg import RobustRegression
+from .gaussian_process_reg import GaussianProcessRegression
 
 __all__ = [
     "Regression",
@@ -14,4 +16,6 @@ __all__ = [
     "ElasticNetRegression",
     "PerceptronRegression",
     "KernelRidgeRegression",
+    "RobustRegression",
+    "GaussianProcessRegression",
 ]

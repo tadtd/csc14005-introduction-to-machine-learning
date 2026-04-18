@@ -5,12 +5,13 @@ from typing import Any, Dict, Literal, Optional
 from matplotlib import pyplot as plt
 from sklearn.metrics import (
   auc,
-  classification_report,
   confusion_matrix,
   precision_recall_fscore_support,
   roc_curve,
 )
 from sklearn.preprocessing import label_binarize
+
+from eval import classification_report as compact_classification_report
 
 
 class Classification(ABC):
@@ -65,49 +66,66 @@ class Classification(ABC):
     sample_weight
       Optional per-sample weights passed to the underlying sklearn metrics.
     """
-    report = classification_report(
-      y_true=y_true,
-      y_pred=y_pred,
-      output_dict=True,
-      zero_division=0,
-      sample_weight=sample_weight,
-    )
-    if average in ("macro", "weighted"):
-      primary = report[f"{average} avg"]
-    elif average in ("micro", "binary"):
-      p, r, f, _ = precision_recall_fscore_support(
-        y_true,
-        y_pred,
-        average=average,
-        zero_division=0,
-        sample_weight=sample_weight,
-      )
-      primary = {
-        "precision": float(p),
-        "recall": float(r),
-        "f1-score": float(f),
-      }
-    else:
+    if average not in ("macro", "weighted", "micro", "binary"):
       raise ValueError(
         "average must be 'macro', 'weighted', 'micro', or 'binary', "
         f"got {average!r}"
       )
+
+    if sample_weight is None:
+      primary = compact_classification_report(y_pred=y_pred, y_true=y_true, average=average)
+      macro_avg = compact_classification_report(y_pred=y_pred, y_true=y_true, average="macro")
+      weighted_avg = compact_classification_report(y_pred=y_pred, y_true=y_true, average="weighted")
+    else:
+      y_true = np.asarray(y_true)
+      y_pred = np.asarray(y_pred)
+      sample_weight = np.asarray(sample_weight)
+      if sample_weight.shape[0] != y_true.shape[0]:
+        raise ValueError(
+          "sample_weight must have the same number of samples as y_true and y_pred."
+        )
+
+      def _weighted_report(avg: Literal["micro", "macro", "weighted", "binary"]) -> Dict[str, float]:
+        p, r, f, _ = precision_recall_fscore_support(
+          y_true,
+          y_pred,
+          average=avg,
+          zero_division=0,
+          sample_weight=sample_weight,
+        )
+        acc = float(np.average((y_true == y_pred).astype(float), weights=sample_weight))
+        return {
+          "accuracy": acc,
+          "precision": float(p),
+          "recall": float(r),
+          "f1-score": float(f),
+        }
+
+      primary = _weighted_report(average)
+      macro_avg = _weighted_report("macro")
+      weighted_avg = _weighted_report("weighted")
+
     return {
-      "accuracy": report["accuracy"],
+      "accuracy": primary["accuracy"],
       "precision": primary["precision"],
       "recall": primary["recall"],
       "f1-score": primary["f1-score"],
       "macro_avg": {
-        "precision": report["macro avg"]["precision"],
-        "recall": report["macro avg"]["recall"],
-        "f1-score": report["macro avg"]["f1-score"],
+        "precision": macro_avg["precision"],
+        "recall": macro_avg["recall"],
+        "f1-score": macro_avg["f1-score"],
       },
       "weighted_avg": {
-        "precision": report["weighted avg"]["precision"],
-        "recall": report["weighted avg"]["recall"],
-        "f1-score": report["weighted avg"]["f1-score"],
+        "precision": weighted_avg["precision"],
+        "recall": weighted_avg["recall"],
+        "f1-score": weighted_avg["f1-score"],
       },
-      "classification_report": report,
+      "classification_report": {
+        "selected_average": average,
+        "selected": primary,
+        "macro_avg": macro_avg,
+        "weighted_avg": weighted_avg,
+      },
     }
 
   def plot_confusion_matrix(

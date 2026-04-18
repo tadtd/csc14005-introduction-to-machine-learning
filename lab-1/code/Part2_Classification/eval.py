@@ -5,12 +5,51 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy.stats import chi2, binomtest
 from sklearn.model_selection import StratifiedKFold
-from sklearn.metrics import average_precision_score, precision_recall_curve
+from sklearn.metrics import average_precision_score, precision_recall_curve, precision_recall_fscore_support
 from sklearn.preprocessing import label_binarize
 
 from typing import Dict, Any, Tuple, Optional, Callable, Literal
 
 
+def classification_report(y_pred: np.ndarray, y_true: np.ndarray, average: str = "weighted") -> Dict[str, float]:
+  """Return compact classification metrics for predictions vs ground truth.
+
+  Parameters
+  ----------
+  y_pred, y_true
+    Predicted labels and true labels with matching shape.
+  average
+    One of ``'micro'``, ``'macro'``, ``'weighted'``, or ``'binary'``.
+  """
+  y_pred = np.asarray(y_pred)
+  y_true = np.asarray(y_true)
+
+  if y_pred.shape[0] != y_true.shape[0]:
+    raise ValueError(
+      f"y_pred and y_true must have the same number of samples, got {y_pred.shape[0]} and {y_true.shape[0]}."
+    )
+
+  valid_averages = {"micro", "macro", "weighted", "binary"}
+  if average not in valid_averages:
+    raise ValueError(f"average must be one of {sorted(valid_averages)}, got {average!r}.")
+
+  accuracy = float(np.mean(y_pred == y_true))
+  precision, recall, f1, _ = precision_recall_fscore_support(
+    y_true,
+    y_pred,
+    average=average,
+    zero_division=0,
+  )
+
+  return {
+    "accuracy": accuracy,
+    "precision": float(precision),
+    "recall": float(recall),
+    "f1-score": float(f1),
+  }
+
+ 
+  
 def kfold_cross_val_score(
   model: Any,
   X: np.ndarray,

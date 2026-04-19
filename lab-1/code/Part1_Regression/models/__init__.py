@@ -7,6 +7,7 @@ from .perceptron_reg import PerceptronRegression
 from .kernel_ridge import KernelRidgeRegression
 from .robust_reg import RobustRegression
 from .gaussian_process_reg import GaussianProcessRegression
+from .bayesian_reg import BayesianRegression
 
 __all__ = [
     "Regression",
@@ -18,4 +19,5 @@ __all__ = [
     "KernelRidgeRegression",
     "RobustRegression",
     "GaussianProcessRegression",
+    "BayesianRegression",
 ]

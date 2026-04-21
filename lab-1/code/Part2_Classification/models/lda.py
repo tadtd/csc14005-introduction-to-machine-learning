@@ -109,7 +109,7 @@ class LDA(Classification):
   ) -> np.ndarray:
     self.fit(X=X, y=y)
     return self.transform(X=X, n_components=n_components)
-
+  
   def explained_discriminative_ratio(
     self,
     n_components: int | None = None,

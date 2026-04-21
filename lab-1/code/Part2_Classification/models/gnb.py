@@ -8,7 +8,10 @@ class GaussianNaiveBayes(Classification):
   Gaussian Naive Bayes with diagonal class-conditional covariance.
   """
 
-  def __init__(self, reg: float = 1e-6) -> None:
+  def __init__(
+    self,
+    reg: float = 1e-6,
+  ) -> None:
     super().__init__()
     self.reg = reg
     self.priors_: np.ndarray | None = None

@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 from scipy.stats import chi2, binomtest
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import average_precision_score, precision_recall_curve, precision_recall_fscore_support
+from sklearn.metrics import roc_curve, roc_auc_score
 from sklearn.preprocessing import label_binarize
 
 from typing import Dict, Any, Tuple, Optional, Callable, Literal
@@ -21,9 +22,6 @@ def classification_report(y_pred: np.ndarray, y_true: np.ndarray, average: str =
   average
     One of ``'micro'``, ``'macro'``, ``'weighted'``, or ``'binary'``.
   """
-  y_pred = np.asarray(y_pred)
-  y_true = np.asarray(y_true)
-
   if y_pred.shape[0] != y_true.shape[0]:
     raise ValueError(
       f"y_pred and y_true must have the same number of samples, got {y_pred.shape[0]} and {y_true.shape[0]}."
@@ -47,7 +45,6 @@ def classification_report(y_pred: np.ndarray, y_true: np.ndarray, average: str =
     "recall": float(recall),
     "f1-score": float(f1),
   }
-
  
   
 def kfold_cross_val_score(
@@ -204,6 +201,60 @@ def plot_precision_recall_curve(
   return average_precision
 
 
+def plot_roc_curve(
+  model: Any,
+  X: np.ndarray,
+  y_true: np.ndarray,
+  title: str = "ROC Curve",
+) -> float:
+  """Plot an ROC curve for a fitted model and return its AUC."""
+  y_target, y_score, is_binary = _precision_recall_inputs(model, X, y_true)
+
+  if is_binary:
+    fpr, tpr, _ = roc_curve(y_target, y_score)
+    roc_auc = float(roc_auc_score(y_target, y_score))
+  else:
+    fpr, tpr, _ = roc_curve(y_target.ravel(), y_score.ravel())
+    roc_auc = float(roc_auc_score(y_target, y_score, average="micro"))
+
+  plt.figure(figsize=(8, 6))
+  plt.plot(fpr, tpr, lw=2, label=f"AUC = {roc_auc:.4f}")
+  plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+  plt.xlabel("False Positive Rate")
+  plt.ylabel("True Positive Rate")
+  plt.title(title)
+  plt.xlim([0.0, 1.0])
+  plt.ylim([0.0, 1.05])
+  plt.legend(loc="lower right")
+  plt.grid(alpha=0.2)
+  plt.show()
+
+  return roc_auc
+
+
+def plot_loss_curves(
+  models: Mapping[str, Any],
+  title: str = "Training Loss over Epochs",
+) -> None:
+  """Plot the loss history of multiple models over training epochs."""
+  if len(models) == 0:
+    raise ValueError("models must contain at least one model with loss_history_.")
+
+  plt.figure(figsize=(10, 6))
+  for name, model in models.items():
+    if not hasattr(model, "loss_history_"):
+      print(f"Skipping {name} as it has no loss_history_ attribute.")
+      continue
+    plt.plot(model.loss_history_, lw=2, label=name)
+
+  plt.xlabel("Epoch / Iteration")
+  plt.ylabel("Loss")
+  plt.title(title)
+  plt.legend(loc="upper right")
+  plt.grid(alpha=0.2)
+  plt.show()
+
+
 def compare_average_precision(
   models: Mapping[str, Any],
   X: np.ndarray,
@@ -340,3 +391,24 @@ def reliability_diagram_multiclass(
 
   return bin_centers, counts, conf_mean, acc_mean, float(ece)
 
+def evaluate_multiclass_strategy(y_true, y_pred, strategy_name: str) -> dict:
+  metrics = classification_report(
+    y_pred=y_pred,
+    y_true=y_true,
+    average='weighted',
+  )
+
+  print(f"[{strategy_name}] Accuracy: {metrics['accuracy']:.4f}")
+  print(
+    f"precision={metrics['precision']:.4f}, "
+    f"recall={metrics['recall']:.4f}, "
+    f"f1-score={metrics['f1-score']:.4f}"
+  )
+
+  return {
+    'strategy': strategy_name,
+    'accuracy': metrics['accuracy'],
+    'precision': metrics['precision'],
+    'recall': metrics['recall'],
+    'f1-score': metrics['f1-score'],
+  }

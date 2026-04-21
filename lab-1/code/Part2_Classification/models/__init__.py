@@ -6,6 +6,7 @@ from .softmax_reg import SoftmaxRegression
 from .lda import LDA
 from .qda import QDA
 from .gnb import GaussianNaiveBayes
+from .perceptron import Perceptron
 
 
 __all__ = [
@@ -17,4 +18,5 @@ __all__ = [
   "LDA",
   "QDA",
   "GaussianNaiveBayes",
+  "Perceptron",
 ]

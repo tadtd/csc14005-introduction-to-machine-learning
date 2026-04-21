@@ -11,9 +11,11 @@ class ProbitRegression(Classification):
     self,
     learning_rate: float = 1e-3,
     eps: float = 1e-6,
-    max_iter: int | None = 10000,
+    max_iter: int | None = None,
+    class_weight: str | dict | None = None,
   ):
     super().__init__()
+    self.class_weight = class_weight
     self.learning_rate = learning_rate
     self.eps = eps
     self.max_iter = max_iter
@@ -40,13 +42,33 @@ class ProbitRegression(Classification):
     n_samples, n_features = X.shape
     y_binary = (y == self.classes_[1]).astype(float)
 
+    if getattr(self, 'class_weight', None) is None:
+      self.sample_weight_ = np.ones(n_samples)
+    else:
+      self.sample_weight_ = np.zeros(n_samples)
+      for idx, cls in enumerate(self.classes_):
+        mask = (y == cls)
+        count = np.sum(mask)
+        if isinstance(self.class_weight, dict):
+          w = self.class_weight.get(cls, 1.0)
+        elif self.class_weight == 'balanced':
+          w = n_samples / (2.0 * count) if count > 0 else 0.0
+        elif self.class_weight == 'proportional':
+          w = count / n_samples
+        else:
+          raise ValueError(f"Unknown class_weight: {self.class_weight}")
+        self.sample_weight_[mask] = w
+      self.sample_weight_ *= n_samples / np.sum(self.sample_weight_)
+
     self.theta = np.zeros(n_features + 1)
     X_aug = self._augment(X)
+    self.loss_history_ = []
 
     self._fit_gradient_descent(X_aug, y_binary)
 
   def _fit_gradient_descent(self, X: np.ndarray, y: np.ndarray) -> None:
     n_samples, n_features = X.shape
+    w = self.sample_weight_
     i = 0
     while True:
       z = X @ self.theta
@@ -57,16 +79,18 @@ class ProbitRegression(Classification):
       denom = np.maximum(cdf_z * (1.0 - cdf_z), 1e-15)
       
       # Gradient of Negative Log-Likelihood:
-      # d(NLL)/dtheta = 1/N * sum( pdf * (cdf - y) / (cdf * (1-cdf)) * x )
-      grad = (1.0 / n_samples) * (X.T @ (pdf_z * (cdf_z - y) / denom))
+      # d(NLL)/dtheta = 1/N * sum( w * pdf * (cdf - y) / (cdf * (1-cdf)) * x )
+      grad = (1.0 / n_samples) * (X.T @ (w * pdf_z * (cdf_z - y) / denom))
       
       update = self.learning_rate * grad
       self.theta -= update
       
       update_norm = float(np.linalg.norm(update))
       
-      if i % 1000 == 0:
-        loss = -np.mean(y * np.log(cdf_z + 1e-15) + (1 - y) * np.log(1 - cdf_z + 1e-15))
+      loss = -np.mean(w * (y * np.log(cdf_z + 1e-15) + (1 - y) * np.log(1 - cdf_z + 1e-15)))
+      self.loss_history_.append(loss)
+      
+      if i % 100 == 0:
         print(f"Iteration {i}: Loss {loss:.4f}")
         
       if update_norm < self.eps:

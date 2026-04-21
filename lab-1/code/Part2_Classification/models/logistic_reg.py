@@ -16,13 +16,19 @@ class LogisticRegression(Classification):
     max_iter: int | None = None,
     prior_precision: float = 1.0,
     penalize_bias: bool = False,
+    l1_penalty: float = 0.0,
+    l2_penalty: float = 0.0,
+    class_weight: str | dict | None = None,
   ):
     super().__init__()
+    self.class_weight = class_weight
     self.learning_rate = learning_rate
     self.eps = eps
     self.max_iter = max_iter
     self.prior_precision = prior_precision
     self.penalize_bias = penalize_bias
+    self.l1_penalty = l1_penalty
+    self.l2_penalty = l2_penalty
     self.posterior_cov: np.ndarray | None = None
 
   @staticmethod
@@ -48,9 +54,28 @@ class LogisticRegression(Classification):
     n_samples, n_features = X.shape
     y_binary = (y == self.classes_[1]).astype(float)
 
+    if getattr(self, 'class_weight', None) is None:
+      self.sample_weight_ = np.ones(n_samples)
+    else:
+      self.sample_weight_ = np.zeros(n_samples)
+      for idx, cls in enumerate(self.classes_):
+        mask = (y == cls)
+        count = np.sum(mask)
+        if isinstance(self.class_weight, dict):
+          w = self.class_weight.get(cls, 1.0)
+        elif self.class_weight == 'balanced':
+          w = n_samples / (2.0 * count) if count > 0 else 0.0
+        elif self.class_weight == 'proportional':
+          w = count / n_samples
+        else:
+          raise ValueError(f"Unknown class_weight: {self.class_weight}")
+        self.sample_weight_[mask] = w
+      self.sample_weight_ *= n_samples / np.sum(self.sample_weight_)
+
     self.theta = np.zeros(n_features + 1)
     X_aug = self._augment(X)
     self.posterior_cov = None
+    self.loss_history_ = []
 
     if solver == 'gradient_descent':
       self._fit_gradient_descent(X_aug, y_binary)
@@ -58,22 +83,32 @@ class LogisticRegression(Classification):
       self._fit_newton_raphson(X_aug, y_binary)
     elif solver == 'laplace_approximation' or solver == 'laplace':
       self._fit_laplace(X_aug, y_binary)
+    elif solver == 'l1':
+      self._fit_l1(X_aug, y_binary)
+    elif solver == 'l2':
+      self._fit_l2(X_aug, y_binary)
+    elif solver == 'elastic_net':
+      self._fit_elastic_net(X_aug, y_binary)
     else:
-      raise ValueError(f"Invalid solver: {solver}. Valid solvers are 'gradient_descent', 'newton_raphson', 'IRLS', and 'laplace'.")
+      raise ValueError(f"Invalid solver: {solver}. Valid solvers are 'gradient_descent', 'newton_raphson', 'IRLS', 'laplace', 'l1', 'l2', and 'elastic_net'.")
 
   def _fit_gradient_descent(self, X: np.ndarray, y: np.ndarray) -> None:
     n_samples, n_features = X.shape
     self.theta = np.zeros(n_features)
+    w = self.sample_weight_
     i = 0
     while True:
       z = X @ self.theta
       probs = self._sigmoid(z)
-      d_theta = (1.0 / n_samples) * (X.T @ (probs - y))
+      d_theta = (1.0 / n_samples) * (X.T @ (w * (probs - y)))
       update = self.learning_rate * d_theta
       self.theta -= update
       update_norm = float(np.linalg.norm(update))
-      if i % 500 == 0:
-        loss = -np.mean(y * np.log(probs + 1e-15) + (1 - y) * np.log(1 - probs + 1e-15))
+      
+      loss = -np.mean(w * (y * np.log(probs + 1e-15) + (1 - y) * np.log(1 - probs + 1e-15)))
+      self.loss_history_.append(loss)
+      
+      if i % 100 == 0:
         print(f"Iteration {i}: Loss {loss:.4f}")
       if update_norm < self.eps:
         print(f"Converged at iteration {i}: update norm {update_norm:.6e} < eps {self.eps:.6e}")
@@ -83,8 +118,131 @@ class LogisticRegression(Classification):
         break
       i += 1
 
+  def _fit_l1(self, X: np.ndarray, y: np.ndarray) -> None:
+    n_samples, n_features = X.shape
+    self.theta = np.zeros(n_features)
+    prior_mask = self._prior_mask(n_features)
+    w = self.sample_weight_
+    i = 0
+    while True:
+      z = X @ self.theta
+      probs = self._sigmoid(z)
+      d_theta = (1.0 / n_samples) * (X.T @ (w * (probs - y))) + self.l1_penalty * (prior_mask * np.sign(self.theta))
+      update = self.learning_rate * d_theta
+      self.theta -= update
+      update_norm = float(np.linalg.norm(update))
+      
+      loss = -np.mean(w * (y * np.log(probs + 1e-15) + (1 - y) * np.log(1 - probs + 1e-15)))
+      loss += self.l1_penalty * np.sum(prior_mask * np.abs(self.theta))
+      self.loss_history_.append(loss)
+      
+      if i % 100 == 0:
+        print(f"Iteration {i} (L1): Loss {loss:.4f}")
+      if update_norm < self.eps:
+        print(f"Converged at iteration {i}: update norm {update_norm:.6e} < eps {self.eps:.6e}")
+        break
+      if self.max_iter is not None and i + 1 >= self.max_iter:
+        print(f"Stopped at iteration {i + 1}: reached max_iter={self.max_iter} before convergence.")
+        break
+      i += 1
+
+  def _fit_l2(self, X: np.ndarray, y: np.ndarray) -> None:
+    n_samples, n_features = X.shape
+    self.theta = np.zeros(n_features)
+    prior_mask = self._prior_mask(n_features)
+    w = self.sample_weight_
+    i = 0
+    while True:
+      z = X @ self.theta
+      probs = self._sigmoid(z)
+      d_theta = (1.0 / n_samples) * (X.T @ (w * (probs - y))) + self.l2_penalty * (prior_mask * self.theta)
+      update = self.learning_rate * d_theta
+      self.theta -= update
+      update_norm = float(np.linalg.norm(update))
+      
+      loss = -np.mean(w * (y * np.log(probs + 1e-15) + (1 - y) * np.log(1 - probs + 1e-15)))
+      loss += 0.5 * self.l2_penalty * np.sum(prior_mask * (self.theta ** 2))
+      self.loss_history_.append(loss)
+      
+      if i % 100 == 0:
+        print(f"Iteration {i} (L2): Loss {loss:.4f}")
+      if update_norm < self.eps:
+        print(f"Converged at iteration {i}: update norm {update_norm:.6e} < eps {self.eps:.6e}")
+        break
+      if self.max_iter is not None and i + 1 >= self.max_iter:
+        print(f"Stopped at iteration {i + 1}: reached max_iter={self.max_iter} before convergence.")
+        break
+      i += 1
+
+  def _fit_elastic_net(self, X: np.ndarray, y: np.ndarray) -> None:
+    n_samples, n_features = X.shape
+    self.theta = np.zeros(n_features)
+    prior_mask = self._prior_mask(n_features)
+    w = self.sample_weight_
+    i = 0
+    while True:
+      z = X @ self.theta
+      probs = self._sigmoid(z)
+      d_theta = (1.0 / n_samples) * (X.T @ (w * (probs - y)))
+      d_theta += self.l2_penalty * (prior_mask * self.theta)
+      d_theta += self.l1_penalty * (prior_mask * np.sign(self.theta))
+      update = self.learning_rate * d_theta
+      self.theta -= update
+      update_norm = float(np.linalg.norm(update))
+      
+      loss = -np.mean(w * (y * np.log(probs + 1e-15) + (1 - y) * np.log(1 - probs + 1e-15)))
+      loss += 0.5 * self.l2_penalty * np.sum(prior_mask * (self.theta ** 2))
+      loss += self.l1_penalty * np.sum(prior_mask * np.abs(self.theta))
+      self.loss_history_.append(loss)
+      
+      if i % 100 == 0:
+        print(f"Iteration {i} (Elastic Net): Loss {loss:.4f}")
+      if update_norm < self.eps:
+        print(f"Converged at iteration {i}: update norm {update_norm:.6e} < eps {self.eps:.6e}")
+        break
+      if self.max_iter is not None and i + 1 >= self.max_iter:
+        print(f"Stopped at iteration {i + 1}: reached max_iter={self.max_iter} before convergence.")
+        break
+      i += 1
+
   def _fit_newton_raphson(self, X: np.ndarray, y: np.ndarray) -> None:
-    raise NotImplementedError("Newton-Raphson method is not implemented yet.")
+    n_samples, n_features_aug = X.shape
+    self.theta = np.zeros(n_features_aug)
+    sw = self.sample_weight_
+    
+    i = 0
+    while True:
+      logits = X @ self.theta
+      probs = self._sigmoid(logits)
+      w = sw * probs * (1.0 - probs)
+
+      grad = (X.T @ (sw * (probs - y))) / n_samples
+      hessian = (X.T * w) @ X / n_samples
+      
+      hessian += 1e-8 * np.eye(n_features_aug)
+      
+      try:
+          step = np.linalg.solve(hessian, grad)
+      except np.linalg.LinAlgError:
+          step = np.linalg.pinv(hessian) @ grad
+          
+      self.theta -= step
+      
+      step_norm = float(np.linalg.norm(step))
+      
+      loss = -np.mean(sw * (y * np.log(probs + 1e-15) + (1.0 - y) * np.log(1.0 - probs + 1e-15)))
+      self.loss_history_.append(loss)
+      
+      if i % 100 == 0:
+        print(f"Iteration {i}: Loss {loss:.4f}")
+        
+      if step_norm < self.eps:
+        print(f"Converged at iteration {i}: step norm {step_norm:.6e} < eps {self.eps:.6e}")
+        break
+      if self.max_iter is not None and i + 1 >= self.max_iter:
+        print(f"Stopped at iteration {i + 1}: reached max_iter={self.max_iter} before convergence.")
+        break
+      i += 1
 
   def _fit_laplace(self, X: np.ndarray, y: np.ndarray) -> None:
     n_samples, n_features_aug = X.shape
@@ -92,15 +250,16 @@ class LogisticRegression(Classification):
     prior_mask = self._prior_mask(n_features_aug)
     reg = self.prior_precision / n_samples
     hessian = None
+    sw = self.sample_weight_
 
     # use Newton-Raphson updates to find the MAP estimate, then compute the posterior covariance at convergence
     i = 0
     while True:
       logits = X @ self.theta
       probs = self._sigmoid(logits)
-      w = probs * (1.0 - probs)
+      w = sw * probs * (1.0 - probs)
 
-      grad = (X.T @ (probs - y)) / n_samples + reg * (prior_mask * self.theta)
+      grad = (X.T @ (sw * (probs - y))) / n_samples + reg * (prior_mask * self.theta)
       hessian = (X.T * w) @ X / n_samples
       hessian += reg * np.diag(prior_mask)
       hessian += 1e-8 * np.eye(n_features_aug)
@@ -109,9 +268,12 @@ class LogisticRegression(Classification):
       self.theta -= step
 
       step_norm = float(np.linalg.norm(step))
+      
+      map_loss = -np.mean(sw * (y * np.log(probs + 1e-15) + (1.0 - y) * np.log(1.0 - probs + 1e-15)))
+      prior_term = 0.5 * reg * np.sum(prior_mask * (self.theta ** 2))
+      self.loss_history_.append(map_loss + prior_term)
+      
       if i % 50 == 0:
-        map_loss = -np.mean(y * np.log(probs + 1e-15) + (1.0 - y) * np.log(1.0 - probs + 1e-15))
-        prior_term = 0.5 * reg * np.sum(prior_mask * (self.theta ** 2))
         print(f"Iteration {i}: MAP objective {map_loss + prior_term:.4f}")
       if step_norm < self.eps:
         print(f"Converged at iteration {i}: step norm {step_norm:.6e} < eps {self.eps:.6e}")

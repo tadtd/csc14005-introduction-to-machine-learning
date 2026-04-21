@@ -9,7 +9,10 @@ class QDA(Classification):
   Discriminant scores are quadratic in x; boundaries are quadric surfaces.
   """
 
-  def __init__(self, reg: float = 1e-6):
+  def __init__(
+    self,
+    reg: float = 1e-6
+  ):
     super().__init__()
     self.reg = reg
     self.priors_: np.ndarray | None = None

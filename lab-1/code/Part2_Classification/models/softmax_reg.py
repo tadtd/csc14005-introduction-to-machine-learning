@@ -15,8 +15,10 @@ class SoftmaxRegression(Classification):
     max_iter: int | None = None,
     prior_precision: float = 1.0,
     penalize_bias: bool = False,
+    class_weight: str | dict | None = None,
   ):
     super().__init__()
+    self.class_weight = class_weight
     self.learning_rate = learning_rate
     self.eps = eps
     self.max_iter = max_iter
@@ -45,10 +47,29 @@ class SoftmaxRegression(Classification):
     n_classes = len(self.classes_)
     y_idx = np.searchsorted(self.classes_, y)
 
+    if getattr(self, 'class_weight', None) is None:
+      self.sample_weight_ = np.ones(n_samples)
+    else:
+      self.sample_weight_ = np.zeros(n_samples)
+      for idx, cls in enumerate(self.classes_):
+        mask = (y == cls)
+        count = np.sum(mask)
+        if isinstance(self.class_weight, dict):
+          w = self.class_weight.get(cls, 1.0)
+        elif self.class_weight == 'balanced':
+          w = n_samples / (n_classes * count) if count > 0 else 0.0
+        elif self.class_weight == 'proportional':
+          w = count / n_samples
+        else:
+          raise ValueError(f"Unknown class_weight: {self.class_weight}")
+        self.sample_weight_[mask] = w
+      self.sample_weight_ *= n_samples / np.sum(self.sample_weight_)
+
     self.theta = np.zeros((n_features + 1, n_classes))
     X_aug = self._augment(X)
     y_encoded = self._one_hot(y_idx, n_classes)
     self.posterior_cov = None
+    self.loss_history_ = []
 
     if solver == "gradient_descent":
       self._fit_gradient_descent(X_aug, y_encoded)
@@ -62,19 +83,22 @@ class SoftmaxRegression(Classification):
 
   def _fit_gradient_descent(self, X: np.ndarray, y_encoded: np.ndarray) -> None:
     n_samples = X.shape[0]
+    w = self.sample_weight_[:, np.newaxis]
     i = 0
     while True:
       scores = X @ self.theta
       probs = self._softmax(scores)
 
-      d_theta = (1.0 / n_samples) * (X.T @ (probs - y_encoded))
+      d_theta = (1.0 / n_samples) * (X.T @ (w * (probs - y_encoded)))
       update = self.learning_rate * d_theta
       self.theta -= update
 
       update_norm = float(np.linalg.norm(update))
 
-      if i % 50 == 0:
-        loss = -np.mean(np.sum(y_encoded * np.log(probs + 1e-15), axis=1))
+      loss = -np.mean(w.ravel() * np.sum(y_encoded * np.log(probs + 1e-15), axis=1))
+      self.loss_history_.append(loss)
+
+      if i % 100 == 0:
         print(f"Iteration {i}: Loss {loss:.4f}")
 
       if update_norm < self.eps:
@@ -90,6 +114,7 @@ class SoftmaxRegression(Classification):
     n_classes = y_encoded.shape[1]
     prior_mask = self._prior_mask(n_features_aug, n_classes)
     prior_diag = (self.prior_precision / n_samples) * prior_mask.ravel()
+    w_weight = self.sample_weight_
 
     hessian = None
     i = 0
@@ -97,7 +122,7 @@ class SoftmaxRegression(Classification):
       scores = X @ self.theta
       probs = self._softmax(scores)
 
-      grad = (X.T @ (probs - y_encoded)) / n_samples
+      grad = (X.T @ (w_weight[:, np.newaxis] * (probs - y_encoded))) / n_samples
       grad += (self.prior_precision / n_samples) * (prior_mask * self.theta)
       grad_vec = grad.ravel()
 
@@ -107,7 +132,7 @@ class SoftmaxRegression(Classification):
         p = probs[idx]
         s = np.diag(p) - np.outer(p, p)
         xx = np.outer(X[idx], X[idx])
-        hessian += np.kron(xx, s) / n_samples
+        hessian += w_weight[idx] * np.kron(xx, s) / n_samples
 
       hessian += np.diag(prior_diag)
       hessian += 1e-8 * np.eye(dk)
@@ -116,11 +141,14 @@ class SoftmaxRegression(Classification):
       self.theta -= step
 
       step_norm = float(np.linalg.norm(step))
-      if i % 20 == 0:
-        map_loss = -np.mean(np.sum(y_encoded * np.log(probs + 1e-15), axis=1))
-        prior_term = 0.5 * (self.prior_precision / n_samples) * np.sum(
-          prior_mask * (self.theta ** 2)
-        )
+      
+      map_loss = -np.mean(w_weight * np.sum(y_encoded * np.log(probs + 1e-15), axis=1))
+      prior_term = 0.5 * (self.prior_precision / n_samples) * np.sum(
+        prior_mask * (self.theta ** 2)
+      )
+      self.loss_history_.append(map_loss + prior_term)
+      
+      if i % 100 == 0:
         print(f"Iteration {i}: MAP objective {map_loss + prior_term:.4f}")
       if step_norm < self.eps:
         print(f"Converged at iteration {i}: step norm {step_norm:.6e} < eps {self.eps:.6e}")

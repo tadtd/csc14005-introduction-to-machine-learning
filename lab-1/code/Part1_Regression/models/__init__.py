@@ -8,6 +8,8 @@ from .kernel_ridge import KernelRidgeRegression
 from .robust_reg import RobustRegression
 from .gaussian_process_reg import GaussianProcessRegression
 from .bayesian_reg import BayesianRegression
+from .wls_reg import FeasibleWeightedLeastSquaresRegression, WeightedLeastSquaresRegression
+from .feature_map_reg import FeatureMapRegressor
 
 __all__ = [
     "Regression",
@@ -20,4 +22,7 @@ __all__ = [
     "RobustRegression",
     "GaussianProcessRegression",
     "BayesianRegression",
+    "WeightedLeastSquaresRegression",
+    "FeasibleWeightedLeastSquaresRegression",
+    "FeatureMapRegressor",
 ]

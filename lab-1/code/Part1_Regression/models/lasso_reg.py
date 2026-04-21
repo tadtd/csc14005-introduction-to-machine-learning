@@ -34,6 +34,7 @@ class LassoRegression(Regression):
         self.tol = tol
         self.theta_: np.ndarray | None = None
         self.n_iter_: int = 0
+        self.max_delta_: float | None = None
 
     # ------------------------------------------------------------------
     # Soft-thresholding operator  S(ρ, λ)
@@ -49,8 +50,14 @@ class LassoRegression(Regression):
 
     def fit(self, X: np.ndarray, y: np.ndarray, **kwargs) -> None:  # type: ignore[override]
         n, d = X.shape
-        theta = np.zeros(d + 1)
-        theta[-1] = float(np.mean(y))
+        initial_theta = kwargs.get("initial_theta")
+        if initial_theta is None:
+            theta = np.zeros(d + 1)
+            theta[-1] = float(np.mean(y))
+        else:
+            theta = np.asarray(initial_theta, dtype=float).reshape(-1).copy()
+            if theta.shape[0] != d + 1:
+                raise ValueError("initial_theta must have shape (n_features + 1,).")
         coef = theta[:-1]
 
         # Pre-compute column squared norms — constant across iterations
@@ -77,6 +84,7 @@ class LassoRegression(Regression):
             # Update bias (never regularised)
             theta[-1] = float(np.mean(y - X @ coef))
             self.n_iter_ = step
+            self.max_delta_ = max_delta
 
             if max_delta < self.tol:
                 break

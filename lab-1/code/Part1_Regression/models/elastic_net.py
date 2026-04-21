@@ -37,15 +37,22 @@ class ElasticNetRegression(Regression):
         self.tol = tol
         self.theta_: np.ndarray | None = None
         self.n_iter_: int = 0
+        self.max_delta_: float | None = None
 
     @staticmethod
     def _soft_threshold(rho: float, lam: float) -> float:
         return float(np.sign(rho) * max(abs(rho) - lam, 0.0))
 
-    def fit(self, X: np.ndarray, y: np.ndarray, **kwargs) -> None:  
+    def fit(self, X: np.ndarray, y: np.ndarray, **kwargs) -> None:
         n, d = X.shape
-        theta = np.zeros(d + 1)
-        theta[-1] = float(np.mean(y))
+        initial_theta = kwargs.get("initial_theta")
+        if initial_theta is None:
+            theta = np.zeros(d + 1)
+            theta[-1] = float(np.mean(y))
+        else:
+            theta = np.asarray(initial_theta, dtype=float).reshape(-1).copy()
+            if theta.shape[0] != d + 1:
+                raise ValueError("initial_theta must have shape (n_features + 1,).")
         coef = theta[:-1]
 
         col_norms_sq = np.sum(X ** 2, axis=0) / n   # (d,)
@@ -69,6 +76,7 @@ class ElasticNetRegression(Regression):
 
             theta[-1] = float(np.mean(y - X @ coef))
             self.n_iter_ = step
+            self.max_delta_ = max_delta
 
             if max_delta < self.tol:
                 break

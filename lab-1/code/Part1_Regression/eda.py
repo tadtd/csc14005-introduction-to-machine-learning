@@ -3,7 +3,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from typing import Sequence
-from models import RidgeRegression, LassoRegression   # local import to avoid circular deps
 
 
 # ---------------------------------------------------------------------------
@@ -152,94 +151,36 @@ def plot_feature_vs_target(
     plt.show()
 
 
-# Regularization paths  (Ridge + Lasso side by side)
-def plot_regularization_path(
-    X: np.ndarray,
-    y: np.ndarray,
-    feature_names: Sequence[str],
-    alphas: np.ndarray | None = None,
-    lasso_max_iter: int = 1_000,
-    figsize: tuple = (18, 6),
+def plot_feature_pair_scatter(
+    df: pd.DataFrame,
+    columns: Sequence[str],
+    *,
+    sample_size: int = 1_500,
+    random_state: int = 42,
+    diag_kind: str = "hist",
 ) -> None:
-    """Plot Ridge and Lasso coefficient paths as a function of log₁₀(α).
+    """Scatter-matrix for a small set of important variables.
 
-    Lasso uses warm start (coefficients from the previous α value are
-    passed as the initial point for the next, in descending α order).
-
-    Parameters
-    ----------
-    X, y : training data (should already be scaled).
-    feature_names : list of feature name strings.
-    alphas : 1-D array of regularization values.  Defaults to
-             ``np.logspace(-4, 4, 80)``.
-    lasso_max_iter : coordinate-descent passes per alpha value.
+    This complements the feature-vs-target plots by showing pairwise
+    relationships among the most relevant variables requested in the project
+    brief. The dataset is optionally down-sampled to keep the chart readable
+    and the notebook responsive.
     """
+    columns = [col for col in columns if col in df.columns]
+    if len(columns) < 2:
+        print("Need at least two valid columns to build a pair-scatter plot.")
+        return
 
-    if alphas is None:
-        alphas = np.logspace(-4, 4, 80)
+    pair_df = df[columns].copy()
+    if sample_size is not None and sample_size > 0 and len(pair_df) > sample_size:
+        pair_df = pair_df.sample(sample_size, random_state=random_state)
 
-    alphas = np.asarray(alphas)
-
-    # ----- Ridge path ----
-    ridge_coefs = []
-    for a in alphas:
-        m = RidgeRegression(alpha=a)
-        m.fit(X, y)
-        ridge_coefs.append(m.coef_.copy())
-    ridge_coefs = np.array(ridge_coefs)   # (n_alphas, d)
-
-    # ----- Lasso path (warm start — descending α) -----
-    n, d = X.shape
-    lasso_coef   = np.zeros(d)
-    lasso_intercept = float(np.mean(y))
-    col_norms_sq = np.sum(X ** 2, axis=0) / n
-
-    lasso_coefs_desc = []
-    for a in alphas[::-1]:                # descend from large to small
-        for _ in range(lasso_max_iter):
-            max_delta = 0.0
-            for j in range(d):
-                r_j   = y - lasso_intercept - X @ lasso_coef + X[:, j] * lasso_coef[j]
-                rho_j = float(X[:, j] @ r_j) / n
-                z_j   = col_norms_sq[j]
-                old   = lasso_coef[j]
-                if z_j < 1e-12:
-                    lasso_coef[j] = 0.0
-                else:
-                    sign = np.sign(rho_j)
-                    lasso_coef[j] = float(sign * max(abs(rho_j) - a / 2.0, 0.0) / z_j)
-                max_delta = max(max_delta, abs(lasso_coef[j] - old))
-            lasso_intercept = float(np.mean(y - X @ lasso_coef))
-            if max_delta < 1e-4:
-                break
-        lasso_coefs_desc.append(lasso_coef.copy())
-
-    lasso_coefs = np.array(lasso_coefs_desc)[::-1]  # back to ascending α
-
-    # ----- Plot -----
-    log_alphas = np.log10(alphas)
-    feature_names = list(feature_names)
-
-    fig, axes = plt.subplots(1, 2, figsize=figsize)
-
-    for i, name in enumerate(feature_names):
-        axes[0].plot(log_alphas, ridge_coefs[:, i], label=name)
-    axes[0].set_xlabel("log₁₀(α)")
-    axes[0].set_ylabel("Coefficient value")
-    axes[0].set_title("Ridge — Regularization Path")
-    axes[0].axhline(0, color="black", linewidth=0.8, linestyle="--")
-    axes[0].legend(fontsize=7, loc="upper right")
-    axes[0].grid(alpha=0.3, linestyle="--")
-
-    for i, name in enumerate(feature_names):
-        axes[1].plot(log_alphas, lasso_coefs[:, i], label=name)
-    axes[1].set_xlabel("log₁₀(α)")
-    axes[1].set_ylabel("Coefficient value")
-    axes[1].set_title("Lasso — Regularization Path")
-    axes[1].axhline(0, color="black", linewidth=0.8, linestyle="--")
-    axes[1].legend(fontsize=7, loc="upper right")
-    axes[1].grid(alpha=0.3, linestyle="--")
-
-    plt.suptitle("Regularization Paths", fontsize=14, fontweight="bold")
-    plt.tight_layout()
+    grid = sns.pairplot(
+        pair_df,
+        corner=True,
+        diag_kind=diag_kind,
+        plot_kws={"alpha": 0.35, "s": 14, "edgecolor": "none"},
+        diag_kws={"bins": 30, "edgecolor": "white"},
+    )
+    grid.fig.suptitle("Pairwise Scatter of Important Variables", y=1.02, fontsize=14, fontweight="bold")
     plt.show()

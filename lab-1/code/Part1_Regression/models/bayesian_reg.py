@@ -1,111 +1,206 @@
 import numpy as np
+
 from .base import Regression
 
 
 class BayesianRegression(Regression):
-  """
-  Bayesian Linear Regression (explicit version)
+    """Bayesian linear regression with optional evidence maximization.
 
-  Model:
-      y = X w + ε
-      w ~ N(0, tau^2 I)
-      ε ~ N(0, sigma^2)
-
-  Equivalent precision form:
-      alpha = 1 / tau^2   (prior precision)
-      beta  = 1 / sigma^2 (noise precision)
-  """
-
-  def __init__(self, sigma: float = 1.0, tau: float = 1.0) -> None:
-    if sigma <= 0:
-      raise ValueError("sigma must be > 0")
-    if tau <= 0:
-      raise ValueError("tau must be > 0")
-
-    # Convert variance → precision
-    self.beta = 1.0 / sigma**2   # noise precision
-    self.alpha = 1.0 / tau**2    # prior precision
-
-    # Posterior parameters
-    self.w_mean = None           # m_N
-    self.w_cov = None            # S_N
-
-  def fit(self, X: np.ndarray, y: np.ndarray) -> None:
-    """
-    Compute posterior p(w | D) = N(m_N, S_N)
-
-    Formulas:
-        S_N^{-1} = alpha I + beta X^T X
-        S_N      = (S_N^{-1})^{-1}
-        m_N      = beta S_N X^T y
+    Parameters
+    ----------
+    sigma, tau
+        Backward-compatible variance parameters. When provided, they override
+        ``beta`` and ``alpha`` via ``beta = 1 / sigma^2`` and
+        ``alpha = 1 / tau^2``.
+    alpha, beta
+        Prior precision and noise precision.
+    penalize_bias
+        When False, the bias term receives near-zero prior precision.
+    max_evidence_iter, tol
+        Controls evidence maximization updates.
     """
 
-    # Add bias term
-    X_aug = self._augment(X)   # shape (n, d+1)
-    n_features = X_aug.shape[1]
+    def __init__(
+        self,
+        sigma: float | None = None,
+        tau: float | None = None,
+        *,
+        alpha: float | None = None,
+        beta: float | None = None,
+        penalize_bias: bool = False,
+        max_evidence_iter: int = 500,
+        tol: float = 1e-6,
+    ) -> None:
+        if sigma is not None:
+            if sigma <= 0:
+                raise ValueError("sigma must be > 0")
+            beta = 1.0 / float(sigma) ** 2
+        if tau is not None:
+            if tau <= 0:
+                raise ValueError("tau must be > 0")
+            alpha = 1.0 / float(tau) ** 2
 
-    # ---- Step 1: Prior precision matrix ----
-    # alpha * I
-    prior_precision = self.alpha * np.eye(n_features)
+        self.alpha = float(1.0 if alpha is None else alpha)
+        self.beta = float(1.0 if beta is None else beta)
+        if self.alpha <= 0 or self.beta <= 0:
+            raise ValueError("alpha and beta must be > 0.")
 
-    # Do not regularize bias (last column)
-    prior_precision[-1, -1] = 1e-12
+        self.penalize_bias = penalize_bias
+        self.max_evidence_iter = max_evidence_iter
+        self.tol = tol
 
-    # ---- Step 2: Posterior precision ----
-    # S_N^{-1} = alpha I + beta X^T X
-    posterior_precision = prior_precision + self.beta * (X_aug.T @ X_aug)
+        self.w_mean: np.ndarray | None = None
+        self.w_cov: np.ndarray | None = None
+        self.alpha_: float = self.alpha
+        self.beta_: float = self.beta
+        self.n_iter_: int = 0
+        self.log_marginal_likelihood_history_: list[float] = []
 
-    # ---- Step 3: Posterior covariance ----
-    # S_N = (S_N^{-1})^{-1}
-    S_N = np.linalg.inv(posterior_precision)
+    def _prior_precision_diag(self, d_aug: int) -> np.ndarray:
+        diag = np.full(d_aug, self.alpha_, dtype=float)
+        if not self.penalize_bias:
+            diag[-1] = 1e-12
+        return diag
 
-    # ---- Step 4: Posterior mean ----
-    # m_N = beta S_N X^T y
-    m_N = self.beta * (S_N @ X_aug.T @ y)
+    def _posterior(
+        self,
+        X_aug: np.ndarray,
+        y: np.ndarray,
+        *,
+        alpha: float,
+        beta: float,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        d_aug = X_aug.shape[1]
+        prior_diag = np.full(d_aug, alpha, dtype=float)
+        if not self.penalize_bias:
+            prior_diag[-1] = 1e-12
 
-    # Save results
-    self.w_mean = m_N.reshape(-1)
-    self.w_cov = S_N
+        precision = np.diag(prior_diag) + beta * (X_aug.T @ X_aug)
+        cov = np.linalg.pinv(precision)
+        mean = beta * cov @ X_aug.T @ y
+        return mean.reshape(-1), cov
 
-  def predict(self, X: np.ndarray) -> np.ndarray:
-    """
-    Mean prediction:
-        E[y*] = x*^T m_N
-    """
-    if self.w_mean is None:
-      raise RuntimeError("Model not fitted")
+    def fit(
+        self,
+        X: np.ndarray,
+        y: np.ndarray,
+        *,
+        maximize_evidence: bool = False,
+    ) -> None:
+        X_aug = self._augment(np.asarray(X, dtype=float))
+        y = np.asarray(y, dtype=float).reshape(-1)
 
-    X_aug = self._augment(X)
-    return X_aug @ self.w_mean
+        self.alpha_ = self.alpha
+        self.beta_ = self.beta
+        self.log_marginal_likelihood_history_ = []
+        self.n_iter_ = 1
 
-  def predict_with_uncertainty(self, X: np.ndarray):
-    """
-    Predictive distribution:
+        if maximize_evidence:
+            self.maximize_evidence(X, y)
+            return
 
-        p(y* | x*, D) = N(mean, variance)
+        self.w_mean, self.w_cov = self._posterior(
+            X_aug,
+            y,
+            alpha=self.alpha_,
+            beta=self.beta_,
+        )
+        self.log_marginal_likelihood_history_.append(self.log_marginal_likelihood(X, y))
 
-    where:
-        mean = x*^T m_N
-        var  = sigma^2 + x*^T S_N x*
-    """
+    def maximize_evidence(
+        self,
+        X: np.ndarray,
+        y: np.ndarray,
+        *,
+        max_iter: int | None = None,
+    ) -> None:
+        X_aug = self._augment(np.asarray(X, dtype=float))
+        y = np.asarray(y, dtype=float).reshape(-1)
+        n_samples = X_aug.shape[0]
 
-    if self.w_mean is None or self.w_cov is None:
-      raise RuntimeError("Model not fitted")
+        max_steps = self.max_evidence_iter if max_iter is None else max_iter
+        alpha = float(self.alpha)
+        beta = float(self.beta)
+        self.log_marginal_likelihood_history_ = []
 
-    X_aug = self._augment(X)
+        for step in range(1, max_steps + 1):
+            mean, cov = self._posterior(X_aug, y, alpha=alpha, beta=beta)
 
-    # ---- Mean ----
-    mean = X_aug @ self.w_mean
+            if self.penalize_bias:
+                penalized_mean = mean
+                penalized_cov = cov
+            else:
+                penalized_mean = mean[:-1]
+                penalized_cov = cov[:-1, :-1]
 
-    # ---- Model uncertainty term ----
-    # x*^T S_N x*
-    model_var = np.einsum("ij,jk,ik->i", X_aug, self.w_cov, X_aug)
+            n_penalized = penalized_mean.size
+            gamma = float(n_penalized - alpha * np.trace(penalized_cov))
+            denom_w = float(np.dot(penalized_mean, penalized_mean))
+            resid = y - X_aug @ mean
+            denom_e = float(np.dot(resid, resid))
 
-    # ---- Total variance ----
-    # sigma^2 + model uncertainty
-    noise_var = 1.0 / self.beta
-    total_var = noise_var + model_var
+            alpha_new = max(gamma / max(denom_w, 1e-12), 1e-12)
+            beta_new = max((n_samples - gamma) / max(denom_e, 1e-12), 1e-12)
 
-    std = np.sqrt(np.maximum(total_var, 0.0))
+            self.alpha_ = alpha_new
+            self.beta_ = beta_new
+            self.w_mean = mean
+            self.w_cov = cov
+            self.log_marginal_likelihood_history_.append(self.log_marginal_likelihood(X, y))
+            self.n_iter_ = step
 
-    return mean, std
+            if abs(alpha_new - alpha) < self.tol and abs(beta_new - beta) < self.tol:
+                break
+
+            alpha, beta = alpha_new, beta_new
+
+    def log_marginal_likelihood(self, X: np.ndarray, y: np.ndarray) -> float:
+        X_aug = self._augment(np.asarray(X, dtype=float))
+        y = np.asarray(y, dtype=float).reshape(-1)
+        if self.w_cov is None or self.w_mean is None:
+            mean, cov = self._posterior(X_aug, y, alpha=self.alpha_, beta=self.beta_)
+        else:
+            mean, cov = self.w_mean, self.w_cov
+
+        d_aug = X_aug.shape[1]
+        prior_diag = self._prior_precision_diag(d_aug)
+        precision = np.diag(prior_diag) + self.beta_ * (X_aug.T @ X_aug)
+        sign, logdet = np.linalg.slogdet(precision)
+        if sign <= 0:
+            raise RuntimeError("Posterior precision must be positive definite.")
+
+        if self.penalize_bias:
+            prior_term = self.alpha_ * np.dot(mean, mean)
+        else:
+            prior_term = self.alpha_ * np.dot(mean[:-1], mean[:-1])
+        data_term = self.beta_ * np.dot(y - X_aug @ mean, y - X_aug @ mean)
+
+        return float(
+            0.5 * np.sum(np.log(np.maximum(prior_diag, 1e-12)))
+            + 0.5 * len(y) * np.log(self.beta_)
+            - 0.5 * data_term
+            - 0.5 * prior_term
+            - 0.5 * logdet
+            - 0.5 * len(y) * np.log(2.0 * np.pi)
+        )
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        if self.w_mean is None:
+            raise RuntimeError("Model not fitted")
+        X_aug = self._augment(np.asarray(X, dtype=float))
+        return X_aug @ self.w_mean
+
+    def predict_with_uncertainty(
+        self,
+        X: np.ndarray,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        if self.w_mean is None or self.w_cov is None:
+            raise RuntimeError("Model not fitted")
+
+        X_aug = self._augment(np.asarray(X, dtype=float))
+        mean = X_aug @ self.w_mean
+        model_var = np.einsum("ij,jk,ik->i", X_aug, self.w_cov, X_aug)
+        noise_var = 1.0 / self.beta_
+        total_var = noise_var + model_var
+        std = np.sqrt(np.maximum(total_var, 0.0))
+        return mean, std

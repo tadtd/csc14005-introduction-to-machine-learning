@@ -2,10 +2,11 @@
 analysis, and visualisation for Part 1 (Regression).
 
 All functions that the notebook imports are exported from this module:
-    k_fold_cv, k_fold_cv_metrics, build_kfold_indices, kfold_rmse_per_model,
-    bias_variance_bootstrap, forward_stepwise_selection, backward_elimination,
-    paired_tests_against_best, plot_learning_curves, plot_residuals,
-    plot_predicted_vs_actual, loss_curve, learning_curve
+    k_fold_cv_metrics, build_kfold_indices, kfold_rmse_per_model,
+    bias_variance_bootstrap, forward_stepwise_selection,
+    backward_elimination, paired_tests_against_best,
+    plot_learning_curves, plot_residuals, plot_predicted_vs_actual,
+    loss_curve, learning_curve
 """
 
 import numpy as np
@@ -19,6 +20,21 @@ from eval import mse as _mse, rmse as _rmse, mae as _mae, r2_score as _r2
 # ===========================================================================
 # K-Fold helpers
 # ===========================================================================
+
+
+def _prepare_fold_inputs(
+    X_train: np.ndarray,
+    X_val: np.ndarray,
+    ScalerClass=None,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Optionally fit a scaler on the train fold and transform both splits."""
+    X_train = np.asarray(X_train)
+    X_val = np.asarray(X_val)
+    if ScalerClass is None:
+        return X_train, X_val
+
+    scaler = ScalerClass()
+    return scaler.fit_transform(X_train), scaler.transform(X_val)
 
 def build_kfold_indices(
     n: int,
@@ -55,48 +71,13 @@ def build_kfold_indices(
     return splits
 
 
-def k_fold_cv(
-    ModelClass,
-    kwargs: Dict[str, Any],
-    X: np.ndarray,
-    y: np.ndarray,
-    k: int = 10,
-    random_state: int = 42,
-) -> Tuple[float, float]:
-    """K-fold cross-validation returning (mean_MSE, std_MSE).
-
-    Parameters
-    ----------
-    ModelClass : class
-        The model class.  An instance is created as ``ModelClass(**kwargs)``
-        for each fold.
-    kwargs : dict
-        Constructor arguments forwarded to ``ModelClass``.
-    X, y : arrays (should be scaled before calling).
-    k : int — number of folds.
-
-    Returns
-    -------
-    (mean_mse, std_mse)
-    """
-    splits = build_kfold_indices(len(y), k=k, random_state=random_state)
-    fold_mse = []
-
-    for train_idx, val_idx in splits:
-        model = ModelClass(**kwargs)
-        model.fit(X[train_idx], y[train_idx])
-        y_pred = model.predict(X[val_idx])
-        fold_mse.append(_mse(y_pred, y[val_idx]))
-
-    return float(np.mean(fold_mse)), float(np.std(fold_mse))
-
-
 def k_fold_cv_metrics(
     builder: Callable,
     X: np.ndarray,
     y: np.ndarray,
     k: int = 10,
     random_state: int = 42,
+    ScalerClass=None,
 ) -> Dict[str, Tuple[float, float]]:
     """K-fold CV returning mean ± std for MSE, RMSE, MAE, and R².
 
@@ -107,6 +88,9 @@ def k_fold_cv_metrics(
               Compatible with sklearn estimators and Pipelines.
     X, y : arrays.
     k : int — number of folds.
+    ScalerClass : optional scaler class
+        If provided, a fresh scaler is fit on each train fold to avoid data
+        leakage into the validation fold.
 
     Returns
     -------
@@ -119,8 +103,13 @@ def k_fold_cv_metrics(
 
     for train_idx, val_idx in splits:
         model = builder()
-        model.fit(X[train_idx], y[train_idx])
-        y_pred = model.predict(X[val_idx])
+        X_fold_train, X_fold_val = _prepare_fold_inputs(
+            X[train_idx],
+            X[val_idx],
+            ScalerClass=ScalerClass,
+        )
+        model.fit(X_fold_train, y[train_idx])
+        y_pred = model.predict(X_fold_val)
         fold_metrics["mse"].append(_mse(y_pred, y[val_idx]))
         fold_metrics["rmse"].append(_rmse(y_pred, y[val_idx]))
         fold_metrics["mae"].append(_mae(y_pred, y[val_idx]))
@@ -137,6 +126,7 @@ def kfold_rmse_per_model(
     X: np.ndarray,
     y: np.ndarray,
     splits: List[Tuple[np.ndarray, np.ndarray]],
+    ScalerClass=None,
 ) -> np.ndarray:
     """Return a 1-D array of per-fold RMSE values for a given builder.
 
@@ -145,6 +135,9 @@ def kfold_rmse_per_model(
     builder : zero-argument callable returning a fresh model instance.
     X, y : arrays.
     splits : pre-computed fold indices from ``build_kfold_indices``.
+    ScalerClass : optional scaler class
+        If provided, a fresh scaler is fit on each train fold to avoid data
+        leakage into the validation fold.
 
     Returns
     -------
@@ -153,8 +146,13 @@ def kfold_rmse_per_model(
     fold_rmse = []
     for train_idx, val_idx in splits:
         model = builder()
-        model.fit(X[train_idx], y[train_idx])
-        y_pred = model.predict(X[val_idx])
+        X_fold_train, X_fold_val = _prepare_fold_inputs(
+            X[train_idx],
+            X[val_idx],
+            ScalerClass=ScalerClass,
+        )
+        model.fit(X_fold_train, y[train_idx])
+        y_pred = model.predict(X_fold_val)
         fold_rmse.append(_rmse(y_pred, y[val_idx]))
     return np.array(fold_rmse)
 
@@ -559,7 +557,7 @@ def plot_residuals(
     y_pred: np.ndarray,
     title: str = "",
 ) -> None:
-    """Residual histogram (left) + Q-Q plot (right).
+    """Residual-vs-fitted, histogram, and Q-Q plot.
 
     Parameters
     ----------
@@ -571,17 +569,24 @@ def plot_residuals(
     residuals = np.asarray(y_true, float) - np.asarray(y_pred, float)
     prefix = f"{title} — " if title else ""
 
-    fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+    fig, axes = plt.subplots(1, 3, figsize=(16, 4.5))
 
-    axes[0].hist(residuals, bins=50, edgecolor="black", alpha=0.7, color="#1f77b4")
-    axes[0].axvline(0, color="red", linestyle="--", linewidth=1.5)
-    axes[0].set_xlabel("Residual")
-    axes[0].set_ylabel("Frequency")
-    axes[0].set_title(f"{prefix}Residual Histogram")
+    axes[0].scatter(y_pred, residuals, alpha=0.35, s=10, color="steelblue")
+    axes[0].axhline(0, color="red", linestyle="--", linewidth=1.5)
+    axes[0].set_xlabel("Fitted / Predicted")
+    axes[0].set_ylabel("Residual")
+    axes[0].set_title(f"{prefix}Residual vs Fitted")
     axes[0].grid(alpha=0.3, linestyle="--")
 
-    sp_stats.probplot(residuals, plot=axes[1])
-    axes[1].set_title(f"{prefix}Q-Q Plot")
+    axes[1].hist(residuals, bins=50, edgecolor="black", alpha=0.7, color="#1f77b4")
+    axes[1].axvline(0, color="red", linestyle="--", linewidth=1.5)
+    axes[1].set_xlabel("Residual")
+    axes[1].set_ylabel("Frequency")
+    axes[1].set_title(f"{prefix}Residual Histogram")
+    axes[1].grid(alpha=0.3, linestyle="--")
+
+    sp_stats.probplot(residuals, plot=axes[2])
+    axes[2].set_title(f"{prefix}Q-Q Plot")
 
     plt.tight_layout()
     plt.show()

@@ -10,7 +10,7 @@ class ClassificationNotebookConfig:
     target_col: str = 'Class'
     test_size: float = 0.2
     val_size: float = 0.1
-    binary_classes: tuple[int, int] = (0, 1)
+    binary_classes: tuple[int, int] = (0, 2)
     binary_feature_indices: tuple[int, int] = (0, 1)
     kfold_splits: int = 5
     reliability_bins: int = 10
@@ -26,7 +26,7 @@ class KernelLogisticRegressionConfig:
     lam: float = 1e-4
     learning_rate: float = 1e-2
     eps: float = 1e-4
-    max_iter: Optional[int] = None
+    max_iter: Optional[int] = 5000
     class_weight: Optional[Union[str, dict]] = None
 
 @dataclass
@@ -37,7 +37,7 @@ class LDAConfig:
 class LogisticRegressionConfig:
     learning_rate: float = 1e-4
     eps: float = 1e-4
-    max_iter: Optional[int] = None
+    max_iter: Optional[int] = 5000
     prior_precision: float = 1.0
     penalize_bias: bool = False
     l1_penalty: float = 0.0
@@ -47,13 +47,13 @@ class LogisticRegressionConfig:
 @dataclass
 class PerceptronConfig:
     learning_rate: float = 1.0
-    max_iter: Optional[int] = None
+    max_iter: Optional[int] = 5000
 
 @dataclass
 class ProbitRegressionConfig:
     learning_rate: float = 1e-3
     eps: float = 1e-4
-    max_iter: Optional[int] = None
+    max_iter: Optional[int] = 5000
     class_weight: Optional[Union[str, dict]] = None
 
 @dataclass
@@ -64,7 +64,7 @@ class QDAConfig:
 class SoftmaxRegressionConfig:
     learning_rate: float = 1e-4
     eps: float = 1e-4
-    max_iter: Optional[int] = None
+    max_iter: Optional[int] = 5000
     prior_precision: float = 1.0
     penalize_bias: bool = False
     class_weight: Optional[Union[str, dict]] = None

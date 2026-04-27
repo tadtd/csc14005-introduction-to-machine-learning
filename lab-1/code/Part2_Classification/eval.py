@@ -412,3 +412,26 @@ def evaluate_multiclass_strategy(y_true, y_pred, strategy_name: str) -> dict:
     'recall': metrics['recall'],
     'f1-score': metrics['f1-score'],
   }
+
+
+def sparsity_ratio(theta: np.ndarray, atol: float = 1e-3) -> float:
+  """Fraction of (non-bias) weights numerically close to zero."""
+  theta = np.asarray(theta, dtype=float).ravel()
+  if theta.size <= 1:
+    return 0.0
+  weights = theta[:-1]
+  return float(np.mean(np.isclose(weights, 0.0, atol=atol)))
+
+
+def collect_models_with_attr(
+  candidate_models: Mapping[str, Any],
+  attr_name: str,
+) -> Dict[str, Any]:
+  """Keep models that expose a required attribute."""
+  selected: Dict[str, Any] = {}
+  for name, model in candidate_models.items():
+    if model is None:
+      continue
+    if hasattr(model, attr_name):
+      selected[name] = model
+  return selected

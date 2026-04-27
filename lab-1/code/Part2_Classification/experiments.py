@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from itertools import combinations
 from models import LogisticRegression as LR
+from models import Perceptron
 
 def ovr_predict_with_logistic(X_train, y_train, X_test, learning_rate, eps, max_iter):
   classes = np.unique(y_train)
@@ -91,3 +92,39 @@ def fisher_ratio_ranking(
     }
   )
   return fisher_df.sort_values('fisher_ratio', ascending=False).reset_index(drop=True)
+
+
+def run_perceptron_toy_convergence(
+  *,
+  seed: int = 42,
+  n_toy: int = 240,
+  learning_rate: float = 1.0,
+  max_iter: int = 120,
+) -> dict[str, np.ndarray | dict]:
+  """Run perceptron on separable vs XOR-like toy data and return metrics/curves."""
+  rng = np.random.default_rng(seed)
+
+  x_sep_0 = rng.normal(loc=(-1.8, -1.8), scale=0.35, size=(n_toy // 2, 2))
+  x_sep_1 = rng.normal(loc=(1.8, 1.8), scale=0.35, size=(n_toy // 2, 2))
+  x_sep = np.vstack([x_sep_0, x_sep_1])
+  y_sep = np.array([0] * (n_toy // 2) + [1] * (n_toy // 2))
+
+  x_xor = rng.normal(0.0, 1.0, size=(n_toy, 2))
+  y_xor = ((x_xor[:, 0] * x_xor[:, 1]) > 0).astype(int)
+
+  perc_sep = Perceptron(learning_rate=learning_rate, max_iter=max_iter)
+  perc_sep.fit(x_sep, y_sep)
+  sep_pred = perc_sep.predict(x_sep)
+
+  perc_xor = Perceptron(learning_rate=learning_rate, max_iter=max_iter)
+  perc_xor.fit(x_xor, y_xor)
+  xor_pred = perc_xor.predict(x_xor)
+
+  return {
+    "sep_loss_history": np.asarray(getattr(perc_sep, "loss_history_", []), dtype=float),
+    "xor_loss_history": np.asarray(getattr(perc_xor, "loss_history_", []), dtype=float),
+    "sep_accuracy": float(np.mean(sep_pred == y_sep)),
+    "xor_accuracy": float(np.mean(xor_pred == y_xor)),
+    "sep_epochs": int(len(getattr(perc_sep, "loss_history_", []))),
+    "xor_epochs": int(len(getattr(perc_xor, "loss_history_", []))),
+  }

@@ -42,6 +42,21 @@ class PreparedClassificationData:
     non_numeric_cols: list[str]
 
 
+@dataclass
+class BinaryClassificationSlice:
+    """Container for a 2-class slice used by binary-only models."""
+
+    class_0: int
+    class_1: int
+    feature_indices: tuple[int, int]
+    X_train_bin: np.ndarray
+    y_train_bin: np.ndarray
+    X_test_bin: np.ndarray
+    y_test_bin: np.ndarray
+    train_mask: np.ndarray
+    test_mask: np.ndarray
+
+
 def _split_data(
     X: pd.DataFrame,
     y: pd.Series,
@@ -196,3 +211,42 @@ def prepare_classification_data(
     )
 
 
+def make_binary_subset(
+    X_train_scaled: np.ndarray,
+    y_train: np.ndarray,
+    X_test_scaled: np.ndarray,
+    y_test: np.ndarray,
+    *,
+    binary_classes: tuple[int, int],
+    feature_indices: tuple[int, int],
+) -> BinaryClassificationSlice:
+    """Build a reusable binary subset for binary-only classifiers."""
+    class_0, class_1 = binary_classes # class 0: 
+    feat_0, feat_1 = feature_indices
+
+    train_mask = np.isin(y_train, [class_0, class_1])
+    test_mask = np.isin(y_test, [class_0, class_1])
+
+    X_train_bin = X_train_scaled[train_mask][:, [feat_0, feat_1]]
+    y_train_bin = y_train[train_mask]
+    X_test_bin = X_test_scaled[test_mask][:, [feat_0, feat_1]]
+    y_test_bin = y_test[test_mask]
+
+    print(
+        "Binary subset -> "
+        f"classes=({class_0}, {class_1}), "
+        f"features=({feat_0}, {feat_1}), "
+        f"train={X_train_bin.shape[0]}, test={X_test_bin.shape[0]}"
+    )
+
+    return BinaryClassificationSlice(
+        class_0=class_0,
+        class_1=class_1,
+        feature_indices=(feat_0, feat_1),
+        X_train_bin=X_train_bin,
+        y_train_bin=y_train_bin,
+        X_test_bin=X_test_bin,
+        y_test_bin=y_test_bin,
+        train_mask=train_mask,
+        test_mask=test_mask,
+    )

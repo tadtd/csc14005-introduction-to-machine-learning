@@ -3,6 +3,7 @@ from typing import Mapping, Any
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.colors import ListedColormap
+from matplotlib.lines import Line2D
 
 def plot_learning_curve(
   model: Classification,
@@ -120,7 +121,7 @@ def compare_loss_curves(
 
 
 
-def plot_2d_decision_boundary(models_dict, X, y, title_prefix=""):
+def plot_2d_decision_boundary(models_dict, X, y, title_prefix="", class_name_map=None):
     # Determine grid boundaries
     x_min, x_max = X[:, 0].min() - 0.5, X[:, 0].max() + 0.5
     y_min, y_max = X[:, 1].min() - 0.5, X[:, 1].max() + 0.5
@@ -167,6 +168,19 @@ def plot_2d_decision_boundary(models_dict, X, y, title_prefix=""):
             ax.set_title(f"{title_prefix} {name}")
             ax.set_xlabel('Feature 1')
             ax.set_ylabel('Feature 2')
+            if len(unique_classes) == 2:
+                label_0 = unique_classes[0]
+                label_1 = unique_classes[1]
+                if class_name_map is not None:
+                    label_0 = f"{unique_classes[0]} ({class_name_map.get(unique_classes[0], unique_classes[0])})"
+                    label_1 = f"{unique_classes[1]} ({class_name_map.get(unique_classes[1], unique_classes[1])})"
+                handles = [
+                    Line2D([0], [0], marker='o', color='w', label=f'class {label_0}',
+                           markerfacecolor='#FF0000', markeredgecolor='k', markersize=7),
+                    Line2D([0], [0], marker='o', color='w', label=f'class {label_1}',
+                           markerfacecolor='#0000FF', markeredgecolor='k', markersize=7),
+                ]
+                ax.legend(handles=handles, loc='best')
         except Exception as e:
             ax.set_title(f"{name} (Failed to plot)")
             print(f"Failed for {name}: {e}")

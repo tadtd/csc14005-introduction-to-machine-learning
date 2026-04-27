@@ -1,7 +1,9 @@
 import numpy as np
+import pandas as pd
 from sklearn.model_selection import StratifiedKFold
 from copy import deepcopy
 from models import Classification
+from models import LogisticRegression
 
 def choose_lambda_cv(
   model: Classification,
@@ -79,3 +81,51 @@ def choose_lambda_cv(
       
   print(f"Best {param_name}: {best_lam} (Score: {best_score:.4f})")
   return best_lam
+
+
+def tune_logistic_regularization(
+  X: np.ndarray,
+  y: np.ndarray,
+  *,
+  base_kwargs: dict,
+  lambda_grid: list[float] | np.ndarray,
+  solvers: tuple[str, ...] = ("l1", "l2"),
+  k: int = 5,
+  random_state: int = 42,
+) -> tuple[pd.DataFrame, dict[str, float]]:
+  """Tune L1/L2 logistic penalties with stratified k-fold CV."""
+  X = np.asarray(X)
+  y = np.asarray(y)
+  splitter = StratifiedKFold(n_splits=k, shuffle=True, random_state=random_state)
+
+  rows: list[dict] = []
+  best: dict[str, dict | None] = {solver: None for solver in solvers}
+
+  for solver in solvers:
+    for lam in lambda_grid:
+      fold_scores = []
+      for tr_idx, va_idx in splitter.split(X, y):
+        kwargs = dict(base_kwargs)
+        kwargs["l1_penalty"] = float(lam) if solver in ("l1", "elastic_net") else 0.0
+        kwargs["l2_penalty"] = float(lam) if solver in ("l2", "elastic_net") else 0.0
+        model = LogisticRegression(**kwargs)
+        model.fit(X[tr_idx], y[tr_idx], solver=solver)
+        y_pred = model.predict(X[va_idx])
+        metrics = model.evaluate(y_pred, y[va_idx], average="weighted")
+        fold_scores.append(float(metrics["f1-score"]))
+
+      score_mean = float(np.mean(fold_scores))
+      score_std = float(np.std(fold_scores, ddof=1)) if len(fold_scores) > 1 else 0.0
+      row = {
+        "penalty": solver.upper(),
+        "lambda": float(lam),
+        "cv_f1_mean": score_mean,
+        "cv_f1_std": score_std,
+      }
+      rows.append(row)
+      if best[solver] is None or score_mean > best[solver]["cv_f1_mean"]:
+        best[solver] = row
+
+  tuning_df = pd.DataFrame(rows)
+  best_lambdas = {solver: float(best[solver]["lambda"]) for solver in solvers if best[solver] is not None}
+  return tuning_df, best_lambdas

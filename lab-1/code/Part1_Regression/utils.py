@@ -6,7 +6,7 @@ All functions that the notebook imports are exported from this module:
     bias_variance_bootstrap, forward_stepwise_selection,
     backward_elimination, paired_tests_against_best,
     plot_learning_curves, plot_residuals, plot_predicted_vs_actual,
-    loss_curve, learning_curve
+    loss_curve, learning_curve, compute_coverage
 """
 
 import numpy as np
@@ -621,3 +621,49 @@ def plot_predicted_vs_actual(
     plt.legend()
     plt.tight_layout()
     plt.show()
+
+
+# ===========================================================================
+# Calibration (coverage probability)
+# ===========================================================================
+
+def compute_coverage(
+    y_true: np.ndarray,
+    mean_pred: np.ndarray,
+    std_pred: np.ndarray,
+    n_sigma: float = 2.0,
+) -> Dict[str, float]:
+    """Compute empirical coverage of predictive intervals.
+
+    Parameters
+    ----------
+    y_true : observed target values.
+    mean_pred : predictive mean.
+    std_pred : predictive standard deviation (one per sample).
+    n_sigma : half-width of the interval in standard deviations.
+
+    Returns
+    -------
+    dict with keys:
+        ``coverage`` — fraction of y_true within [mean ± n_sigma*std],
+        ``n_sigma``  — the interval width used,
+        ``nominal``  — expected coverage under Gaussian calibration (≈95.4% for n_sigma=2),
+        ``n_samples`` — number of test points evaluated.
+    """
+    y_true = np.asarray(y_true, float)
+    mean_pred = np.asarray(mean_pred, float)
+    std_pred = np.asarray(std_pred, float)
+
+    lower = mean_pred - n_sigma * std_pred
+    upper = mean_pred + n_sigma * std_pred
+    within = (y_true >= lower) & (y_true <= upper)
+
+    from scipy import special
+    nominal = float(special.erf(n_sigma / np.sqrt(2.0)))
+
+    return {
+        "coverage": float(np.mean(within)),
+        "n_sigma": float(n_sigma),
+        "nominal": nominal,
+        "n_samples": int(len(y_true)),
+    }

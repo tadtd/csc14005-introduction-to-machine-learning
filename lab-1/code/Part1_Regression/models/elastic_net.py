@@ -66,7 +66,7 @@ class ElasticNetRegression(Regression):
 
                 old = coef[j]
                 # Elastic-net update: soft-thresh numerator, ridge denominator
-                z_j = col_norms_sq[j] + 2.0 * self.lambda2
+                z_j = col_norms_sq[j] + self.lambda2
                 if z_j < 1e-12:
                     coef[j] = 0.0
                 else:

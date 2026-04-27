@@ -1,7 +1,5 @@
 from models import Classification
 from typing import Mapping, Any
-from sklearn.model_selection import StratifiedKFold
-from copy import deepcopy
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.colors import ListedColormap
@@ -121,82 +119,6 @@ def compare_loss_curves(
   plt.show()
 
 
-def choose_lambda_cv(
-  model: Classification,
-  X: np.ndarray,
-  y: np.ndarray,
-  lambdas: list[float] | np.ndarray,
-  param_name: str = "lam",
-  k: int = 5,
-  scoring: str = "accuracy",
-  average: str = "weighted",
-  random_state: int = 42,
-  fit_kwargs: dict | None = None,
-) -> float:
-  """
-  Choose the best regularization parameter using stratified k-fold CV.
-  
-  Parameters
-  ----------
-  model : Classification
-    The unfitted model to evaluate.
-  X, y : np.ndarray
-    The input features and target labels.
-  lambdas : list[float] | np.ndarray
-    The array of candidate lambda (regularization) values to test.
-  param_name : str
-    The name of the attribute in the model that represents the regularization.
-    Defaults to 'lam' (used in KernelLogisticRegression). For LogisticRegression,
-    you might pass 'l2_penalty' or 'l1_penalty'.
-  k : int
-    The number of folds for StratifiedKFold (default 5).
-  scoring : str
-    The metric to track (e.g., 'accuracy', 'f1-score').
-  average : str
-    The averaging method for the metrics (e.g., 'weighted', 'macro').
-  fit_kwargs: dict
-    Any extra arguments passed to fold_model.fit(X, y).
-    For LogisticRegression, pass `fit_kwargs={'solver': 'l2'}`.
-    
-  Returns
-  -------
-  float
-    The lambda value that achieved the highest cross-validation score.
-  """
-  X = np.asarray(X)
-  y = np.asarray(y)
-  fit_kwargs = fit_kwargs or {}
-  
-  splitter = StratifiedKFold(n_splits=k, shuffle=True, random_state=random_state)
-  best_score = -np.inf
-  best_lam = None
-  
-  print(f"Starting Stratified CV (k={k}) for '{param_name}' over {len(lambdas)} parameters...")
-  
-  for lam_val in lambdas:
-    fold_scores = []
-    
-    for train_idx, val_idx in splitter.split(X, y):
-      fold_model = deepcopy(model)
-      # Dynamically assign the specified attribute for regularization
-      setattr(fold_model, param_name, lam_val)
-      
-      # Fit model with any necessary extra parameters (like solvers)
-      fold_model.fit(X[train_idx], y[train_idx], **fit_kwargs)
-      
-      y_pred = fold_model.predict(X[val_idx])
-      metrics = fold_model.evaluate(y_pred, y[val_idx], average=average)
-      fold_scores.append(metrics[scoring])
-      
-    mean_score = float(np.mean(fold_scores))
-    print(f"  {param_name}={lam_val:<10.6g} \t Mean {scoring}: {mean_score:.4f}")
-    
-    if mean_score > best_score:
-      best_score = mean_score
-      best_lam = lam_val
-      
-  print(f"Best {param_name}: {best_lam} (Score: {best_score:.4f})")
-  return best_lam
 
 def plot_2d_decision_boundary(models_dict, X, y, title_prefix=""):
     # Determine grid boundaries
@@ -255,63 +177,6 @@ def plot_2d_decision_boundary(models_dict, X, y, title_prefix=""):
         
     plt.tight_layout()
     plt.show()
-from models import LogisticRegression as LR
-from itertools import combinations
-
-def ovr_predict_with_logistic(X_train, y_train, X_test, learning_rate, eps, max_iter):
-  classes = np.unique(y_train)
-  models_ovr = {}
-  class_scores = []
-
-  for cls in classes:
-    y_binary = (y_train == cls).astype(int)
-    model = LR(learning_rate=learning_rate, eps=eps, max_iter=max_iter)
-    model.fit(X_train, y_binary)
-    models_ovr[cls] = model
-    class_scores.append(model.predict_proba(X_test)[:, 1])
-
-  class_scores = np.column_stack(class_scores)
-  y_pred = classes[np.argmax(class_scores, axis=1)]
-  return y_pred, models_ovr
-
-def ovo_predict_with_logistic(X_train, y_train, X_test, learning_rate, eps, max_iter):
-  classes = np.unique(y_train)
-  class_to_idx = {cls: idx for idx, cls in enumerate(classes)}
-
-  votes = np.zeros((X_test.shape[0], len(classes)), dtype=int)
-  confidences = np.zeros((X_test.shape[0], len(classes)), dtype=float)
-  models_ovo = {}
-
-  for cls_i, cls_j in combinations(classes, 2):
-    pair_mask = (y_train == cls_i) | (y_train == cls_j)
-    X_pair = X_train[pair_mask]
-    y_pair = y_train[pair_mask]
-
-    y_pair_binary = (y_pair == cls_j).astype(int)
-    model = LR(learning_rate=learning_rate, eps=eps, max_iter=max_iter)
-    model.fit(X_pair, y_pair_binary)
-    models_ovo[(cls_i, cls_j)] = model
-
-    pair_prob_j = model.predict_proba(X_test)[:, 1]
-    pair_pred = np.where(pair_prob_j >= 0.5, cls_j, cls_i)
-
-    idx_i, idx_j = class_to_idx[cls_i], class_to_idx[cls_j]
-    votes[np.arange(X_test.shape[0]), [class_to_idx[p] for p in pair_pred]] += 1
-    confidences[:, idx_i] += (1.0 - pair_prob_j)
-    confidences[:, idx_j] += pair_prob_j
-
-  max_votes = votes.max(axis=1, keepdims=True)
-  is_tie = (votes == max_votes).sum(axis=1) > 1
-  pred_idx = np.argmax(votes, axis=1)
-
-  for i in np.where(is_tie)[0]:
-    tie_mask = votes[i] == votes[i].max()
-    tie_candidates = np.where(tie_mask)[0]
-    best_tie_idx = tie_candidates[np.argmax(confidences[i, tie_candidates])]
-    pred_idx[i] = best_tie_idx
-
-  y_pred = classes[pred_idx]
-  return y_pred, models_ovo
 
 def plot_boundary(model, X, y, title):
     x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1

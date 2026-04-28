@@ -147,23 +147,33 @@ def plot_2d_decision_boundary(models_dict, X, y, title_prefix="", class_name_map
         if not hasattr(model, "predict"):
             continue
         try:
-            # Predict over the grid
-            Z = model.predict(grid)
-            
-            # Map predictions to integer indices if they are original class labels
-            unique_classes = model.classes_
-            Z_idx = np.zeros_like(Z, dtype=int)
-            for idx, cls in enumerate(unique_classes):
-                Z_idx[Z == cls] = idx
-            
-            Z_idx = Z_idx.reshape(xx.shape)
-            
-            # Convert y to numerical indices as well for scatter colors
+            unique_classes = getattr(model, "classes_", np.unique(y))
+
+            # Convert y to numerical indices for scatter colors
             y_idx = np.zeros_like(y, dtype=int)
             for idx, cls in enumerate(unique_classes):
                 y_idx[y == cls] = idx
-                
-            ax.contourf(xx, yy, Z_idx, alpha=0.4, cmap=cmap_light)
+
+            # Prefer probability surface if available (more informative than hard labels)
+            if hasattr(model, "predict_proba") and len(unique_classes) == 2:
+                P = model.predict_proba(grid)
+                # Accept either (n, 2) or (n,) for binary
+                if P.ndim == 2:
+                    p1 = P[:, 1]
+                else:
+                    p1 = P
+                p1 = p1.reshape(xx.shape)
+                Z_idx = (p1 >= 0.5).astype(int)
+                ax.contourf(xx, yy, Z_idx, alpha=0.35, cmap=cmap_light)
+                ax.contour(xx, yy, p1, levels=[0.5], colors="k", linewidths=1.5)
+            else:
+                Z = model.predict(grid)
+                Z_idx = np.zeros_like(Z, dtype=int)
+                for idx, cls in enumerate(unique_classes):
+                    Z_idx[Z == cls] = idx
+                Z_idx = Z_idx.reshape(xx.shape)
+                ax.contourf(xx, yy, Z_idx, alpha=0.35, cmap=cmap_light)
+
             ax.scatter(X[:, 0], X[:, 1], c=y_idx, cmap=cmap_bold, edgecolor='k', s=20)
             ax.set_title(f"{title_prefix} {name}")
             ax.set_xlabel('Feature 1')

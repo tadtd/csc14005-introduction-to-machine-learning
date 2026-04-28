@@ -55,8 +55,6 @@ def choose_lambda_cv(
   best_score = -np.inf
   best_lam = None
   
-  print(f"Starting Stratified CV (k={k}) for '{param_name}' over {len(lambdas)} parameters...")
-  
   for lam_val in lambdas:
     fold_scores = []
     
@@ -73,13 +71,11 @@ def choose_lambda_cv(
       fold_scores.append(metrics[scoring])
       
     mean_score = float(np.mean(fold_scores))
-    print(f"  {param_name}={lam_val:<10.6g} \t Mean {scoring}: {mean_score:.4f}")
     
     if mean_score > best_score:
       best_score = mean_score
       best_lam = lam_val
       
-  print(f"Best {param_name}: {best_lam} (Score: {best_score:.4f})")
   return best_lam
 
 

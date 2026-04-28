@@ -95,7 +95,10 @@ def kfold_cross_val_score(
   fold_values = {name: [] for name in metric_names}
   per_fold: list[Dict[str, float]] = []
 
-  for fold_id, (train_idx, val_idx) in enumerate(splitter.split(X, y), start=1):
+  for fold_id, (train_idx, val_idx) in enumerate(
+    splitter.split(X, y),
+    start=1,
+  ):
     fold_model = model_builder() if model_builder is not None else deepcopy(model)
     fold_model.fit(X[train_idx], y[train_idx])
 
@@ -235,17 +238,35 @@ def plot_roc_curve(
 def plot_loss_curves(
   models: Mapping[str, Any],
   title: str = "Training Loss over Epochs",
+  log_scale: bool | str = "auto",
 ) -> None:
   """Plot the loss history of multiple models over training epochs."""
   if len(models) == 0:
     raise ValueError("models must contain at least one model with loss_history_.")
 
   plt.figure(figsize=(10, 6))
+  all_losses: list[float] = []
   for name, model in models.items():
     if not hasattr(model, "loss_history_"):
       print(f"Skipping {name} as it has no loss_history_ attribute.")
       continue
-    plt.plot(model.loss_history_, lw=2, label=name)
+    losses = np.asarray(model.loss_history_, dtype=float)
+    if losses.size == 0:
+      continue
+    all_losses.extend(losses[np.isfinite(losses)].tolist())
+    plt.plot(losses, lw=2, label=name)
+
+  if log_scale is True:
+    plt.yscale("log")
+  elif log_scale == "auto":
+    finite = np.asarray(all_losses, dtype=float)
+    finite = finite[np.isfinite(finite)]
+    if finite.size > 0:
+      pos = finite[finite > 0]
+      if pos.size > 0:
+        ratio = float(np.max(pos) / np.min(pos))
+        if ratio >= 1e3:
+          plt.yscale("log")
 
   plt.xlabel("Epoch / Iteration")
   plt.ylabel("Loss")
@@ -253,6 +274,38 @@ def plot_loss_curves(
   plt.legend(loc="upper right")
   plt.grid(alpha=0.2)
   plt.show()
+
+
+def plot_loss_curves_separately(
+  models: Mapping[str, Any],
+  title_prefix: str = "Training Loss",
+  *,
+  log_scale: bool = False,
+) -> None:
+  """Plot one loss curve per model in its own figure."""
+  if len(models) == 0:
+    raise ValueError("models must contain at least one model with loss_history_.")
+
+  items: list[tuple[str, Any]] = [
+    (name, model)
+    for name, model in models.items()
+    if hasattr(model, "loss_history_") and len(getattr(model, "loss_history_", [])) > 0
+  ]
+  if len(items) == 0:
+    raise ValueError("No models contain a non-empty loss_history_.")
+
+  for name, model in items:
+    losses = np.asarray(model.loss_history_, dtype=float)
+    plt.figure(figsize=(7, 4.5))
+    plt.plot(np.arange(1, len(losses) + 1), losses, lw=2)
+    if log_scale:
+      plt.yscale("log")
+    plt.title(f"{title_prefix}: {name}")
+    plt.xlabel("Epoch / Iteration")
+    plt.ylabel("Loss")
+    plt.grid(alpha=0.2)
+    plt.tight_layout()
+    plt.show()
 
 
 def compare_average_precision(

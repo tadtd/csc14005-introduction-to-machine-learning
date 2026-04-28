@@ -1,3 +1,5 @@
+from itertools import count
+
 import numpy as np
 
 from .base import Classification
@@ -13,6 +15,9 @@ class SoftmaxRegression(Classification):
     learning_rate: float = 1e-4,
     eps: float = 1e-6,
     max_iter: int | None = None,
+    min_iter: int = 100,
+    early_stopping_patience: int = 100,
+    early_stopping_tol: float = 1e-12,
     prior_precision: float = 1.0,
     penalize_bias: bool = False,
     class_weight: str | dict | None = None,
@@ -22,6 +27,9 @@ class SoftmaxRegression(Classification):
     self.learning_rate = learning_rate
     self.eps = eps
     self.max_iter = max_iter
+    self.min_iter = min_iter
+    self.early_stopping_patience = early_stopping_patience
+    self.early_stopping_tol = early_stopping_tol
     self.prior_precision = prior_precision
     self.penalize_bias = penalize_bias
     self.posterior_cov: np.ndarray | None = None
@@ -84,8 +92,10 @@ class SoftmaxRegression(Classification):
   def _fit_gradient_descent(self, X: np.ndarray, y_encoded: np.ndarray) -> None:
     n_samples = X.shape[0]
     w = self.sample_weight_[:, np.newaxis]
-    i = 0
-    while True:
+    prev_loss = np.inf
+    stagnation = 0
+    iterations = range(self.max_iter) if self.max_iter is not None else count()
+    for i in iterations:
       scores = X @ self.theta
       probs = self._softmax(scores)
 
@@ -93,21 +103,35 @@ class SoftmaxRegression(Classification):
       update = self.learning_rate * d_theta
       self.theta -= update
 
-      update_norm = float(np.linalg.norm(update))
+      param_change = float(np.linalg.norm(update))
+      grad_norm = float(np.linalg.norm(d_theta))
 
       loss = -np.mean(w.ravel() * np.sum(y_encoded * np.log(probs + 1e-15), axis=1))
       self.loss_history_.append(loss)
+      loss_change = abs(prev_loss - loss)
+      if i + 1 >= self.min_iter and loss_change < self.early_stopping_tol:
+        stagnation += 1
+      else:
+        stagnation = 0
 
-      if i % 100 == 0:
+      if i % 1000 == 0:
         print(f"Iteration {i}: Loss {loss:.4f}")
 
-      if update_norm < self.eps:
-        print(f"Converged at iteration {i}: update norm {update_norm:.6e} < eps {self.eps:.6e}")
+      if (
+        i + 1 >= self.min_iter
+        and param_change < self.eps
+        and grad_norm < self.eps
+        and loss_change < self.eps
+      ):
         break
-      if self.max_iter is not None and i + 1 >= self.max_iter:
-        print(f"Stopped at iteration {i + 1}: reached max_iter={self.max_iter} before convergence.")
+      if (
+        self.early_stopping_patience > 0
+        and stagnation >= self.early_stopping_patience
+      ):
         break
-      i += 1
+      prev_loss = loss
+    else:
+      pass
 
   def _fit_laplace(self, X: np.ndarray, y_encoded: np.ndarray) -> None:
     n_samples, n_features_aug = X.shape
@@ -117,8 +141,10 @@ class SoftmaxRegression(Classification):
     w_weight = self.sample_weight_
 
     hessian = None
-    i = 0
-    while True:
+    prev_objective = np.inf
+    stagnation = 0
+    iterations = range(self.max_iter) if self.max_iter is not None else count()
+    for i in iterations:
       scores = X @ self.theta
       probs = self._softmax(scores)
 
@@ -140,20 +166,38 @@ class SoftmaxRegression(Classification):
       step = np.linalg.solve(hessian, grad_vec).reshape(n_features_aug, n_classes)
       self.theta -= step
 
-      step_norm = float(np.linalg.norm(step))
+      param_change = float(np.linalg.norm(step))
+      grad_norm = float(np.linalg.norm(grad_vec))
       
       map_loss = -np.mean(w_weight * np.sum(y_encoded * np.log(probs + 1e-15), axis=1))
       prior_term = 0.5 * (self.prior_precision / n_samples) * np.sum(
         prior_mask * (self.theta ** 2)
       )
-      self.loss_history_.append(map_loss + prior_term)
+      objective = map_loss + prior_term
+      self.loss_history_.append(objective)
+      loss_change = abs(prev_objective - objective)
+      if i + 1 >= self.min_iter and loss_change < self.early_stopping_tol:
+        stagnation += 1
+      else:
+        stagnation = 0
       
-      if i % 100 == 0:
-        print(f"Iteration {i}: MAP objective {map_loss + prior_term:.4f}")
-      if step_norm < self.eps:
-        print(f"Converged at iteration {i}: step norm {step_norm:.6e} < eps {self.eps:.6e}")
+      if i % 1000 == 0:
+        print(f"Iteration {i}: MAP objective {objective:.4f}")
+      if (
+        i + 1 >= self.min_iter
+        and param_change < self.eps
+        and grad_norm < self.eps
+        and loss_change < self.eps
+      ):
         break
-      i += 1
+      if (
+        self.early_stopping_patience > 0
+        and stagnation >= self.early_stopping_patience
+      ):
+        break
+      prev_objective = objective
+    else:
+      pass
 
     if hessian is None:
       raise RuntimeError("Laplace fitting failed before computing Hessian.")

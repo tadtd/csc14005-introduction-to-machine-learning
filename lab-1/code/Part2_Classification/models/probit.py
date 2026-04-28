@@ -1,3 +1,5 @@
+from itertools import count
+
 import numpy as np
 from scipy.stats import norm
 from .base import Classification
@@ -12,6 +14,9 @@ class ProbitRegression(Classification):
     learning_rate: float = 1e-3,
     eps: float = 1e-6,
     max_iter: int | None = None,
+    min_iter: int = 100,
+    early_stopping_patience: int = 100,
+    early_stopping_tol: float = 1e-12,
     class_weight: str | dict | None = None,
   ):
     super().__init__()
@@ -19,6 +24,9 @@ class ProbitRegression(Classification):
     self.learning_rate = learning_rate
     self.eps = eps
     self.max_iter = max_iter
+    self.min_iter = min_iter
+    self.early_stopping_patience = early_stopping_patience
+    self.early_stopping_tol = early_stopping_tol
 
   @staticmethod
   def _phi_cdf(z: np.ndarray) -> np.ndarray:
@@ -69,37 +77,48 @@ class ProbitRegression(Classification):
   def _fit_gradient_descent(self, X: np.ndarray, y: np.ndarray) -> None:
     n_samples, n_features = X.shape
     w = self.sample_weight_
-    i = 0
-    while True:
+    prev_loss = np.inf
+    stagnation = 0
+    iterations = range(self.max_iter) if self.max_iter is not None else count()
+    for i in iterations:
       z = X @ self.theta
       cdf_z = self._phi_cdf(z)
       pdf_z = self._phi_pdf(z)
 
-      # Avoid division by zero by clipping or adding epsilon
       denom = np.maximum(cdf_z * (1.0 - cdf_z), 1e-15)
-      
-      # Gradient of Negative Log-Likelihood:
-      # d(NLL)/dtheta = 1/N * sum( w * pdf * (cdf - y) / (cdf * (1-cdf)) * x )
       grad = (1.0 / n_samples) * (X.T @ (w * pdf_z * (cdf_z - y) / denom))
       
       update = self.learning_rate * grad
       self.theta -= update
       
-      update_norm = float(np.linalg.norm(update))
+      param_change = float(np.linalg.norm(update))
+      grad_norm = float(np.linalg.norm(grad))
       
       loss = -np.mean(w * (y * np.log(cdf_z + 1e-15) + (1 - y) * np.log(1 - cdf_z + 1e-15)))
       self.loss_history_.append(loss)
+      loss_change = abs(prev_loss - loss)
+      if i + 1 >= self.min_iter and loss_change < self.early_stopping_tol:
+        stagnation += 1
+      else:
+        stagnation = 0
       
-      if i % 100 == 0:
+      if i % 1000 == 0:
         print(f"Iteration {i}: Loss {loss:.4f}")
-        
-      if update_norm < self.eps:
-        print(f"Converged at iteration {i}: update norm {update_norm:.6e} < eps {self.eps:.6e}")
+      if (
+        i + 1 >= self.min_iter
+        and param_change < self.eps
+        and grad_norm < self.eps
+        and loss_change < self.eps
+      ):
         break
-      if self.max_iter is not None and i + 1 >= self.max_iter:
-        print(f"Stopped at iteration {i + 1}: reached max_iter={self.max_iter} before convergence.")
+      if (
+        self.early_stopping_patience > 0
+        and stagnation >= self.early_stopping_patience
+      ):
         break
-      i += 1
+      prev_loss = loss
+    else:
+      pass
 
   def predict(self, X: np.ndarray) -> np.ndarray:
     if self.theta is None or self.classes_ is None:

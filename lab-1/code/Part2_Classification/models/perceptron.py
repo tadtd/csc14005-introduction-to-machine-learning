@@ -1,4 +1,5 @@
 import numpy as np
+from itertools import count
 
 from .base import Classification
 
@@ -10,11 +11,17 @@ class Perceptron(Classification):
   def __init__(
     self,
     learning_rate: float = 1.0,
-    max_iter: int = 1000,
+    max_iter: int | None = 1000,
+    min_iter: int = 1,
+    early_stopping_patience: int = 100,
+    early_stopping_tol: float = 1e-12,
   ):
     super().__init__()
     self.learning_rate = learning_rate
     self.max_iter = max_iter
+    self.min_iter = min_iter
+    self.early_stopping_patience = early_stopping_patience
+    self.early_stopping_tol = early_stopping_tol
 
   def fit(self, X: np.ndarray, y: np.ndarray) -> None:
     self.classes_ = np.unique(y)
@@ -30,27 +37,42 @@ class Perceptron(Classification):
     X_aug = self._augment(X)
     
     self.loss_history_ = []
+
+    prev_loss = np.inf
+    stagnation = 0
     
-    for epoch in range(self.max_iter):
+    iterations = range(self.max_iter) if self.max_iter is not None else count()
+    for epoch in iterations:
       misclassified = 0
       loss = 0.0
       
       for i in range(n_samples):
-        # f(x) = w^T x
         fx = np.dot(X_aug[i], self.theta)
         
-        # Perceptron loss logic: y_i * (w^T x_i) <= 0 means misclassification
         if y_binary[i] * fx <= 0:
-          # Update rule: w = w + \eta y_i x_i
           self.theta += self.learning_rate * y_binary[i] * X_aug[i]
           misclassified += 1
           loss += -y_binary[i] * fx
           
       self.loss_history_.append(loss)
+      loss_change = abs(prev_loss - loss)
+      if epoch + 1 >= self.min_iter and loss_change < self.early_stopping_tol:
+        stagnation += 1
+      else:
+        stagnation = 0
           
-      if misclassified == 0:
-        print(f"Converged at epoch {epoch}")
+      if misclassified == 0 and epoch + 1 >= self.min_iter:
         break
+      if (
+        self.early_stopping_patience > 0
+        and epoch + 1 >= self.min_iter
+        and stagnation >= self.early_stopping_patience
+      ):
+        break
+
+      prev_loss = loss
+    else:
+      pass
 
   def predict(self, X: np.ndarray) -> np.ndarray:
     if getattr(self, "theta", None) is None:

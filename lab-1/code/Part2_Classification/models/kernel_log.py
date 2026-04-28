@@ -1,3 +1,5 @@
+from itertools import count
+
 import numpy as np
 from .base import Classification
 
@@ -15,6 +17,9 @@ class KernelLogisticRegression(Classification):
     learning_rate: float = 1e-2,
     eps: float = 1e-6,
     max_iter: int | None = None,
+    min_iter: int = 100,
+    early_stopping_patience: int = 100,
+    early_stopping_tol: float = 1e-12,
     class_weight: str | dict | None = None,
   ):
     super().__init__()
@@ -25,6 +30,9 @@ class KernelLogisticRegression(Classification):
     self.learning_rate = learning_rate
     self.eps = eps
     self.max_iter = max_iter
+    self.min_iter = min_iter
+    self.early_stopping_patience = early_stopping_patience
+    self.early_stopping_tol = early_stopping_tol
     self.alpha = None
     self.b = 0.0
     self.X_train = None
@@ -85,41 +93,51 @@ class KernelLogisticRegression(Classification):
     self.loss_history_ = []
     w = self.sample_weight_
     
-    i = 0
-    while True:
+    prev_loss = np.inf
+    stagnation = 0
+    iterations = range(self.max_iter) if self.max_iter is not None else count()
+    for i in iterations:
       z = K @ self.alpha + self.b
       probs = self._sigmoid(z)
       
-      # Compute gradients
-      # dJ/d_alpha = K @ (1/n * w * (probs - y) + lam * alpha)
-      # dJ/d_b = 1/n * sum(w * (probs - y))
       err = w * (probs - y_binary)
-      grad_alpha = K @ (err / n_samples + self.lam * self.alpha)
+
+      grad_alpha = (K @ err) / n_samples + self.lam * (K @ self.alpha)
       grad_b = np.mean(err)
       
-      # Updates
       update_alpha = self.learning_rate * grad_alpha
       update_b = self.learning_rate * grad_b
       
       self.alpha -= update_alpha
       self.b -= update_b
       
-      update_norm = float(np.linalg.norm(update_alpha) + abs(update_b))
+      param_change = float(np.sqrt(np.linalg.norm(update_alpha) ** 2 + float(update_b) ** 2))
+      grad_norm = float(np.linalg.norm(grad_alpha) + abs(grad_b))
       
       log_loss = -np.mean(w * (y_binary * np.log(probs + 1e-15) + (1 - y_binary) * np.log(1 - probs + 1e-15)))
       reg_loss = 0.5 * self.lam * (self.alpha @ K @ self.alpha)
-      self.loss_history_.append(log_loss + reg_loss)
-      
-      if i % 100 == 0:
-        print(f"Iteration {i}: Loss {log_loss + reg_loss:.4f}")
-        
-      if update_norm < self.eps:
-        print(f"Converged at iteration {i}: update norm {update_norm:.6e} < eps {self.eps:.6e}")
+      objective = log_loss + reg_loss
+      self.loss_history_.append(objective)
+      loss_change = abs(prev_loss - objective)
+      if i + 1 >= self.min_iter and loss_change < self.early_stopping_tol:
+        stagnation += 1
+      else:
+        stagnation = 0
+
+      if i % 1000 == 0:
+        print(f"Iteration {i}: Loss {objective:.4f}")
+      if (
+        i + 1 >= self.min_iter
+        and param_change < self.eps
+        and grad_norm < self.eps
+        and loss_change < self.eps
+      ):
         break
-      if self.max_iter is not None and i + 1 >= self.max_iter:
-        print(f"Stopped at iteration {i + 1}: reached max_iter={self.max_iter} before convergence.")
+      if self.early_stopping_patience > 0 and stagnation >= self.early_stopping_patience:
         break
-      i += 1
+      prev_loss = objective
+    else:
+      pass
 
   def predict(self, X: np.ndarray) -> np.ndarray:
     if self.alpha is None or self.classes_ is None:

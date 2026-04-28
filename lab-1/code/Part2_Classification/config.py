@@ -1,19 +1,16 @@
 from dataclasses import dataclass
 from typing import Optional, Union
 
-
-@dataclass
-class ClassificationNotebookConfig:
-    seed: int = 42
-    alpha: float = 0.05
-    data_path: str = '../../data/raw/dry-bean-dataset/Dry_Bean_Dataset.xlsx'
-    target_col: str = 'Class'
-    test_size: float = 0.2
-    val_size: float = 0.1
-    binary_classes: tuple[int, int] = (0, 2)
-    binary_feature_indices: tuple[int, int] = (0, 1)
-    kfold_splits: int = 5
-    reliability_bins: int = 10
+SEED = 42
+ALPHA = 0.05
+DATA_PATH = '../../data/raw/dry-bean-dataset/Dry_Bean_Dataset.xlsx'
+TARGET_COL = 'Class'
+TEST_SIZE = 0.2
+VAL_SIZE = 0.1
+BINARY_CLASSES = (0, 2)
+BINARY_FEATURE_INDICES = (0, 1)
+KFOLD_SPLITS = 5
+N_BINS = 10
 
 @dataclass
 class GaussianNaiveBayesConfig:
@@ -26,7 +23,10 @@ class KernelLogisticRegressionConfig:
     lam: float = 1e-4
     learning_rate: float = 1e-2
     eps: float = 1e-4
-    max_iter: Optional[int] = 5000
+    max_iter: Optional[int] = 20_000
+    min_iter: int = 100
+    early_stopping_patience: int = 100
+    early_stopping_tol: float = 1e-6
     class_weight: Optional[Union[str, dict]] = None
 
 @dataclass
@@ -35,9 +35,12 @@ class LDAConfig:
 
 @dataclass
 class LogisticRegressionConfig:
-    learning_rate: float = 1e-4
+    learning_rate: float = 1e-2
     eps: float = 1e-4
-    max_iter: Optional[int] = 5000
+    max_iter: Optional[int] = 20_000
+    min_iter: int = 100
+    early_stopping_patience: int = 100
+    early_stopping_tol: float = 1e-6
     prior_precision: float = 1.0
     penalize_bias: bool = False
     l1_penalty: float = 0.0
@@ -47,13 +50,19 @@ class LogisticRegressionConfig:
 @dataclass
 class PerceptronConfig:
     learning_rate: float = 1.0
-    max_iter: Optional[int] = 5000
+    max_iter: Optional[int] = 20_000
+    min_iter: int = 1
+    early_stopping_patience: int = 100
+    early_stopping_tol: float = 1e-6
 
 @dataclass
 class ProbitRegressionConfig:
-    learning_rate: float = 1e-3
+    learning_rate: float = 1e-2
     eps: float = 1e-4
-    max_iter: Optional[int] = 5000
+    max_iter: Optional[int] = 20_000
+    min_iter: int = 100
+    early_stopping_patience: int = 100
+    early_stopping_tol: float = 1e-6
     class_weight: Optional[Union[str, dict]] = None
 
 @dataclass
@@ -62,9 +71,12 @@ class QDAConfig:
 
 @dataclass
 class SoftmaxRegressionConfig:
-    learning_rate: float = 1e-4
+    learning_rate: float = 1e-2
     eps: float = 1e-4
-    max_iter: Optional[int] = 5000
+    max_iter: Optional[int] = 20_000
+    min_iter: int = 100
+    early_stopping_patience: int = 100
+    early_stopping_tol: float = 1e-6
     prior_precision: float = 1.0
     penalize_bias: bool = False
     class_weight: Optional[Union[str, dict]] = None

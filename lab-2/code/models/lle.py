@@ -3,17 +3,21 @@ from scipy.spatial.distance import cdist
 from scipy import sparse
 from scipy.sparse.linalg import eigsh
 
-class MyLLE:
+from .base import BaseDR
+
+class MyLLE(BaseDR):
     """
     Locally Linear Embedding (LLE) Implementation from Scratch.
     Bám sát quy trình toán học: Tìm láng giềng -> Giải trọng số W -> Tối ưu hóa Y.
     """
-    def __init__(self, n_neighbors: int = 10, n_components: int = 2, reg: float = 1e-3):
+    def __init__(self, n_neighbors: int = 10, n_components: int = 2, reg: float = 1e-3, **kwargs):
+        super().__init__(n_components=n_components, **kwargs)
         self.t = n_neighbors      # t nearest neighbors
-        self.d = n_components     # Target dimensionality
         self.reg = reg            # Regularization parameter for C'
+        self.embedding_ = None
+        self._X_fit = None
 
-    def fit_transform(self, X: np.ndarray) -> np.ndarray:
+    def _fit(self, X: np.ndarray) -> None:
         m, n = X.shape
         
         # --- BƯỚC 1: Tìm t láng giềng gần nhất ---
@@ -26,9 +30,15 @@ class MyLLE:
         W = self._compute_reconstruction_weights(X, neighbors_idx)
         
         # --- BƯỚC 3: Tối ưu hóa tọa độ nhúng Y (Equation 12.10) ---
-        Y = self._optimize_embedding(W)
-        
-        return Y
+        self.embedding_ = self._optimize_embedding(W)
+        self._X_fit = X
+
+    def _transform(self, X: np.ndarray) -> np.ndarray:
+        if X is self._X_fit:
+            return self.embedding_
+        if self._X_fit is not None and X.shape == self._X_fit.shape and np.allclose(X, self._X_fit):
+            return self.embedding_
+        raise NotImplementedError("Out-of-sample extension for LLE is not implemented.")
 
     def _compute_reconstruction_weights(self, X: np.ndarray, neighbors_idx: np.ndarray) -> sparse.csr_matrix:
         m = X.shape[0]
@@ -74,7 +84,7 @@ class MyLLE:
         
         # Tìm d+1 vector riêng ứng với trị riêng nhỏ nhất (Smallest Magnitude)
         # Sử dụng eigsh để xử lý ma trận thưa hiệu quả
-        eigenvalues, eigenvectors = eigsh(M, k=self.d + 1, which='SM')
+        eigenvalues, eigenvectors = eigsh(M, k=self.n_components + 1, which='SM')
         
         # Loại bỏ vector riêng cuối cùng ứng với trị riêng = 0 (Constant vector)
         # Lấy d cột từ index 1 đến d+1

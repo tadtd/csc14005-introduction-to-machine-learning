@@ -1,14 +1,13 @@
 import numpy as np
 from scipy.spatial.distance import cdist
 from scipy import sparse
-from scipy.sparse.linalg import eigsh
 
 from .base import BaseDR
 
 class MyLLE(BaseDR):
     """
     Locally Linear Embedding (LLE) Implementation from Scratch.
-    Bám sát quy trình toán học: Tìm láng giềng -> Giải trọng số W -> Tối ưu hóa Y.
+    Sửa đổi chuẩn hóa theo công thức sách: M = (I - W)(I - W) và lọc bỏ chính xác trị riêng 0.
     """
     def __init__(self, n_neighbors: int = 10, n_components: int = 2, reg: float = 1e-3, **kwargs):
         super().__init__(n_components=n_components, **kwargs)
@@ -21,15 +20,13 @@ class MyLLE(BaseDR):
         m, n = X.shape
         
         # --- BƯỚC 1: Tìm t láng giềng gần nhất ---
-        # Sử dụng Euclidean distance
         dist_matrix = cdist(X, X, metric='euclidean')
-        # Lấy t láng giềng (bỏ qua chính nó tại vị trí index 0)
         neighbors_idx = np.argsort(dist_matrix, axis=1)[:, 1:self.t + 1]
         
-        # --- BƯỚC 2: Xây dựng ma trận trọng số W (Equation 12.8 & 12.9) ---
+        # --- BƯỚC 2: Xây dựng ma trận trọng số W ---
         W = self._compute_reconstruction_weights(X, neighbors_idx)
         
-        # --- BƯỚC 3: Tối ưu hóa tọa độ nhúng Y (Equation 12.10) ---
+        # --- BƯỚC 3: Tối ưu hóa tọa độ nhúng Y ---
         self.embedding_ = self._optimize_embedding(W)
         self._X_fit = X
 
@@ -46,15 +43,12 @@ class MyLLE(BaseDR):
         
         for i in range(m):
             idx_i = neighbors_idx[i]
-            # Tính xi - xj cho tất cả j trong láng giềng của i
-            # Xi có kích thước (t, n)
             Xi = X[idx_i] - X[i]
             
             # Tính ma trận covariance cục bộ C' (Equation 12.8)
-            # C' = (xi - xj)^T * (xi - xk) -> (t, t) matrix
             C_prime = np.dot(Xi, Xi.T)
             
-            # Regularization để đảm bảo C' khả nghịch (Tránh lỗi ma trận suy biến)
+            # Regularization để đảm bảo C' khả nghịch
             trace = np.trace(C_prime)
             r = self.reg * trace if trace > 0 else self.reg
             C_prime += np.eye(self.t) * r
@@ -62,7 +56,7 @@ class MyLLE(BaseDR):
             # Giải hệ phương trình C' * w = 1 để tìm weights chưa chuẩn hóa
             w_i = np.linalg.solve(C_prime, np.ones(self.t))
             
-            # Chuẩn hóa để sum(w_i) = 1 (Theo yêu cầu Step 2 trong hình)
+            # Chuẩn hóa để sum(w_i) = 1 (Equation 12.9)
             w_i /= np.sum(w_i)
             
             for j_idx, weight in enumerate(w_i):
@@ -76,16 +70,19 @@ class MyLLE(BaseDR):
         m = W.shape[0]
         I = sparse.eye(m, format='csr')
         
-        # Xây dựng ma trận M = (I - W)^T * (I - W)
-        # Lưu ý: Tài liệu hình 2 ghi M = (I - W^T)(I - W^T) có thể là lỗi đánh máy, 
-        # chuẩn thuật toán LLE phải là (I - W).T @ (I - W)
+       
         I_minus_W = I - W
-        M = I_minus_W.T @ I_minus_W
+        M = I_minus_W.T @ I_minus_W  
         
-        # Tìm d+1 vector riêng ứng với trị riêng nhỏ nhất (Smallest Magnitude)
-        # Sử dụng eigsh để xử lý ma trận thưa hiệu quả
-        eigenvalues, eigenvectors = eigsh(M, k=self.n_components + 1, which='SM')
+        # Chuyển về dạng dense để giải toán trị riêng ổn định tuyệt đối bằng np.linalg.eigh
+        M_dense = M.toarray()
+        eigenvalues, eigenvectors = np.linalg.eigh(M_dense)
         
-        # Loại bỏ vector riêng cuối cùng ứng với trị riêng = 0 (Constant vector)
-        # Lấy d cột từ index 1 đến d+1
-        return eigenvectors[:, 1:]
+        # --- XỬ LÝ THEO TÀI LIỆU: Tìm và loại bỏ chính xác trị riêng 0 ---
+        # Sách yêu cầu: "excluding the last singular vector corresponding to the singular value 0"
+        non_zero_indices = np.where(eigenvalues > 1e-7)[0]
+        
+        # Lấy k (n_components) trị riêng nhỏ nhất còn lại đứng ngay sau trị riêng 0
+        selected_indices = non_zero_indices[:self.n_components]
+        
+        return eigenvectors[:, selected_indices]

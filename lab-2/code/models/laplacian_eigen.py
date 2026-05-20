@@ -1,23 +1,11 @@
-"""
-Laplacian Eigenmaps: A dimensionality reduction technique based on spectral analysis.
-
-This implementation follows the classical Laplacian Eigenmaps algorithm:
-1. Construct a k-nearest neighbor graph
-2. Build a weight matrix based on Gaussian kernel
-3. Compute the graph Laplacian
-4. Solve the generalized eigenvalue problem
-5. Use the smallest eigenvectors as the low-dimensional embedding
-"""
-
 import numpy as np
 from typing import Tuple
-
 from .base import BaseDR
 
 class LaplacianEigenmaps(BaseDR):
-    def __init__(self, k: int = 5, n_components: int = 2, sigma: float = 1.0, **kwargs):
+    def __init__(self, n_neighbors: int = 5, n_components: int = 2, sigma: float = 1.0, **kwargs):
         super().__init__(n_components=n_components, **kwargs)
-        self.k = k
+        self.k = n_neighbors
         self.sigma = sigma
         self.embedding_ = None
         self._X_fit = None
@@ -42,7 +30,19 @@ class LaplacianEigenmaps(BaseDR):
         eigenvalues, eigenvectors = np.linalg.eigh(L)
         
         print("Step 7: Selecting embedding dimensions...")
-        self.embedding_ = eigenvectors[:, 1:self.n_components+1]
+        # 1. Sắp xếp tường minh từ nhỏ đến lớn để tránh xung đột định nghĩa "top/bottom"
+        idx = np.argsort(eigenvalues)
+        eigenvalues = eigenvalues[idx]
+        eigenvectors = eigenvectors[:, idx]
+        
+        # 2. Tìm và loại bỏ vectơ riêng ứng với trị riêng bằng 0 (hoặc sát 0 do sai số số học)
+        # Sách yêu cầu: "excluding the singular vector corresponding to the singular value 0"
+        non_zero_indices = np.where(eigenvalues > 1e-5)[0]
+        
+        # 3. Lấy k (n_components) trị riêng nhỏ nhất còn lại
+        selected_indices = non_zero_indices[:self.n_components]
+        
+        self.embedding_ = eigenvectors[:, selected_indices]
         self._X_fit = X
 
     def _transform(self, X: np.ndarray) -> np.ndarray:
@@ -65,18 +65,27 @@ class LaplacianEigenmaps(BaseDR):
         neighbors = np.zeros((n_samples, k), dtype=int)
         for i in range(n_samples):
             sorted_indices = np.argsort(distance_matrix[i])
-            neighbors[i] = sorted_indices[1:k+1]
+            neighbors[i] = sorted_indices[1:k+1] # Bỏ chính nó (chỉ số 0)
         return neighbors
 
     def _build_weight_matrix(self, X: np.ndarray, neighbors: np.ndarray, sigma: float = 1.0) -> np.ndarray:
         n_samples = X.shape[0]
         W = np.zeros((n_samples, n_samples))
+        
+        # Bước 1: Xác định quan hệ lân cận (Symmetric Graph)
+        # Nếu i là hàng xóm của j HOẶC j là hàng xóm của i
         for i in range(n_samples):
             for j in neighbors[i]:
-                distance = np.linalg.norm(X[i] - X[j])
-                weight = np.exp(-(distance ** 2) / (sigma ** 2))
-                W[i, j] = weight
-        W = np.maximum(W, W.T)
+                W[i, j] = 1.0
+                W[j, i] = 1.0
+        
+        # Bước 2: Tính toán trọng số theo công thức chuẩn trong sách: exp(-||xi - xj||^2 / (2 * sigma^2))
+        for i in range(n_samples):
+            for j in range(n_samples):
+                if W[i, j] == 1.0: # Chỉ tính nếu có quan hệ hàng xóm
+                    distance = np.linalg.norm(X[i] - X[j])
+                    W[i, j] = np.exp(-(distance ** 2) / (2 * (sigma ** 2)))
+                    
         return W
 
     def _build_degree_matrix(self, W: np.ndarray) -> np.ndarray:

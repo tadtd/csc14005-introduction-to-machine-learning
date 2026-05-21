@@ -11,35 +11,25 @@ class LaplacianEigenmaps(BaseDR):
         self._X_fit = None
 
     def _fit(self, X: np.ndarray) -> None:
-        print("Step 1: Computing pairwise distance matrix...")
         distance_matrix = self._compute_distance_matrix(X)
         
-        print("Step 2: Finding k nearest neighbors...")
         neighbors = self._find_neighbors(distance_matrix, self.k)
         
-        print("Step 3: Building weight matrix...")
-        W = self._build_weight_matrix(X, neighbors, sigma=self.sigma)
+        W = self._build_weight_matrix(X, neighbors, sigma=self.sigma) # weight matrix
+        D = self._build_degree_matrix(W) # degree matrix
+        L = self._build_laplacian(D, W) # laplacian matrix
         
-        print("Step 4: Building degree matrix...")
-        D = self._build_degree_matrix(W)
+        eigenvalues, eigenvectors = np.linalg.eigh(L) # eigenvalues and eigenvectors
         
-        print("Step 5: Constructing graph Laplacian...")
-        L = self._build_laplacian(D, W)
-        
-        print("Step 6: Computing eigenvectors and eigenvalues...")
-        eigenvalues, eigenvectors = np.linalg.eigh(L)
-        
-        print("Step 7: Selecting embedding dimensions...")
-        # 1. Sắp xếp tường minh từ nhỏ đến lớn để tránh xung đột định nghĩa "top/bottom"
+        # sort eigenvalues and eigenvectors from smallest to largest
         idx = np.argsort(eigenvalues)
         eigenvalues = eigenvalues[idx]
         eigenvectors = eigenvectors[:, idx]
         
-        # 2. Tìm và loại bỏ vectơ riêng ứng với trị riêng bằng 0 (hoặc sát 0 do sai số số học)
-        # Sách yêu cầu: "excluding the singular vector corresponding to the singular value 0"
+        # exclude the singular vector corresponding to the singular value 0
         non_zero_indices = np.where(eigenvalues > 1e-5)[0]
         
-        # 3. Lấy k (n_components) trị riêng nhỏ nhất còn lại
+        # get the smallest n_components eigenvalues and eigenvectors
         selected_indices = non_zero_indices[:self.n_components]
         
         self.embedding_ = eigenvectors[:, selected_indices]
@@ -72,17 +62,17 @@ class LaplacianEigenmaps(BaseDR):
         n_samples = X.shape[0]
         W = np.zeros((n_samples, n_samples))
         
-        # Bước 1: Xác định quan hệ lân cận (Symmetric Graph)
-        # Nếu i là hàng xóm của j HOẶC j là hàng xóm của i
+        # determine the relationship between neighbors (symmetric graph)
+        # if i is a neighbor of j OR j is a neighbor of i
         for i in range(n_samples):
             for j in neighbors[i]:
                 W[i, j] = 1.0
                 W[j, i] = 1.0
         
-        # Bước 2: Tính toán trọng số theo công thức chuẩn trong sách: exp(-||xi - xj||^2 / (2 * sigma^2))
+        # calculate the weight according to the standard formula: exp(-||xi - xj||^2 / (2 * sigma^2))
         for i in range(n_samples):
             for j in range(n_samples):
-                if W[i, j] == 1.0: # Chỉ tính nếu có quan hệ hàng xóm
+                if W[i, j] == 1.0: # only calculate if there is a neighbor relationship
                     distance = np.linalg.norm(X[i] - X[j])
                     W[i, j] = np.exp(-(distance ** 2) / (2 * (sigma ** 2)))
                     

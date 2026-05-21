@@ -4,10 +4,10 @@ from scipy import sparse
 
 from .base import BaseDR
 
-class MyLLE(BaseDR):
+class LLE(BaseDR):
     """
     Locally Linear Embedding (LLE) Implementation from Scratch.
-    Sửa đổi chuẩn hóa theo công thức sách: M = (I - W)(I - W) và lọc bỏ chính xác trị riêng 0.
+    Modified normalization according to the book: M = (I - W)(I - W) and exclude the singular value 0.
     """
     def __init__(self, n_neighbors: int = 10, n_components: int = 2, reg: float = 1e-3, **kwargs):
         super().__init__(n_components=n_components, **kwargs)
@@ -19,14 +19,14 @@ class MyLLE(BaseDR):
     def _fit(self, X: np.ndarray) -> None:
         m, n = X.shape
         
-        # --- BƯỚC 1: Tìm t láng giềng gần nhất ---
+        # find the t nearest neighbors
         dist_matrix = cdist(X, X, metric='euclidean')
         neighbors_idx = np.argsort(dist_matrix, axis=1)[:, 1:self.t + 1]
         
-        # --- BƯỚC 2: Xây dựng ma trận trọng số W ---
+        # build the weight matrix W
         W = self._compute_reconstruction_weights(X, neighbors_idx)
         
-        # --- BƯỚC 3: Tối ưu hóa tọa độ nhúng Y ---
+        # optimize the embedding coordinates Y
         self.embedding_ = self._optimize_embedding(W)
         self._X_fit = X
 
@@ -45,18 +45,18 @@ class MyLLE(BaseDR):
             idx_i = neighbors_idx[i]
             Xi = X[idx_i] - X[i]
             
-            # Tính ma trận covariance cục bộ C' (Equation 12.8)
+            # calculate the local covariance matrix C' (Equation 12.8)
             C_prime = np.dot(Xi, Xi.T)
             
-            # Regularization để đảm bảo C' khả nghịch
+            # regularization to ensure C' is invertible
             trace = np.trace(C_prime)
             r = self.reg * trace if trace > 0 else self.reg
             C_prime += np.eye(self.t) * r
             
-            # Giải hệ phương trình C' * w = 1 để tìm weights chưa chuẩn hóa
+            # solve the equation C' * w = 1 to find the unnormalized weights
             w_i = np.linalg.solve(C_prime, np.ones(self.t))
             
-            # Chuẩn hóa để sum(w_i) = 1 (Equation 12.9)
+            # normalize to sum(w_i) = 1
             w_i /= np.sum(w_i)
             
             for j_idx, weight in enumerate(w_i):
@@ -69,20 +69,17 @@ class MyLLE(BaseDR):
     def _optimize_embedding(self, W: sparse.csr_matrix) -> np.ndarray:
         m = W.shape[0]
         I = sparse.eye(m, format='csr')
-        
-       
         I_minus_W = I - W
         M = I_minus_W.T @ I_minus_W  
         
-        # Chuyển về dạng dense để giải toán trị riêng ổn định tuyệt đối bằng np.linalg.eigh
+        # convert to dense to solve the eigenvalues and eigenvectors using np.linalg.eigh
         M_dense = M.toarray()
         eigenvalues, eigenvectors = np.linalg.eigh(M_dense)
         
-        # --- XỬ LÝ THEO TÀI LIỆU: Tìm và loại bỏ chính xác trị riêng 0 ---
-        # Sách yêu cầu: "excluding the last singular vector corresponding to the singular value 0"
+        # exclude the singular vector corresponding to the singular value 0
         non_zero_indices = np.where(eigenvalues > 1e-7)[0]
         
-        # Lấy k (n_components) trị riêng nhỏ nhất còn lại đứng ngay sau trị riêng 0
+        # get the smallest n_components eigenvalues and eigenvectors
         selected_indices = non_zero_indices[:self.n_components]
         
         return eigenvectors[:, selected_indices]

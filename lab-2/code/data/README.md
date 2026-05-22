@@ -8,7 +8,7 @@ Everything heavy goes under `**code/data/raw/**`: sklearn/OpenML cache (`.cache/
 from code.data import load_dataset, DatasetBundle
 ```
 
-## By dataset
+## By dataset 
 
 
 | Kind           | Name(s)                      | Notes                                                                                                                                                                                                                         |
@@ -20,6 +20,8 @@ from code.data import load_dataset, DatasetBundle
 | Text           | `20newsgroups`, `newsgroups` | Fetch + TF-IDF                                                                                                                                                                                                                |
 | scRNA          | `pbmc3k`                     | `scanpy.datasets.pbmc3k()`; optional override file `**raw/pbmc3k.h5ad**`                                                                                                                                                      |
 
+
+For MNIST and Coil 20, you can directly download from this link: [ML Lab-2 Data](https://drive.google.com/drive/folders/1EacZk-p7jFkkpE4WnyKv4xTdL8j3wyMf?usp=drive_link)
 
 ## Prefetch
 
@@ -46,3 +48,4 @@ code/data/
         ├── sklearn/           # sklearn datasets cache
         └── scanpy/            # scanpy datasets cache
 ```
+

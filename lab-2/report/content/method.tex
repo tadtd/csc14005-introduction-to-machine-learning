@@ -1,0 +1,294 @@
+\section{Phương pháp giảm chiều}
+
+Chương trình bày các phương pháp cổ điển: từ chiếu tuyến tính tối ưu lỗi tái tạo (PCA), mở rộng qua kernel (KPCA), rồi tới học manifold và chiếu ngẫu nhiên có bảo đảm lý thuyết (Johnson--Lindenstrauss).
+
+\subsection{Phân tích thành phần chính (PCA)}
+\label{sec:pca}
+
+Cho $k \in \{1,\ldots,N\}$ và $\mathbf{X}$ đã căn giữa. PCA tìm ma trận chiếu $\mathbf{P} \in P_k$ sao cho tái tạo sau chiếu gần $\mathbf{X}$ nhất theo chuẩn Frobenius:
+\begin{equation}
+\min_{\mathbf{P} \in P_k} \|\mathbf{P}\mathbf{X} - \mathbf{X}\|_F^2.
+\label{eq:pca-objective}
+\end{equation}
+
+\begin{theorem}[Nghiệm PCA]
+\label{thm:pca}
+Nghiệm $\mathbf{P}^*$ của \eqref{eq:pca-objective} có dạng $\mathbf{P}^* = \mathbf{U}_k\mathbf{U}_k^\top$, trong đó $\mathbf{U}_k \in \R^{N \times k}$ gồm $k$ vector kỳ dị trái hàng đầu của $\mathbf{C} = \frac{1}{m}\mathbf{X}\mathbf{X}^\top$. Biểu diễn $k$ chiều là $\mathbf{Y} = \mathbf{U}_k^\top \mathbf{X}$.
+\end{theorem}
+
+\begin{proof}
+Vì $\mathbf{P}$ trực giao nên $\mathbf{P}^2 = \mathbf{P}$. Khai triển norm và dùng tính tuyến tính của trace:
+\[
+\|\mathbf{P}\mathbf{X} - \mathbf{X}\|_F^2
+= -\Tr(\mathbf{X}^\top\mathbf{P}\mathbf{X}) + \Tr(\mathbf{X}^\top\mathbf{X}),
+\]
+số hạng thứ hai không phụ thuộc $\mathbf{P}$. Vậy ta cần cực đại $\Tr(\mathbf{X}^\top\mathbf{P}\mathbf{X})$ trên $P_k$.
+
+Viết $\mathbf{P} = \mathbf{U}\mathbf{U}^\top$ với $\mathbf{U}$ có $k$ cột trực chuẩn. Hoán vị trace cho
+\[
+\Tr(\mathbf{X}^\top\mathbf{P}\mathbf{X})
+= \Tr(\mathbf{U}^\top\mathbf{X}\mathbf{X}^\top\mathbf{U})
+= \sum_{i=1}^k \mathbf{u}_i^\top \mathbf{X}\mathbf{X}^\top \mathbf{u}_i,
+\]
+với $\mathbf{u}_i$ là cột thứ $i$ của $\mathbf{U}$. Mỗi số hạng bị chặn bởi giá trị kỳ dị của $\mathbf{X}\mathbf{X}^\top$; tổng đạt lớn nhất khi $\mathbf{u}_1,\ldots,\mathbf{u}_k$ là $k$ vector kỳ dị trái hàng đầu. Suy ra $\mathbf{P}^*$ và $\mathbf{Y} = \mathbf{U}_k^\top\mathbf{X}$.
+\end{proof}
+
+\paragraph{Cách nhìn theo phương sai.}
+Vector kỳ dị của $\mathbf{C}$ trỏ theo hướng biến thiên mạnh nhất; giá trị kỳ dị bằng phương sai theo hướng đó. Thành phần chính thứ $i$ là chiếu lên hướng phương sai lớn thứ $i$, vuông góc các hướng trước.
+
+\begin{extension}
+Với $k=1$, PCA chọn hướng đơn vị $\mathbf{u}$ tối đa $\mathbf{u}^\top\mathbf{C}\mathbf{u}$---trùng vector kỳ dị hàng đầu sau khi căn giữa dữ liệu.
+\end{extension}
+
+\begin{example}[Hai đặc trưng tương quan]
+Đo cùng một đại lượng (ví dụ cỡ giày) bằng hai thang đơn vị khác nhau. Sau căn giữa, đám điểm gần một đường thẳng; chiếu lên thành phần chính thứ nhất cho một số gần đủ mô tả biến thiên (Hình~\ref{fig:pca-shoe}, Chương~2).
+\end{example}
+
+\subsection{PCA trong không gian kernel (KPCA)}
+\label{sec:kpca}
+
+PCA giả định vector đặc trưng nằm trong $\R^N$. Nhiều khi ta chỉ có thể tính tương tự trong không gian $\mathcal{H}$ cao (hoặc vô hạn) chiều qua kernel $K(x,x') = \langle \Phi(x), \Phi(x')\rangle$. KPCA làm PCA trên ma trận Gram $\mathbf{K}$ thay vì $\mathbf{X}$ trực tiếp.
+
+\paragraph{Các bước thực hiện.}
+\begin{enumerate}
+  \item Lập $\mathbf{K}$, $K_{ij} = K(x_i, x_j)$.
+  \item Căn giữa kernel nếu cần: $\tilde{\mathbf{K}} = \mathbf{H}\mathbf{K}\mathbf{H}$.
+  \item Lấy $k$ cặp giá trị/vector kỳ dị lớn nhất của $\tilde{\mathbf{K}}$ (vector kỳ dị phải).
+  \item Với điểm mới $x$, vector kernel $\mathbf{k}_x = (K(x_1,x),\ldots,K(x_m,x))^\top$; tọa độ thứ $i$ là $\mathbf{k}_x^\top \mathbf{v}_i / \sqrt{\lambda_i}$.
+\end{enumerate}
+
+Khi kernel tuyến tính trên dữ liệu đã căn giữa, $\mathbf{K} = \mathbf{X}^\top\mathbf{X}$. Từ SVD $\mathbf{X} = \mathbf{U}\boldsymbol{\Sigma}\mathbf{V}^\top$ suy ra
+\begin{equation}
+\mathbf{C} = \frac{1}{m}\mathbf{U}\boldsymbol{\Lambda}\mathbf{U}^\top,
+\qquad
+\mathbf{K} = \mathbf{V}\boldsymbol{\Lambda}\mathbf{V}^\top,
+\qquad
+\boldsymbol{\Lambda} = \boldsymbol{\Sigma}^2.
+\label{eq:svd-relation}
+\end{equation}
+Vector kỳ dị trái $\mathbf{u}$ của $\mathbf{C}$ (ứng $\lambda$) tương ứng $\mathbf{X}\mathbf{v}/\sqrt{m\lambda}$ với $\mathbf{v}$ kỳ dị phải của $\mathbf{K}$. Chiếu một chiều lên $\mathbf{u}$:
+\begin{equation}
+\Phi(x)^\top \mathbf{u}
+= \frac{\mathbf{k}_x^\top \mathbf{v}}{\sqrt{\lambda}}.
+\label{eq:kpca-projection}
+\end{equation}
+Nếu $x = x_i$ trong mẫu thì tọa độ bằng $\sqrt{\lambda}\, v_i$. Toàn bộ KPCA chỉ cần eigendecomposition của $\mathbf{K}$---PCA là trường hợp $\mathbf{K} = \mathbf{X}^\top\mathbf{X}$.
+
+\subsection{Học manifold qua KPCA}
+\label{sec:manifold}
+
+Giả định dữ liệu cao chiều nằm gần một manifold nhúng. Thay vì chọn kernel ``có sẵn'', ta \emph{thiết kế} ma trận tương tự kernel từ đồ thị láng giềng hoặc khoảng cách địa hình, rồi áp dụng cùng khung KPCA (trích vector kỳ dị hàng đầu hoặc nhỏ nhất tùy bài toán).
+
+\subsubsection{Isomap}
+
+Ý tưởng: giữ khoảng cách ``đi bộ'' trên manifold, xấp xỉ bằng đường đi ngắn nhất trên đồ thị $t$-láng giềng.
+
+\begin{enumerate}
+  \item Dựng đồ thị vô hướng: nối mỗi điểm với $t$ láng giềng gần nhất (khoảng cách Euclidean).
+  \item Tính khoảng cách ngắn nhất $\delta_{ij}$ giữa mọi cặp đỉnh (ví dụ Floyd--Warshall).
+  \item Từ ma trận khoảng cách bình phương $\boldsymbol{\Delta}$, đặt $\mathbf{K}_{\mathrm{Iso}} = -\frac{1}{2}\mathbf{H}\boldsymbol{\Delta}\mathbf{H}$.
+  \item Lấy $k$ chiều từ $k$ giá trị kỳ dị lớn nhất của $\mathbf{K}_{\mathrm{Iso}}$:
+  \begin{equation}
+  \mathbf{Y} = \boldsymbol{\Sigma}_{\mathrm{Iso},k}^{1/2}\,\mathbf{U}_{\mathrm{Iso},k}^\top.
+  \label{eq:isomap-solution}
+  \end{equation}
+\end{enumerate}
+
+Trên mẫu hữu hạn, $\mathbf{K}_{\mathrm{Iso}}$ đôi khi không xác định dương bán; trên manifold trơn (giới hạn liên tục) thì thường ổn định hơn. Isomap gần với scaling đa chiều cổ điển (MDS) nhưng dùng geodesic thay vì khoảng cách Euclidean thẳng.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  scale=0.95,
+  vertex/.style={circle, draw=blue!60, fill=blue!12, minimum size=7mm, font=\small},
+  edge/.style={thick, blue!70},
+  geodesic/.style={thick, green!50!black},
+  shortcut/.style={dashed, gray, thick}
+]
+  \node[vertex] (p1) at (0,2) {1};
+  \node[vertex] (p2) at (1.8,1) {2};
+  \node[vertex] (p3) at (1.8,-1) {3};
+  \node[vertex] (p4) at (0,-2) {4};
+  \node[vertex] (p5) at (-1.8,-1) {5};
+  \node[vertex] (p6) at (-1.8,1) {6};
+  \draw[edge] (p1)--(p2)--(p3)--(p4)--(p5)--(p6)--(p1);
+  \draw[geodesic] (p1)--(p2)--(p3)--(p4);
+  \draw[shortcut] (p1)--(p4);
+  \node[font=\small, blue!70] at (2.8,0.3) {cạnh láng giềng};
+  \node[font=\small, green!50!black] at (-2.9,-0.2) {đường geodesic};
+  \node[font=\small, gray] at (0.9,-2.9) {đường tắt Euclidean};
+\end{tikzpicture}
+\caption{Isomap: khoảng cách trên manifold được xấp xỉ bằng tổng độ dài cạnh trên đường đi ngắn nhất (nét liền xanh lá), không dùng trực tiếp đoạn thẳng Euclidean (nét đứt).}
+\label{fig:isomap-graph}
+\end{figure}
+
+\begin{extension}
+Bước $\mathbf{K}_{\mathrm{Iso}} = -\frac{1}{2}\mathbf{H}\boldsymbol{\Delta}\mathbf{H}$ tương đương căn giữa ma trận tích vô hướng suy ra từ khoảng cách Euclidean, giúp đưa geodesic về dạng kernel cho phân tích kỳ dị.
+\end{extension}
+
+\subsubsection{Laplacian eigenmaps}
+
+Ưu tiên láng giềng gần trong không gian đầu vẫn gần trong không gian thấp. Trọng số
+$W_{ij} = \exp(-\|\mathbf{x}_i - \mathbf{x}_j\|^2 / \sigma^2)$ nếu $i,j$ là láng giềng, ngược lại $0$.
+Tối thiểu
+\begin{equation}
+\sum_{i,j} W_{ij}\,\|\mathbf{y}_i - \mathbf{y}_j\|^2
+\quad \Rightarrow \quad
+\mathbf{Y} = \mathbf{U}_{L,k}^\top,
+\label{eq:laplacian}
+\end{equation}
+với $\mathbf{U}_{L,k}$ gồm $k$ vector kỳ dị \emph{nhỏ nhất} của $\mathbf{L} = \mathbf{D} - \mathbf{W}$ (bỏ vector ứng giá trị kỳ dị $0$ khi đồ thị liên thông). Có thể hiểu là KPCA với kernel liên quan $\mathbf{K}_L = \mathbf{L}^\dagger$: phạt nặng khi hai điểm láng giềng bị đẩy xa trong không gian thấp.
+
+\subsubsection{Locally Linear Embedding (LLE)}
+
+Mỗi $\mathbf{x}_i$ được xấp xỉ tuyến tính bởi láng giềng:
+\[
+\min_{\sum_j W_{ij}=1} \left\| \mathbf{x}_i - \sum_{j \in \mathcal{N}_i} W_{ij}\mathbf{x}_j \right\|^2.
+\]
+Khai triển cho hệ số $W_{ij}$ dẫn tới ma trận hiệp phương sai cục bộ $\mathbf{C}'$ và
+\begin{equation}
+W_{ij} = \frac{\sum_{k \in \mathcal{N}_i} (\mathbf{C}'^{-1})_{jk}}{\sum_{s,t \in \mathcal{N}_i} (\mathbf{C}'^{-1})_{st}}.
+\label{eq:lle-weights}
+\end{equation}
+Sau khi cố định $\mathbf{W}$, tìm $\mathbf{y}_i$ sao cho quan hệ tái tạo tuyến tính được giữ:
+\[
+\min \sum_i \left\| \mathbf{y}_i - \sum_j W_{ij}\mathbf{y}_j \right\|^2,
+\]
+nghiệm từ $k$ vector kỳ dị nhỏ nhất của $\mathbf{M} = (\mathbf{I} - \mathbf{W}^\top)(\mathbf{I} - \mathbf{W}^\top)$. LLE cũng có dạng KPCA với kernel xây từ $\mathbf{W}$.
+
+\paragraph{So sánh nhanh.}
+\begin{table}[H]
+\centering
+\caption{Các hướng giảm chiều trong chương}
+\label{tab:dr-compare}
+\begin{tabular}{@{}llll@{}}
+\toprule
+Phương pháp & Tính chất & Ma trận cốt lõi & Giữ gì \\
+\midrule
+PCA & Tuyến tính & $\mathbf{K} = \mathbf{X}^\top\mathbf{X}$ & Phương sai toàn cục \\
+KPCA & Phi tuyến (kernel) & $\mathbf{K}$ tùy chọn & Cấu trúc kernel \\
+Isomap & Manifold & $\mathbf{K}_{\mathrm{Iso}}$ từ geodesic & Khoảng cách toàn cục (xấp xỉ) \\
+Laplacian & Manifold & $\mathbf{L}$, $\mathbf{K}_L$ & Láng giềng cục bộ \\
+LLE & Manifold & $\mathbf{W}$, $\mathbf{M}$ & Tái tạo tuyến tính cục bộ \\
+Chiếu ngẫu nhiên & Ngẫu nhiên & $\mathbf{A}/\sqrt{k}$ & Khoảng cách cặp (JL) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Bổ đề Johnson--Lindenstrauss}
+\label{sec:jl}
+
+Khác với PCA (tối ưu phương sai), bổ đề Johnson--Lindenstrauss (JL) trả lời câu hỏi: với $m$ điểm cố định trong $\R^N$, có thể chiếu tuyến tính xuống $\R^k$ với $k$ nhỏ đến mức nào mà \emph{mọi} khoảng cách cặp chỉ bị méo hệ số $(1 \pm \varepsilon)$? 
+
+\begin{lemma}[Tập trung phân phối $\chi^2$]
+\label{lem:chi2-conc}
+Với $\varepsilon \in (0,1)$ và $Z_1,\ldots,Z_k$ i.i.d. $\mathcal{N}(0,1)$, đặt $S = \sum_{i=1}^k Z_i^2$. Khi đó
+\[
+\Pr\!\left(\left|\frac{S}{k} - 1\right| > \varepsilon\right) \leq 2 e^{-\varepsilon^2 k/4}.
+\]
+\end{lemma}
+
+\begin{proof}
+Dùng bất đẳng thức Chernoff (Markov trên $e^{tS}$). Với $t < 1/2$, MGF của $Z_i^2$ là $\E[e^{tZ_i^2}] = (1-2t)^{-1/2}$, nên $\E[e^{tS}] = (1-2t)^{-k/2}$.
+
+\textbf{Đuôi trên} ($S > (1+\varepsilon)k$): với $t \in (0, 1/2)$,
+\[
+\Pr(S > (1+\varepsilon)k) \leq \frac{(1-2t)^{-k/2}}{e^{t(1+\varepsilon)k}}.
+\]
+Chọn $t = \varepsilon/(2(1+\varepsilon))$ và dùng $\ln(1+\varepsilon) \leq \varepsilon - \varepsilon^2/4$ (với $\varepsilon \in (0,1)$) suy ra $\Pr(S > (1+\varepsilon)k) \leq e^{-\varepsilon^2 k/8} \leq e^{-\varepsilon^2 k/4}$.
+
+\textbf{Đuôi dưới} ($S < (1-\varepsilon)k$): với $t \in (-1/2, 0)$, chọn $t = -\varepsilon/(2(1-\varepsilon))$ và $\ln(1-\varepsilon) \leq -\varepsilon - \varepsilon^2/2$ cho $\Pr(S < (1-\varepsilon)k) \leq e^{-\varepsilon^2 k/4}$.
+
+Union bound trên hai đuôi: $\Pr(|\frac{S}{k} - 1| > \varepsilon) \leq 2 e^{-\varepsilon^2 k/4}$.
+\end{proof}
+
+\begin{theorem}[Johnson--Lindenstrauss]
+\label{lem:jl}
+Cho $0 < \varepsilon < 1$ và tập hữu hạn $\mathcal{V} = \{\mathbf{v}_1, \ldots, \mathbf{v}_m\} \subset \R^N$. Nếu $k > \frac{8 \log m}{\varepsilon^2}$, thì tồn tại ánh xạ $f : \R^N \to \R^k$ sao cho mọi $\mathbf{u}, \mathbf{v} \in \mathcal{V}$,
+\[
+(1-\varepsilon)\|\mathbf{u} - \mathbf{v}\|^2
+\leq \|f(\mathbf{u}) - f(\mathbf{v})\|^2
+\leq (1+\varepsilon)\|\mathbf{u} - \mathbf{v}\|^2.
+\]
+\end{theorem}
+
+\begin{proof}
+Xét một ma trận ngẫu nhiên $\mathbf{R} \in \R^{k \times N}$ với $R_{ij} \stackrel{\text{i.i.d.}}{\sim} \mathcal{N}(0,1)$. Các hàng $\mathbf{r}_i^\top$ của $\mathbf{R}$ là vector Gaussian độc lập trong $\R^N$. 
+Đặt $f(\mathbf{x}) = \frac{1}{\sqrt{k}}\,\mathbf{R}\mathbf{x}$, ta sẽ chứng minh tồn tại ánh xạ $f$ như vậy thỏa mãn bổ đề.  
+
+Với $\mathbf{x} \in \R^N$ bất kỳ, viết $\mathbf{R}\mathbf{x} = (\mathbf{r}_1^\top\mathbf{x}, \ldots, \mathbf{r}_k^\top\mathbf{x})^\top$, nên
+\[
+\|\mathbf{R}\mathbf{x}\|^2 = \sum_{i=1}^k (\mathbf{r}_i^\top \mathbf{x})^2.
+\]
+Vì $\mathbf{r}_i^\top \sim \mathcal{N}(\mathbf{0}, \mathbf{I}_N)$ nên $\mathbf{r}_i^\top\mathbf{x} \sim \mathcal{N}(0, \|\mathbf{x}\|^2)$, tức $\mathbf{r}_i^\top\mathbf{x} = \|\mathbf{x}\|\, Z_i$ với $Z_i \stackrel{\text{i.i.d.}}{\sim} \mathcal{N}(0,1)$. Đặt $S = \sum_{i=1}^k Z_i^2 \sim \chi^2_k$, ta có
+\[
+\frac{\|\mathbf{R}\mathbf{x}\|^2}{\|\mathbf{x}\|^2} = S \Rightarrow
+\|f(\mathbf{x})\|^2 = \frac{\|\mathbf{R}\mathbf{x}\|^2}{k} = \frac{S}{k}\,\|\mathbf{x}\|^2.
+\]
+
+Áp dụng Bổ đề~\ref{lem:chi2-conc} với $S = \frac{1}{\|\mathbf{x}\|^2}\|\mathbf{R}\mathbf{x}\|^2$ suy ra
+\[
+\Pr\!\left(\left|\frac{S}{k} - 1\right| > \varepsilon\right) \leq 2 e^{-\varepsilon^2 k/4}.
+\]
+
+Đặt $\mathbf{x} = \mathbf{u} - \mathbf{v}$. Vì $f$ tuyến tính, $f(\mathbf{u}) - f(\mathbf{v}) = f(\mathbf{u}-\mathbf{v})$, nên
+\[
+\Pr\!\left(
+(1-\varepsilon)\|\mathbf{u}-\mathbf{v}\|^2
+\leq \|f(\mathbf{u}) - f(\mathbf{v})\|^2
+\leq (1+\varepsilon)\|\mathbf{u}-\mathbf{v}\|^2
+\right) \geq 1 - 2 e^{-\varepsilon^2 k/4}.
+\]
+
+Gọi $A_{\mathbf{u},\mathbf{v}}$ là sự kiện khoảng cách cặp $(\mathbf{u},\mathbf{v})$ được bảo toàn (bất đẳng thức trên), và $A = \bigcap_{\mathbf{u} \neq \mathbf{v}} A_{\mathbf{u},\mathbf{v}}$. Với $\binom{m}{2}$ cặp,
+\[
+\Pr(A^c) = \Pr\!\left(\bigcup_{\mathbf{u} \neq \mathbf{v}} A_{\mathbf{u},\mathbf{v}}^c\right)
+\leq \binom{m}{2} \cdot 2 e^{-\varepsilon^2 k/4}
+< m^2 e^{-\varepsilon^2 k/4}.
+\]
+Để $\Pr(A) > 0$ (tức tồn tại $\mathbf{R}$ thỏa mọi cặp), cần $m^2 e^{-\varepsilon^2 k/4} < 1$, tương đương
+\[
+k > \frac{4 \cdot 2 \log m}{\varepsilon^2} = \frac{8 \log m}{\varepsilon^2}.
+\]
+Vậy với $k$ như giả thiết định lý, xác suất chọn được $\mathbf{R}$ phù hợp là dương, nên ánh xạ $f$ như vậy tồn tại.
+\end{proof}
+
+\paragraph{Ý nghĩa.}
+JL cho phép giảm $N$ xuống $k \approx \log m$ (bỏ qua hệ số $1/\varepsilon^2$) mà vẫn giữ hình học cặp điểm---cơ sở cho \emph{random projection} làm tiền xử lý nhanh, không cần SVD. Trong sách \cite{mohri2018foundations} dùng hằng số $20$ thay cho $8$; điều kiện $k > 8\log m/\varepsilon^2$ ở trên là phiên bản tinh gọn từ lập luận union bound ở Bước~4.
+
+\begin{example}
+Với $m = 1000$, $\varepsilon = 0{,}1$, ngưỡng $k > 8\ln(1000)/0{,}01 \approx 5{,}5 \times 10^3$. Trên thực nghiệm thường chọn $k$ nhỏ hơn nhiều vẫn chấp nhận được; Chương~\ref{sec:experiments} sẽ so sánh chiếu ngẫu nhiên với PCA.
+\end{example}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[scale=0.95]
+  \draw[fill=blue!10] (-0.3,0) rectangle (4.3,3.2);
+  \node at (2,2.8) {\small $\R^N$};
+  \foreach \x/\y in {0.5/0.6, 1.2/1.5, 2/0.8, 3/2, 3.5/1} {
+    \fill[blue!60] (\x,\y) circle (2pt);
+  }
+  \draw[-{Stealth}, thick] (4.6,1.6) -- node[above, font=\small] {$\mathbf{A}/\sqrt{k}$} (6.4,1.6);
+  \draw[fill=green!10] (6.7,0.5) rectangle (9.2,2.7);
+  \node at (7.95,2.4) {\small $\R^k$};
+  \foreach \x/\y in {7.2/1.2, 7.8/1.8, 8.5/1} {
+    \fill[green!60!black] (\x,\y) circle (2pt);
+  }
+  \node[align=center, font=\small] at (4.9,-0.5) {Méo khoảng cách cặp trong $(1 \pm \varepsilon)$};
+\end{tikzpicture}
+\caption{Chiếu ngẫu nhiên Johnson--Lindenstrauss: giảm chiều với bảo đảm trên khoảng cách cặp.}
+\label{fig:jl-projection}
+\end{figure}
+
+\begin{extension}
+\textbf{Độ phức tạp (ước lượng).}
+SVD đầy đủ $\mathbf{X}$: $O(\min(Nm^2, N^2 m))$. Floyd--Warshall: $O(m^3)$. Eigendecomposition Laplacian thưa: gần tuyến tính theo số cạnh. Chiếu JL: nhân ma trận $O(kNm)$, không cần SVD---phù hợp tiền xử lý nhanh khi chỉ cần giữ khoảng cách cặp.
+\end{extension}
+
+\subsection{Mối liên hệ trong chương}
+
+PCA là nền tảng tuyến tính: tối ưu lỗi tái tạo hoặc phương sai. KPCA thay $\mathbf{X}$ bằng $\mathbf{K}$, mở đường cho kernel tùy biến. Isomap, Laplacian, LLE \emph{thiết kế} $\mathbf{K}$ (hoặc ma trận liên hệ) từ geometry đồ thị rồi dùng cùng khung phân tích kỳ dị. JL không tìm trục tối ưu mà chứng minh chiếu ngẫu nhiên đủ tốt---hữu ích khi ưu tiên tốc độ và bảo đảm đơn giản.
+
+Các mảng kiến thức liên quan trong học máy: phương pháp kernel (ánh xạ ngầm $\Phi$), đại số ma trận (SVD, trace, PSD), và học có giám sát có thể dùng $\mathbf{Y}$ làm đầu vào cho mô hình sau. Tài liệu gốc \cite{mohri2018foundations} trình bày đầy đủ hơn; báo cáo này tập trung diễn giải và chứng minh các mắt xích chính.
+
+\FloatBarrier

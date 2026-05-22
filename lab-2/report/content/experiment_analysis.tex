@@ -1,0 +1,21 @@
+\section{Thực nghiệm và phân tích kết quả}
+\label{sec:experiments}
+
+\textit{Phần này sẽ hoàn thiện sau khi nhóm chạy xong pipeline thực nghiệm. Dưới đây chỉ là kế hoạch, chưa có số liệu hay hình kết quả.}
+
+\subsection{Nội dung dự kiến}
+
+\begin{itemize}
+  \item Cài đặt PCA và KPCA từ đầu: chỉ dùng NumPy/SciPy cho đại số tuyến tính; không gọi \texttt{sklearn.decomposition} cho lõi thuật toán.
+  \item Trực quan: dữ liệu tổng hợp kiểu Swiss roll hoặc tương tự; biểu đồ phương sai tích lũy; so sánh hai chiều sau PCA và sau một phương pháp manifold.
+  \item Kiểm chứng Johnson--Lindenstrauss: trên tập con MNIST, so sánh láng giềng gần sau chiếu ngẫu nhiên và sau PCA với nhiều giá trị $k$; đặt \texttt{random\_seed}, ghi phiên bản thư viện trong README.
+  \item Kiểm chứng lý thuyết: lỗi tái tạo PCA giảm khi $k$ tăng; méo khoảng cách cặp dưới chiếu ngẫu nhiên so với mức $\varepsilon$ trong định lý.
+\end{itemize}
+
+\subsection{Hình, bảng và mã nguồn trong báo cáo}
+
+Hình kết quả sẽ có chú thích đầy đủ (trục, ý nghĩa). Chỉ trích các đoạn code quan trọng bằng \texttt{lstlisting}; tên biến và hàm trong code giữ tiếng Anh theo quy ước lập trình.
+
+\subsection{Trạng thái}
+
+Chưa có đồ thị hay bảng số trong phiên bản hiện tại. Sau khi chạy thư mục \texttt{code/}, nhóm cập nhật mục này với phân tích so khớp Chương~3.

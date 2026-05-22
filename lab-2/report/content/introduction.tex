@@ -1,0 +1,66 @@
+\section{Giới thiệu}
+
+Khi số chiều đặc trưng rất lớn, nhiều thuật toán học máy tốn kém bộ nhớ và thời gian, đồng thời khó quan sát cấu trúc dữ liệu. \emph{Giảm chiều} (dimensionality reduction) nhằm tìm một biểu diễn có số chiều nhỏ hơn nhưng vẫn giữ được phần thông tin hoặc quan hệ hình học quan trọng của tập mẫu gốc.
+
+\begin{notation}
+\begin{itemize}
+  \item \textbf{Tập hợp:} $\mathcal{X}$ (không gian mẫu), $\mathcal{H}$ (không gian Hilbert), $P_k$ (tập ma trận chiếu).
+  \item \textbf{Vector:} chữ thường in đậm, ví dụ $\mathbf{x}_i \in \R^N$.
+  \item \textbf{Ma trận:} chữ hoa in đậm, ví dụ $\mathbf{X} \in \R^{N \times m}$.
+  \item \textbf{Vô hướng (scalar):} chữ nghiêng thường, ví dụ $N$, $m$, $k$, $\varepsilon$, $\lambda$.
+\end{itemize}
+\end{notation}
+
+\subsection{Bài toán và ký hiệu}
+
+Cho tập mẫu $S = (x_1, \ldots, x_m)$ với $x_i \in \mathcal{X}$, ánh xạ đặc trưng $\Phi : \mathcal{X} \to \R^N$ và ma trận dữ liệu
+\[
+\mathbf{X} = \big[\Phi(x_1), \ldots, \Phi(x_m)\big] \in \R^{N \times m},
+\]
+cột thứ $i$ là vector $\mathbf{x}_i = \Phi(x_i)$. Ta muốn tìm ma trận biểu diễn $\mathbf{Y} \in \R^{k \times m}$ với $k \ll N$ sao cho $\mathbf{Y}$ phản ánh $\mathbf{X}$ theo tiêu chí đã chọn (lỗi tái tạo, phương sai, khoảng cách, láng giềng,\ldots).
+
+\subsection{Động lực thực hiện}
+
+\begin{itemize}
+  \item \textbf{Tính toán:} nén dữ liệu trước khi huấn luyện hoặc truy vấn, giảm chi phí lưu trữ và phép toán.
+  \item \textbf{Trực quan:} đưa mẫu về hai hoặc ba chiều để khám phá cụm, ngoại lệ, xu hướng.
+  \item \textbf{Trích đặc trưng:} tạo tập chiều thấp hy vọng hữu ích hơn cho phân loại hoặc hồi quy phía sau.
+\end{itemize}
+
+\subsection{Ví dụ Swiss roll}
+
+Swiss roll là dữ liệu mô phỏng ba chiều nằm gần một mặt hai chiều ``cuộn'' (Hình~\ref{fig:swiss-roll}). Nếu ``mở'' mặt này ra phẳng, quan hệ láng giềng trở nên rõ. Trong thực tế, manifold lý tưởng hiếm khi khớp hoàn toàn; ví dụ này chủ yếu giúp hình dung vì sao cần phương pháp \emph{phi tuyến}, chứ không phải bằng chứng cho mọi bộ dữ liệu thật.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[scale=0.9, every node/.style={font=\small}]
+  \begin{scope}
+    \node[font=\bfseries] at (0,2.6) {(a) Dữ liệu ``cuộn'' (minh họa)};
+    \draw[blue!60, thick, domain=0:720, samples=120, smooth]
+      plot ({(0.8+0.003*\x)*cos(\x)}, {(0.8+0.003*\x)*sin(\x)});
+    \foreach \t in {60,180,300,480,600} {
+      \fill[red!70] ({(0.8+0.003*\t)*cos(\t)}, {(0.8+0.003*\t)*sin(\t)}) circle (1.8pt);
+    }
+  \end{scope}
+  \begin{scope}[xshift=5.5cm]
+    \node[font=\bfseries] at (0,2.6) {(b) Mở ra mặt phẳng};
+    \draw[fill=blue!8, draw=blue!30] (-2.1,-0.6) rectangle (2.1,2.2);
+    \foreach \x/\y in {-1.4/1.6, -0.4/0.8, 0.6/1.4, 1.3/0.5, -0.9/0.3, 1.0/1.9} {
+      \fill[blue!70] (\x,\y) circle (2pt);
+    }
+  \end{scope}
+\end{tikzpicture}
+\caption{Ý tưởng Swiss roll: mẫu nằm trên cấu trúc hai chiều được nhúng trong không gian cao chiều; sau giảm chiều, quan hệ láng giềng dễ quan sát hơn.}
+\label{fig:swiss-roll}
+\end{figure}
+
+\subsection{Đóng góp của báo cáo}
+
+\begin{enumerate}
+  \item Chương~2: kiến thức nền (hiệp phương sai, SVD, kernel, đồ thị).
+  \item Chương~3: PCA, KPCA, Isomap, Laplacian eigenmaps, LLE, định lý Johnson--Lindenstrauss.
+  \item Chương~4: thực nghiệm (đang bổ sung).
+  \item Chương~5: tổng kết và hướng nghiên cứu gần đây.
+\end{enumerate}
+
+Nguồn tham khảo chính cho phần lý thuyết là \emph{Foundations of Machine Learning} \cite{mohri2018foundations}.

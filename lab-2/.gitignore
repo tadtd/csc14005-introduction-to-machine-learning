@@ -3,3 +3,17 @@ code/data/raw/.cache/
 code/data/raw/coil-20/
 code/data/raw/pbmc3k*.h5ad
 code/data/raw/mnist.hdf5
+
+notes/
+*.log
+*.aux
+*.bbl
+*.blg
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.toc
+*.out
+*.lot
+*.lof
+*.pdf

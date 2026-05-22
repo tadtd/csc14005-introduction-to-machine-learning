@@ -6,7 +6,7 @@ from .base import BaseDR
 
 class LLE(BaseDR):
     """
-    Locally Linear Embedding (LLE) Implementation from Scratch.
+    Locally Linear Embedding (LLE).
     Modified normalization according to the book: M = (I - W)(I - W) and exclude the singular value 0.
     """
     def __init__(self, n_neighbors: int = 10, n_components: int = 2, reg: float = 1e-3, **kwargs):

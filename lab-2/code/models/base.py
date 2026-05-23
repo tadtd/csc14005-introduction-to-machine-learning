@@ -59,8 +59,6 @@ class BaseDR(ABC):
     self._n_samples_fit: int = 0
     self._n_features_fit: int = 0
     self._mean_: Optional[np.ndarray] = None  # shape (n_features,)
-    self._fit_time: float = 0.0
-    self._transform_time: float = 0.0
 
     # Seeded RNG exposed to subclasses
     self._rng: np.random.Generator = np.random.default_rng(random_state)
@@ -234,10 +232,8 @@ class BaseDR(ABC):
 
   @property
   def fit_time(self) -> float:
-    """Wall-clock seconds spent in the last fit() call."""
-    return self._fit_time
+    return getattr(self, "_fit_time_", 0.0)
 
   @property
   def transform_time(self) -> float:
-    """Wall-clock seconds spent in the last transform() call."""
-    return self._transform_time
+    return getattr(self, "_transform_time_", 0.0)

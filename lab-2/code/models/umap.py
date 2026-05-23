@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.optimize import curve_fit
-from scipy.spatial.distance import cdist
+from scipy.spatial.distance import cKDTree
 
 from .base import BaseDR
 
@@ -77,12 +77,9 @@ class UMAP(BaseDR):
   def _compute_nearest_neighbors(
     self, X: np.ndarray, k: int
   ) -> tuple[np.ndarray, np.ndarray]:
-    dist_matrix = cdist(X, X, metric="euclidean")
-    knn_indices = np.argsort(dist_matrix, axis=1)[:, 1 : k + 1]
-    knn_distances = np.take_along_axis(
-      dist_matrix, knn_indices, axis=1
-    )
-    return knn_indices, knn_distances
+    tree = cKDTree(X)
+    knn_distances, knn_indices = tree.query(X, k=k + 1, workers=-1) # workers=-1 to use all available cores
+    return knn_indices[:, 1:], knn_distances[:, 1:]
 
   def _sigma_sum(self, knn_dists: np.ndarray, rho: float, sigma: float) -> float:
     if sigma <= 0:
@@ -117,38 +114,38 @@ class UMAP(BaseDR):
     eigenvectors = eigenvectors[:, idx]
     non_zero_indices = np.where(eigenvalues > 1e-5)[0]
     selected_indices = non_zero_indices[:n_components]
-    return eigenvectors[:, selected_indices].astype(float)
+    Y = eigenvectors[:, selected_indices].astype(float)
+    Y += self._rng.normal(0, 1e-4, Y.shape) # add small noise to break symmetry (standard UMAP practice)
+    return Y
 
   def _fit_phi_curve(self, min_dist: float, spread: float) -> tuple[float, float]:
+    if spread <= min_dist:
+      raise ValueError(f"spread ({spread}) must be greater than min_dist ({min_dist})")
+
     def phi(d, a, b):
       return 1.0 / (1.0 + a * d ** (2 * b))
 
     xv = np.linspace(0.0, spread * 3, 300)
     yv = np.zeros(xv.shape)
     yv[xv <= min_dist] = 1.0
-    yv[xv >= spread] = 0.0
     mask = (xv > min_dist) & (xv < spread)
-    yv[mask] = 1.0 - (xv[mask] - min_dist) / (spread - min_dist)
+    yv[mask] = np.exp(-(xv[mask] - min_dist) / spread) # 
 
     pos = xv > 0
     a, b = curve_fit(phi, xv[pos], yv[pos], p0=(1.0, 1.0), maxfev=10000)[0]
     return float(a), float(b)
 
   def _positive_samples(self, P: np.ndarray) -> list[tuple[int, int, float]]:
-    pairs = []
-    N = P.shape[0]
-    for i in range(N):
-      for j in range(i + 1, N):
-        if P[i, j] > 0:
-          pairs.append((i, j, P[i, j]))
-    return pairs
+    rows, cols = np.where(np.triu(P, k=1) > 0)
+    weights = P[rows, cols]
+    return list(zip(rows.tolist(), cols.tolist(), weights.tolist()))
 
   def _dist(self, y_i: np.ndarray, y_j: np.ndarray) -> float:
     return float(np.linalg.norm(y_i - y_j))
 
   def _compute_attractive_gradient(
     self,
-    p_ij: float,
+    p_ij: float | None,
     q_ij: float,
     dist: float,
     a: float,
@@ -156,6 +153,8 @@ class UMAP(BaseDR):
     y_i: np.ndarray,
     y_j: np.ndarray,
   ) -> tuple[np.ndarray, np.ndarray]:
+    if p_ij is None:
+      p_ij = 1.0
     if dist < 1e-8:
       return np.zeros_like(y_i), np.zeros_like(y_j)
     d2b = dist ** (2 * b)
@@ -177,9 +176,9 @@ class UMAP(BaseDR):
     if dist < 1e-8:
       return np.zeros_like(y_i), np.zeros_like(y_k)
     d2b = dist ** (2 * b)
-    d2bm1 = dist ** (2 * b - 1)
-    grad_coef = 2.0 * b * d2bm1 / ((1e-3 + dist) * (1.0 + a * d2b))
-    diff = (y_i - y_k) / dist
+    dist_sq = dist * dist
+    grad_coef = 2.0 * b / ((1e-3 + dist_sq) * (1.0 + a * d2b))
+    diff = y_i - y_k
     grad = grad_coef * diff
     return grad, -grad
 
@@ -197,12 +196,14 @@ class UMAP(BaseDR):
 
     for epoch in range(self.epochs):
       for i, j, p_ij in pairs:
+        if self._rng.random() > p_ij:
+          continue
         dist_y = self._dist(Y[i], Y[j])
         q_ij = 1.0 / (1.0 + a * dist_y ** (2 * b))
 
-        grad_i, grad_j = self._compute_attractive_gradient(
-          p_ij, q_ij, dist_y, a, b, Y[i], Y[j]
-        )
+        grad_i, grad_j = self._compute_attractive_gradient(1.0, q_ij, dist_y, a, b, Y[i], Y[j])
+        grad_i = np.clip(grad_i, -4.0, 4.0)
+        grad_j = np.clip(grad_j, -4.0, 4.0)
         Y[i] -= lr * grad_i
         Y[j] -= lr * grad_j
 
@@ -213,11 +214,11 @@ class UMAP(BaseDR):
           dist_y_neg = self._dist(Y[i], Y[k])
           q_ik = 1.0 / (1.0 + a * dist_y_neg ** (2 * b))
 
-          grad_i_neg, grad_k = self._compute_repulsive_gradient(
-            q_ik, dist_y_neg, a, b, Y[i], Y[k]
-          )
+          grad_i_neg, grad_k = self._compute_repulsive_gradient(q_ik, dist_y_neg, a, b, Y[i], Y[k])
+          grad_i_neg = np.clip(grad_i_neg, -4.0, 4.0)
+          grad_k = np.clip(grad_k, -4.0, 4.0)
           Y[i] -= lr * grad_i_neg
-          Y[k] += lr * grad_k
+          Y[k] -= lr * grad_k
 
       lr *= 1.0 - (epoch + 1) / self.epochs
 

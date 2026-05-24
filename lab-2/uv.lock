@@ -585,24 +585,32 @@ name = "lab-2"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "anndata" },
     { name = "h5py" },
     { name = "ipykernel" },
+    { name = "matplotlib" },
     { name = "numpy" },
+    { name = "pandas" },
     { name = "pillow" },
     { name = "requests" },
     { name = "scanpy" },
     { name = "scikit-learn" },
+    { name = "scipy" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "anndata", specifier = ">=0.12.6" },
     { name = "h5py", specifier = ">=3.16.0" },
     { name = "ipykernel", specifier = ">=7.2.0" },
+    { name = "matplotlib", specifier = ">=3.10.9" },
     { name = "numpy", specifier = ">=2.4.4" },
+    { name = "pandas", specifier = ">=2.3.3" },
     { name = "pillow", specifier = ">=12.2.0" },
     { name = "requests", specifier = ">=2.33.1" },
     { name = "scanpy", specifier = ">=1.12.1" },
     { name = "scikit-learn", specifier = ">=1.8.0" },
+    { name = "scipy", specifier = ">=1.17.1" },
 ]
 
 [[package]]

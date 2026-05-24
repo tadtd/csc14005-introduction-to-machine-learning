@@ -12,6 +12,7 @@ dependencies = [
     "pandas>=2.3.3",
     "pillow>=12.2.0",
     "requests>=2.33.1",
+    "scanpy>=1.12.1",
     "scipy>=1.17.1",
     "scikit-learn>=1.8.0",
     "matplotlib>=3.10.9",

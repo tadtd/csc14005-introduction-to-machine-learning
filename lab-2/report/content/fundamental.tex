@@ -27,13 +27,18 @@ Với $\mathbf{X} \in \R^{N \times m}$, tồn tại phân tích
 $\mathbf{U},\mathbf{V}$ có cột trực chuẩn, $\boldsymbol{\Sigma}$ đường chéo các giá trị kỳ dị không âm $\sigma_1 \geq \sigma_2 \geq \cdots$.
 \end{definition}
 
-Đặt $\boldsymbol{\Lambda} = \boldsymbol{\Sigma}^2$. Khi đó
+Đặt $\boldsymbol{\Lambda} = \boldsymbol{\Sigma}^2 =
+\operatorname{diag}(\sigma_1^2,\sigma_2^2,\ldots)$. Khi đó
 \[
 \mathbf{C} = \frac{1}{m}\mathbf{U}\boldsymbol{\Lambda}\mathbf{U}^\top,
 \qquad
 \mathbf{K} = \mathbf{X}^\top\mathbf{X} = \mathbf{V}\boldsymbol{\Lambda}\mathbf{V}^\top,
 \]
-với $\mathbf{K}$ là ma trận Gram (kernel tuyến tính trên các cột $\mathbf{x}_i$). Cùng một bộ giá trị kỳ dị $\lambda_i = \sigma_i^2/m$ xuất hiện ở $\mathbf{C}$ và $\mathbf{K}$, chỉ khác hệ vector kỳ dị trái/phải---đây là cầu nối giữa PCA và KPCA.
+với $\mathbf{K}$ là ma trận Gram (kernel tuyến tính trên các cột $\mathbf{x}_i$).
+Do đó, nếu $\lambda_i = \sigma_i^2$ là trị riêng khác không của
+$\mathbf{K}$, thì trị riêng tương ứng của $\mathbf{C}$ là
+$\lambda_i/m$. Hai ma trận chia sẻ thông tin phổ đến một hệ số tỉ lệ,
+nhưng dùng hai hệ vector riêng khác nhau; đây là cầu nối giữa PCA và KPCA.
 
 \subsection{Chiếu trực giao và chuẩn Frobenius}
 
@@ -45,7 +50,7 @@ Chuẩn Frobenius: $\|\mathbf{M}\|_F^2 = \Tr(\mathbf{M}^\top\mathbf{M})$. Tính 
 
 \subsection{Phương sai theo một hướng}
 
-Với vector đơn vị $\mathbf{u}$, lượng $\mathbf{u}^\top\mathbf{C}\mathbf{u}$ là phương sai của chiếu một chiều lên $\mathbf{u}$. Bài toán $\max_{\|\mathbf{u}\|=1} \mathbf{u}^\top\mathbf{C}\mathbf{u}$ đạt tại vector kỳ dị của $\mathbf{C}$ ứng với giá trị kỳ dị lớn nhất (thương số Rayleigh). Các hướng tiếp theo tối đa hóa phương sai trong không gian vuông góc với các hướng đã chọn.
+Với vector đơn vị $\mathbf{u}$, lượng $\mathbf{u}^\top\mathbf{C}\mathbf{u}$ là phương sai của chiếu một chiều lên $\mathbf{u}$. Bài toán $\max_{\|\mathbf{u}\|=1} \mathbf{u}^\top\mathbf{C}\mathbf{u}$ đạt tại vector riêng của $\mathbf{C}$ ứng với trị riêng lớn nhất (thương số Rayleigh). Các hướng tiếp theo tối đa hóa phương sai trong không gian vuông góc với các hướng đã chọn.
 
 \begin{example}
 Hai đặc trưng trên mặt phẳng tương quan mạnh (ví dụ cùng đo kích thước giày nhưng đơn vị khác nhau). Đám điểm kéo dài theo một đường chéo; chiếu lên đường đó giữ phần lớn biến thiên, chiếu vuông góc gần như mất thông tin---đó là động lực hình học của thành phần chính thứ nhất (Hình~\ref{fig:pca-shoe}).

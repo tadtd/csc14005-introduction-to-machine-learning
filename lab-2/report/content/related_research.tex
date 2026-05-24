@@ -1,0 +1,189 @@
+\section{Nghiên cứu tiên tiến liên quan}
+\label{sec:related-research}
+
+\subsection{Bài báo được khảo sát}
+
+Phần này khảo sát bài báo của Wang, Huang, Rudin và Shaposhnik,
+\textit{Understanding How Dimension Reduction Tools Work: An Empirical
+Approach to Deciphering t-SNE, UMAP, TriMap, and PaCMAP for Data
+Visualization}, công bố trên \textit{Journal of Machine Learning Research}
+\cite{wang2021pacmap}. Bài báo nghiên cứu các thuật toán giảm chiều phục
+vụ trực quan hóa, đặc biệt trong tình huống dữ liệu chiều cao được nhúng
+xuống hai chiều. Ngoài phân tích t-SNE, UMAP và TriMap, tác giả đề xuất
+thuật toán PaCMAP (\textit{Pairwise Controlled Manifold Approximation
+Projection}).
+
+Nội dung này nối trực tiếp với các phương pháp đã trình bày ở các chương
+trước. PCA cung cấp phép chiếu tuyến tính và thường là khởi tạo cho các
+thuật toán hiện đại; Isomap, Laplacian eigenmaps và LLE biểu diễn quan điểm
+dữ liệu nằm trên manifold thông qua quan hệ lân cận; KPCA cho thấy cách tạo
+embedding phi tuyến từ độ tương tự. Bài báo tiếp tục câu hỏi đó trong bối
+cảnh trực quan hóa: một embedding đẹp cần giữ thông tin lân cận nào và giữ
+bao nhiêu cấu trúc toàn cục.
+
+\subsection{Bài toán nghiên cứu}
+
+Một scatter plot hai chiều có thể khiến người đọc diễn giải khoảng cách
+giữa cụm, kích thước cụm hoặc các khoảng trống như cấu trúc thật của dữ
+liệu gốc. Tuy nhiên, khi giảm từ số chiều lớn xuống hai chiều, không thể
+bảo toàn đồng thời mọi khoảng cách. t-SNE và UMAP thường làm nổi bật láng
+giềng cục bộ, trong khi cấu trúc giữa các nhóm xa nhau có thể bị biến dạng.
+Ngược lại, một phương pháp quá ưu tiên cấu trúc toàn cục có thể làm mờ các
+cụm nhỏ có ý nghĩa.
+
+Từ vấn đề này, bài báo đặt ra ba câu hỏi chính:
+\begin{enumerate}
+  \item Vì sao các thuật toán phổ biến tạo ra những embedding khác nhau,
+  dù cùng được dùng cho trực quan hóa?
+  \item Thành phần nào của hàm mất mát, đồ thị hoặc phép khởi tạo quyết định
+  khả năng giữ cấu trúc cục bộ và toàn cục?
+  \item Có thể thiết kế một thuật toán cân bằng hai mục tiêu đó tốt hơn hay
+  không?
+\end{enumerate}
+
+\subsection{Đóng góp chính của bài báo}
+
+\paragraph{Phân tích hàm mất mát bằng lực hút và lực đẩy.}
+Các tác giả diễn giải thuật toán trực quan hóa thông qua lực hút giữa những
+điểm cần ở gần nhau và lực đẩy giữa những điểm không nên chồng lên nhau.
+Thay vì chỉ so sánh công thức, bài báo đưa ra biểu diễn ``rainbow figure''
+để quan sát độ lớn gradient theo khoảng cách trong không gian gốc và không
+gian nhúng. Từ phân tích thực nghiệm này, tác giả tổng hợp sáu nguyên tắc
+cho một hàm mất mát có khả năng giữ cấu trúc cục bộ tốt; chẳng hạn điểm
+láng giềng bị đặt xa cần chịu lực hút đủ mạnh, còn điểm không lân cận đã ở
+xa không nên tiếp tục chi phối quá mức quá trình tối ưu
+\cite{wang2021pacmap}.
+
+\paragraph{Vai trò của đồ thị và phép khởi tạo.}
+Bài báo chỉ ra rằng chỉ thu hút các láng giềng gần nhất và đẩy các điểm xa
+khi chúng va vào nhau chưa đủ để phục hồi cấu trúc toàn cục. Các cặp điểm
+ở khoảng cách trung gian cung cấp thông tin quan trọng về bố cục tổng thể.
+Ngoài ra, hiệu quả giữ cấu trúc toàn cục của TriMap phụ thuộc đáng kể vào
+khởi tạo PCA; điều này nhấn mạnh rằng kết quả embedding không chỉ do hàm
+mất mát, mà còn do trạng thái ban đầu và thang đo của khởi tạo.
+
+\paragraph{Thuật toán PaCMAP.}
+PaCMAP xây dựng ba loại cặp điểm:
+\begin{itemize}
+  \item \textit{neighbor pairs}: các cặp láng giềng dùng để duy trì cấu
+  trúc cục bộ;
+  \item \textit{mid-near pairs}: các cặp ở khoảng cách trung gian giúp định
+  hình cấu trúc toàn cục;
+  \item \textit{further pairs}: các cặp xa giúp tránh việc embedding co cụm
+  không hợp lý.
+\end{itemize}
+Thuật toán tối ưu theo ba giai đoạn. Giai đoạn đầu tăng trọng số của
+\textit{mid-near pairs} để dựng bố cục lớn; giai đoạn giữa cân bằng các
+loại cặp; giai đoạn cuối giảm vai trò của cặp trung gian và tinh chỉnh
+quan hệ lân cận. Theo các thí nghiệm trên dữ liệu ảnh, văn bản, dữ liệu
+sinh học và dữ liệu tổng hợp trong bài báo, PaCMAP đạt cân bằng tốt giữa
+đánh giá cục bộ và toàn cục, đồng thời có thời gian chạy cạnh tranh.
+
+\begin{table}[H]
+  \centering
+  \caption{Góc nhìn của Wang et al. về các thuật toán trực quan hóa giảm chiều.}
+  \label{tab:related-methods}
+  \begin{tabular}{p{0.18\textwidth}p{0.32\textwidth}p{0.39\textwidth}}
+    \toprule
+    Phương pháp & Thông tin ưu tiên & Nhận xét liên quan trong bài báo \\
+    \midrule
+    t-SNE & Láng giềng cục bộ & Cho cụm cục bộ rõ, nhưng bố cục toàn cục
+    không nên được diễn giải trực tiếp. \\
+    UMAP & Đồ thị lân cận mờ & Có dạng lực phù hợp với các nguyên tắc giữ
+    cục bộ được phân tích. \\
+    TriMap & Quan hệ bộ ba & Khả năng giữ toàn cục chịu ảnh hưởng lớn từ
+    khởi tạo PCA. \\
+    PaCMAP & Cặp gần, trung gian và xa & Dùng lịch trọng số theo giai đoạn
+    để cân bằng cục bộ và toàn cục. \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Liên hệ với lý thuyết giảm chiều đã trình bày}
+
+\begin{table}[H]
+  \centering
+  \caption{Quan hệ giữa bài báo khảo sát và nội dung lý thuyết của báo cáo.}
+  \label{tab:related-theory}
+  \begin{tabular}{p{0.20\textwidth}p{0.70\textwidth}}
+    \toprule
+    Nội dung chương & Liên hệ với Wang et al. \\
+    \midrule
+    PCA & PCA là baseline tuyến tính giữ phương sai/toàn cục và còn được
+    dùng làm khởi tạo cho một số embedding phi tuyến; vì vậy chất lượng
+    khởi tạo có thể ảnh hưởng đến hình trực quan cuối cùng. \\
+    KPCA & KPCA và các thuật toán trong bài báo đều tạo embedding phi tuyến,
+    nhưng KPCA tối ưu theo phổ của kernel, còn PaCMAP tối ưu lực trên các
+    cặp điểm được lựa chọn; hai cách tiếp cận không bảo toàn cùng một loại
+    hình học. \\
+    Isomap & Isomap giữ khoảng cách geodesic trên đồ thị để mô hình hóa hình
+    học toàn cục của manifold. PaCMAP cũng dùng quan hệ láng giềng, nhưng
+    bổ sung cặp trung gian và xa để phục vụ trực quan hóa cân bằng hơn. \\
+    Laplacian/LLE & Các phương pháp này nhấn mạnh cấu trúc địa phương trên
+    đồ thị; phân tích của bài báo giải thích vì sao chỉ thông tin địa phương
+    có thể làm mất bố cục toàn cục. \\
+    JL & Bổ đề JL đưa ra bảo đảm méo khoảng cách cho chiếu ngẫu nhiên ở số
+    chiều đủ lớn; trái lại, bài toán trực quan hóa xuống đúng hai chiều
+    chấp nhận biến dạng và phải chọn loại cấu trúc cần ưu tiên. \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Như vậy, bài báo không thay thế các kết quả phổ hoặc bảo đảm toán học của
+chương, mà bổ sung một góc nhìn thiết kế thuật toán: khi mục đích là quan
+sát embedding hai chiều, việc kiểm soát cặp điểm và gradient quyết định
+cách đánh đổi giữa cấu trúc gần và bố cục xa.
+
+\subsection{[MỞ RỘNG] Đối chiếu với cài đặt của nhóm}
+
+Trong mã nguồn của đồ án, lớp \texttt{TSNE} cung cấp giao diện thống nhất
+cho \texttt{sklearn.manifold.TSNE}, còn lớp \texttt{UMAP} được cài đặt với
+các bước xây đồ thị $k$-láng giềng, tính trọng số fuzzy, khởi tạo phổ và
+tối ưu với mẫu âm. Notebook thực nghiệm dùng mẫu cố định gồm 500 ảnh MNIST
+và \texttt{random\_state = 42}; nhãn chỉ được dùng để đánh giá sau khi
+nhúng. Hai chỉ số được báo cáo là \textit{trustworthiness@12}, đo mức bảo
+toàn láng giềng, và độ chính xác KNN năm láng giềng trên embedding hai
+chiều.
+
+\begin{table}[H]
+  \centering
+  \caption{Thực nghiệm mở rộng trên 500 mẫu MNIST trong notebook.}
+  \label{tab:bonus-tsne-umap}
+  \begin{tabular}{lcc}
+    \toprule
+    Phương pháp & Trustworthiness@12 & KNN accuracy@5 \\
+    \midrule
+    t-SNE, perplexity $=30$ & \textbf{0.9291} & \textbf{0.800} \\
+    t-SNE, perplexity $=10$ & 0.9284 & 0.798 \\
+    t-SNE, perplexity $=50$ & 0.9282 & 0.782 \\
+    t-SNE, perplexity $=5$  & 0.9195 & 0.766 \\
+    Isomap & 0.7525 & 0.424 \\
+    PCA & 0.7314 & 0.316 \\
+    UMAP tự cài & 0.5006 & 0.112 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Kết quả này phù hợp với cảnh báo của bài báo ở hai điểm. Thứ nhất, t-SNE
+nhạy với tham số: chỉ thay \texttt{perplexity} đã làm hai chỉ số thay đổi.
+Thứ hai, không nên suy diễn từ tên thuật toán rằng một embedding luôn tốt
+hơn thuật toán khác. Cài đặt UMAP hiện tại cho kết quả thấp, vì vậy chỉ
+được ghi nhận như thử nghiệm mở rộng cần hiệu chỉnh thêm; báo cáo không
+dùng kết quả đó để khẳng định UMAP kém về bản chất hay t-SNE luôn vượt trội.
+
+\subsection{Xu hướng, hạn chế và câu hỏi mở}
+
+Từ bài báo có thể nhận xét xu hướng nghiên cứu giảm chiều phục vụ trực
+quan hóa đang chuyển từ một tiêu chuẩn duy nhất, như phương sai của PCA
+hoặc khoảng cách geodesic của Isomap, sang thiết kế mục tiêu lai: cấu trúc
+cục bộ phải dễ quan sát nhưng bố cục toàn cục không được tùy tiện. Đồng
+thời, cộng đồng quan tâm hơn đến việc giải thích hàm mất mát, đánh giá bằng
+nhiều chỉ số và khảo sát độ nhạy tham số thay vì chỉ đưa ra một hình ảnh
+embedding.
+
+Bài báo chủ yếu đưa ra lập luận thiết kế và bằng chứng thực nghiệm cho
+trực quan hai chiều; chất lượng hình thu được vẫn phụ thuộc tập dữ liệu,
+siêu tham số, khởi tạo và chỉ số đánh giá. Một hướng kiểm chứng tiếp theo
+cho đồ án là cài đặt PaCMAP hoặc dùng hiện thực chuẩn, rồi so sánh trên
+cùng dữ liệu với PCA, Isomap, t-SNE và UMAP bằng cả thước đo cục bộ lẫn
+thước đo toàn cục như độ chính xác triplet mà Wang et al. sử dụng.

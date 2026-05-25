@@ -1,6 +1,6 @@
 # Lab data (`load_data.py`)
 
-Everything heavy goes under `**code/data/raw/**`: sklearn/OpenML cache (`.cache/sklearn/`), scanpy cache (`.cache/scanpy/`), and scanpy’s `**datasetdir**` (so PBMC lands as `**raw/pbmc3k_raw.h5ad**`, not `./data/`).
+Everything heavy goes under `**code/data/raw/**`. MNIST is downloaded automatically from OpenML and cached under `**raw/.cache/openml/**`; COIL-20 is downloaded automatically from the Columbia archive and cached under `**raw/.cache/coil20/**`.
 
 ## Use
 
@@ -8,20 +8,13 @@ Everything heavy goes under `**code/data/raw/**`: sklearn/OpenML cache (`.cache/
 from code.data import load_dataset, DatasetBundle
 ```
 
-## By dataset 
+## By dataset
 
-
-| Kind           | Name(s)                      | Notes                                                                                                                                                                                                                         |
-| -------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Synthetic      | `swiss_roll`, `circles`      | No download                                                                                                                                                                                                                   |
-| Tabular        | `iris`, `wine`               | Bundled in sklearn                                                                                                                                                                                                            |
-| Images         | `mnist`                      | Local `**raw/mnist.hdf5**` ([PyMVPA / LeCun MNIST](https://www.pymvpa.org/datadb/mnist.html), [data mirror](http://data.pymvpa.org/datasets/mnist/)); optional kwarg `hdf5_path`                                              |
-| Images (local) | `coil20`, `coil-20`          | [COIL-20](http://www.cs.columbia.edu/CAVE/software/softlib/coil-20.php) → `**raw/coil-20/**` or `**raw/coil-20-proc/**` (same under `code/data/` still works). Nested `obj1`…`obj20` or flat `obj10__0.png`. Env: `COIL20_*`. |
-| Text           | `20newsgroups`, `newsgroups` | Fetch + TF-IDF                                                                                                                                                                                                                |
-| scRNA          | `pbmc3k`                     | `scanpy.datasets.pbmc3k()`; optional override file `**raw/pbmc3k.h5ad**`                                                                                                                                                      |
-
-
-For MNIST and Coil 20, you can directly download from this link: [ML Lab-2 Data](https://drive.google.com/drive/folders/1EacZk-p7jFkkpE4WnyKv4xTdL8j3wyMf?usp=drive_link)
+| Kind      | Name(s)                         | Notes                                                                 |
+| --------- | -------------------------------- | --------------------------------------------------------------------- |
+| Synthetic | `circles`, `swiss_roll`         | Generated locally with scikit-learn.                                  |
+| Images    | `mnist`                         | Auto-downloads from OpenML on first use and caches under `raw/.cache/openml/`. |
+| Images    | `coil20`, `coil_20`, `coil-20`  | Auto-downloads the official COIL-20 processed archive on first use and caches under `raw/.cache/coil20/`. |
 
 ## Prefetch
 
@@ -33,19 +26,14 @@ uv run python code/data/load_data.py
 
 ```
 code/data/
-├── __init__.py                 # Python package marker
-├── load_data.py               # Main data loading module
-├── README.md                  # This file (documentation)
-└── raw/                       # Raw data directory for datasets
-    ├── mnist.hdf5             # MNIST dataset (PyMVPA HDF5 format)
-    ├── pbmc3k_raw.h5ad        # PBMC 3K single-cell RNA data (AnnData format)
-    ├── coil-20/               # COIL-20 object images
-    │   ├── obj1/              # Images of object 1
-    │   ├── obj2/              # Images of object 2
-    │   └── ...
-    │   └── obj20/             # Images of object 20
-    └── .cache/                # Auto-generated cache directories
-        ├── sklearn/           # sklearn datasets cache
-        └── scanpy/            # scanpy datasets cache
+├── __init__.py
+├── load_data.py
+├── README.md
+└── raw/
+    ├── mnist.hdf5
+    ├── coil-20/
+    └── .cache/
+        ├── openml/
+        └── coil20/
 ```
 

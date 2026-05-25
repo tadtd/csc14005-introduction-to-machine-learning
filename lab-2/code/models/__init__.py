@@ -4,10 +4,9 @@ from .base import BaseDR
 from .isomap import Isomap
 from .kpca import KPCA
 from .laplacian_eigen import LaplacianEigenmaps
-from .lle import LLE, MyLLE
+from .lle import LLE
 from .pca import PCA
 from .t_sne import TSNE
-from .umap import UMAP
 
 __all__ = [
     "BaseDR",
@@ -15,8 +14,6 @@ __all__ = [
     "KPCA",
     "LaplacianEigenmaps",
     "LLE",
-    "MyLLE",
     "PCA",
     "TSNE",
-    "UMAP",
 ]

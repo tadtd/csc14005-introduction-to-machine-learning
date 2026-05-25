@@ -83,6 +83,3 @@ class LLE(BaseDR):
         selected_indices = non_zero_indices[:self.n_components]
         
         return eigenvectors[:, selected_indices]
-
-
-MyLLE = LLE

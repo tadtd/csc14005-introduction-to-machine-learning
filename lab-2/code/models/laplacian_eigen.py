@@ -1,8 +1,9 @@
 import numpy as np
 from .base import BaseDR
+import scipy
 
 class LaplacianEigenmaps(BaseDR):
-    def __init__(self, n_neighbors: int = 5, n_components: int = 2, sigma: float = 1.0, **kwargs):
+    def __init__(self, n_neighbors=5, n_components=2, sigma=1.0, **kwargs):
         super().__init__(n_components=n_components, **kwargs)
         self.k = n_neighbors
         self.sigma = sigma
@@ -11,78 +12,49 @@ class LaplacianEigenmaps(BaseDR):
 
     def _fit(self, X: np.ndarray) -> None:
         distance_matrix = self._compute_distance_matrix(X)
-        
-        neighbors = self._find_neighbors(distance_matrix, self.k)
-        
-        W = self._build_weight_matrix(X, neighbors, sigma=self.sigma) # weight matrix
-        D = self._build_degree_matrix(W) # degree matrix
-        L = self._build_laplacian(D, W) # laplacian matrix
-        
-        eigenvalues, eigenvectors = np.linalg.eigh(L) # eigenvalues and eigenvectors
-        
-        # sort eigenvalues and eigenvectors from smallest to largest
-        idx = np.argsort(eigenvalues)
-        eigenvalues = eigenvalues[idx]
-        eigenvectors = eigenvectors[:, idx]
-        
-        # exclude the singular vector corresponding to the singular value 0
-        non_zero_indices = np.where(eigenvalues > 1e-5)[0]
-        
-        # get the smallest n_components eigenvalues and eigenvectors
-        selected_indices = non_zero_indices[:self.n_components]
-        
+        neighbors       = self._find_neighbors(distance_matrix, self.k)
+
+        W = self._build_weight_matrix(distance_matrix, neighbors, self.sigma)
+        L = self._build_laplacian(W)
+
+        _, eigenvectors = np.linalg.eigh(L)
+        selected_indices = np.arange(1, self.n_components + 1)
         self.embedding_ = eigenvectors[:, selected_indices]
         self._X_fit = X
 
     def _transform(self, X: np.ndarray) -> np.ndarray:
         if X is self._X_fit:
             return self.embedding_
-        if self._X_fit is not None and X.shape == self._X_fit.shape and np.allclose(X, self._X_fit):
+        if (self._X_fit is not None
+                and X.shape == self._X_fit.shape
+                and np.allclose(X, self._X_fit)):
             return self.embedding_
-        raise NotImplementedError("Out-of-sample extension for Laplacian Eigenmaps is not implemented.")
+        raise NotImplementedError(
+            "Out-of-sample extension for Laplacian Eigenmaps is not implemented."
+        )
 
     def _compute_distance_matrix(self, X: np.ndarray) -> np.ndarray:
-        n_samples = X.shape[0]
-        distance_matrix = np.zeros((n_samples, n_samples))
-        for i in range(n_samples):
-            for j in range(n_samples):
-                distance_matrix[i, j] = np.linalg.norm(X[i] - X[j])
-        return distance_matrix
+        sq = np.sum(X ** 2, axis=1)
+        D2 = sq[:, None] + sq[None, :] - 2 * (X @ X.T)
+        return np.sqrt(np.maximum(D2, 0))   # clip avoid negative sqrt due to numerical issues
 
     def _find_neighbors(self, distance_matrix: np.ndarray, k: int) -> np.ndarray:
-        n_samples = distance_matrix.shape[0]
-        neighbors = np.zeros((n_samples, k), dtype=int)
-        for i in range(n_samples):
-            sorted_indices = np.argsort(distance_matrix[i])
-            neighbors[i] = sorted_indices[1:k+1] # Bỏ chính nó (chỉ số 0)
-        return neighbors
+        return np.argsort(distance_matrix, axis=1)[:, 1:k + 1]
 
-    def _build_weight_matrix(self, X: np.ndarray, neighbors: np.ndarray, sigma: float = 1.0) -> np.ndarray:
-        n_samples = X.shape[0]
-        W = np.zeros((n_samples, n_samples))
-        
-        # determine the relationship between neighbors (symmetric graph)
-        # if i is a neighbor of j OR j is a neighbor of i
-        for i in range(n_samples):
-            for j in neighbors[i]:
-                W[i, j] = 1.0
-                W[j, i] = 1.0
-        
-        # calculate the weight according to the standard formula: exp(-||xi - xj||^2 / (2 * sigma^2))
-        for i in range(n_samples):
-            for j in range(n_samples):
-                if W[i, j] == 1.0: # only calculate if there is a neighbor relationship
-                    distance = np.linalg.norm(X[i] - X[j])
-                    W[i, j] = np.exp(-(distance ** 2) / (2 * (sigma ** 2)))
-                    
+    def _build_weight_matrix(self, distance_matrix: np.ndarray,
+                              neighbors: np.ndarray, sigma: float = 1.0) -> np.ndarray:
+        n = distance_matrix.shape[0]
+        W = np.zeros((n, n))
+
+        rows = np.repeat(np.arange(n), self.k)
+        cols = neighbors.ravel()
+
+        w_vals = np.exp(-(distance_matrix[rows, cols] ** 2) / (self.sigma ** 2))
+        W[rows, cols] = w_vals
+        W[cols, rows] = w_vals   # symmetry
         return W
 
-    def _build_degree_matrix(self, W: np.ndarray) -> np.ndarray:
-        n_samples = W.shape[0]
-        D = np.zeros((n_samples, n_samples))
-        degrees = np.sum(W, axis=1)
-        np.fill_diagonal(D, degrees)
-        return D
-
-    def _build_laplacian(self, D: np.ndarray, W: np.ndarray) -> np.ndarray:
-        return D - W
+    def _build_laplacian(self, W: np.ndarray) -> np.ndarray:
+        L = -W.copy()
+        np.fill_diagonal(L, W.sum(axis=1))
+        return L

@@ -239,10 +239,8 @@ class BaseDR(ABC):
 
   @property
   def fit_time(self) -> float:
-    """Wall-clock seconds spent in the last fit() call."""
     return self._fit_time
 
   @property
   def transform_time(self) -> float:
-    """Wall-clock seconds spent in the last transform() call."""
     return self._transform_time

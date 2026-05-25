@@ -12,7 +12,7 @@ class LaplacianEigenmaps(BaseDR):
 
     def _fit(self, X: np.ndarray) -> None:
         distance_matrix = self._compute_distance_matrix(X)
-        neighbors       = self._find_neighbors(distance_matrix, self.k)
+        neighbors = self._find_neighbors(distance_matrix, self.k)
 
         W = self._build_weight_matrix(distance_matrix, neighbors, self.sigma)
         L = self._build_laplacian(W)
@@ -49,8 +49,8 @@ class LaplacianEigenmaps(BaseDR):
         rows = np.repeat(np.arange(n), self.k)
         cols = neighbors.ravel()
 
-        w_vals = np.exp(-(distance_matrix[rows, cols] ** 2) / (self.sigma ** 2))
-        W[rows, cols] = w_vals
+        dynamic_sigma = np.mean(distance_matrix[rows, cols]) + 1e-8
+        w_vals = np.exp(-(distance_matrix[rows, cols] ** 2) / (dynamic_sigma ** 2))
         W[cols, rows] = w_vals   # symmetry
         return W
 

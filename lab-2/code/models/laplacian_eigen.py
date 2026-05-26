@@ -29,9 +29,7 @@ class LaplacianEigenmaps(BaseDR):
                 and X.shape == self._X_fit.shape
                 and np.allclose(X, self._X_fit)):
             return self.embedding_
-        raise NotImplementedError(
-            "Out-of-sample extension for Laplacian Eigenmaps is not implemented."
-        )
+        raise NotImplementedError("Out-of-sample extension for Laplacian Eigenmaps is not implemented.")
 
     def _compute_distance_matrix(self, X: np.ndarray) -> np.ndarray:
         sq = np.sum(X ** 2, axis=1)
@@ -57,5 +55,5 @@ class LaplacianEigenmaps(BaseDR):
 
     def _build_laplacian(self, W: np.ndarray) -> np.ndarray:
         L = -W.copy()
-        np.fill_diagonal(L, W.sum(axis=1))
+        np.fill_diagonal(L, W.sum(axis=1)) # fill the diagonal with the sum of the weights
         return L

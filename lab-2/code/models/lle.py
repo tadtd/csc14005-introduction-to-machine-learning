@@ -74,12 +74,7 @@ class LLE(BaseDR):
         
         # convert to dense to solve the eigenvalues and eigenvectors using np.linalg.eigh
         M_dense = M.toarray()
-        eigenvalues, eigenvectors = np.linalg.eigh(M_dense)
-        
-        # exclude the singular vector corresponding to the singular value 0
-        non_zero_indices = np.where(eigenvalues > 1e-7)[0]
-        
-        # get the smallest n_components eigenvalues and eigenvectors
-        selected_indices = non_zero_indices[:self.n_components]
+        _, eigenvectors = np.linalg.eigh(M_dense)
+        selected_indices = np.arange(1, self.n_components + 1)
         
         return eigenvectors[:, selected_indices]

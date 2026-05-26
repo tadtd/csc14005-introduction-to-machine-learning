@@ -1,0 +1,90 @@
+\documentclass[12pt]{article}
+
+\usepackage{hcmus-report-template}
+
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{placeins}
+\usepackage{tocloft}
+
+\input{content/preamble}
+
+% Disable indentation on new paragraphs
+\setlength{\parindent}{0pt}
+
+% Line spacing 1.5
+\renewcommand{\baselinestretch}{1.5}
+
+\graphicspath{{figures/}}
+
+% To use Times font family, uncomment this row
+% \usepackage{mathptmx}
+
+% To use roman section / subsection, uncomment these rows
+% \renewcommand{\thesection}{\Roman{section}}
+% \renewcommand{\thesubsection}{\thesection.\Roman{subsection}}
+
+% Define course name, report name and report title.
+\newcommand{\coursename}{Nhập môn học máy}
+\newcommand{\reportname}{Project 02}
+\newcommand{\reporttitle}{Dimensionality Reduction}
+
+\renewcommand{\thesection}{Chương \arabic{section}}
+\renewcommand{\thesubsection}{\arabic{section}.\arabic{subsection}}
+% Định lý/định nghĩa: chỉ dùng số chương (2.1), không ghép chữ "Chương" vào nhãn
+\renewcommand{\thedefinition}{\arabic{section}.\arabic{definition}}
+\renewcommand{\theexample}{\arabic{section}.\arabic{example}}
+\renewcommand{\thetheorem}{\arabic{section}.\arabic{theorem}}
+\renewcommand{\thelemma}{\arabic{section}.\arabic{lemma}}
+\renewcommand{\theremark}{\arabic{section}.\arabic{remark}}
+\setlength{\cftsecnumwidth}{6em}
+\setlength{\cftsubsecindent}{2.5em}
+\setlength{\cftsubsecnumwidth}{3.5em}
+
+\newcommand{\studentname}{Đỗ Tiến Đạt - 23120119 \\ Lê Nhật Minh Tâm - 23120163\\ Triệu Tuấn Kiệt - 23120137\\ Nguyễn Đăng Khoa - 23120134\\ Huỳnh Mạnh Tường - 23120105}
+\newcommand{\teachername}{Thầy Bùi Tiến Lên \\ Thầy Lê Nhựt Nam}
+
+% Header
+\lhead{\reporttitle}
+\rhead{
+Trường Đại học Khoa học Tự nhiên - ĐHQG HCM\\
+\coursename
+}
+
+% Footer
+
+
+% ============ DOCUMENT ============
+\begin{document}
+
+\hypersetup{pageanchor=false}
+\input{content/title}
+\hypersetup{pageanchor=true}
+\pagenumbering{roman}
+
+\tableofcontents
+\pagebreak
+\listoftables
+\pagebreak
+\listoffigures
+\pagebreak
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\input{content/introduction}
+\input{content/fundamental}
+\input{content/method}
+\input{content/experiment_analysis}
+\input{content/related_research}
+\input{content/conclusion}
+% \input{content/cite}
+
+% References
+\input{ref/ref.tex}
+
+% Appendix
+% \appendix
+% Add \cleardoublepage to move appendices to next page.
+% \input{appendix/appendix.tex}
+\end{document}

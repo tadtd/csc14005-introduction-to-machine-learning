@@ -18,6 +18,7 @@ class UMAP(BaseDR):
     n_neighbors: int = 15,
     min_dist: float = 0.1,
     metric: str = "euclidean",
+    n_jobs: int = 1,
     **kwargs: Any,
   ) -> None:
     kwargs.setdefault("center", False)
@@ -25,6 +26,7 @@ class UMAP(BaseDR):
     self.n_neighbors = n_neighbors
     self.min_dist = min_dist
     self.metric = metric
+    self.n_jobs = n_jobs
     self.embedding_: Optional[np.ndarray] = None
     self._X_fit: Optional[np.ndarray] = None
 
@@ -53,6 +55,7 @@ class UMAP(BaseDR):
       min_dist=self.min_dist,
       metric=self.metric,
       random_state=self.random_state,
+      n_jobs=self.n_jobs,
     )
     return model.fit_transform(X)
 
@@ -62,4 +65,5 @@ class UMAP(BaseDR):
       "n_neighbors": self.n_neighbors,
       "min_dist": self.min_dist,
       "metric": self.metric,
+      "n_jobs": self.n_jobs,
     }

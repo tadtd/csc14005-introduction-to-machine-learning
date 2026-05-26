@@ -1,12 +1,15 @@
 import numpy as np
 from .base import BaseDR
-import scipy
 
 class LaplacianEigenmaps(BaseDR):
     def __init__(self, n_neighbors=5, n_components=2, sigma=1.0, **kwargs):
+        if n_neighbors < 1:
+            raise ValueError("n_neighbors must be >= 1.")
+        if sigma <= 0:
+            raise ValueError("sigma must be > 0.")
         super().__init__(n_components=n_components, **kwargs)
         self.k = n_neighbors
-        self.sigma = sigma
+        self.sigma = float(sigma)
         self.embedding_ = None
         self._X_fit = None
 
@@ -47,8 +50,7 @@ class LaplacianEigenmaps(BaseDR):
         rows = np.repeat(np.arange(n), self.k)
         cols = neighbors.ravel()
 
-        dynamic_sigma = np.mean(distance_matrix[rows, cols]) + 1e-8
-        w_vals = np.exp(-(distance_matrix[rows, cols] ** 2) / (dynamic_sigma ** 2))
+        w_vals = np.exp(-(distance_matrix[rows, cols] ** 2) / (sigma ** 2))
         W[rows, cols] = w_vals
         W[cols, rows] = w_vals
         return W

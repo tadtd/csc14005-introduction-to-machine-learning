@@ -51,7 +51,8 @@ class LaplacianEigenmaps(BaseDR):
 
         dynamic_sigma = np.mean(distance_matrix[rows, cols]) + 1e-8
         w_vals = np.exp(-(distance_matrix[rows, cols] ** 2) / (dynamic_sigma ** 2))
-        W[cols, rows] = w_vals   # symmetry
+        W[rows, cols] = w_vals
+        W[cols, rows] = w_vals
         return W
 
     def _build_laplacian(self, W: np.ndarray) -> np.ndarray:

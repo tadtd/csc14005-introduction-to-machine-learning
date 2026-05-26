@@ -185,7 +185,8 @@ wheels = [
 
 [[package]]
 name = "contrastive-ne"
-source = { editable = "external/contrastive-ne" }
+version = "0.4.0"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annoy" },
     { name = "matplotlib" },
@@ -196,17 +197,9 @@ dependencies = [
     { name = "torch" },
     { name = "torchvision" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "annoy" },
-    { name = "matplotlib" },
-    { name = "numpy", specifier = ">=1.17" },
-    { name = "pykeops" },
-    { name = "scikit-learn", specifier = ">=0.23.2" },
-    { name = "scipy" },
-    { name = "torch", specifier = ">=1.10" },
-    { name = "torchvision" },
+sdist = { url = "https://files.pythonhosted.org/packages/25/a9/f2aa147acb0b5b743d1ca0377de1a61442771adfcba49f0e675688ae135d/contrastive_ne-0.4.0.tar.gz", hash = "sha256:1601450de2128a7a8f21d793dbc3cf445be8669dfa2d14a55d59db7c6e9189ee", size = 28097, upload-time = "2025-11-07T18:23:53.514Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d4/e8/b515e4c9a58183822714a314e538600333b14935cf1414665a3025c7c697/contrastive_ne-0.4.0-py3-none-any.whl", hash = "sha256:d2ef35626634633bff841f3781de0ffb58753eca2747ebe993b5b21a2993d797", size = 25797, upload-time = "2025-11-07T18:23:52.023Z" },
 ]
 
 [[package]]
@@ -656,6 +649,7 @@ dependencies = [
     { name = "ipykernel" },
     { name = "matplotlib" },
     { name = "numpy" },
+    { name = "pandas" },
     { name = "scikit-learn" },
     { name = "scipy" },
     { name = "torch" },
@@ -670,11 +664,12 @@ data = [
 
 [package.metadata]
 requires-dist = [
-    { name = "contrastive-ne", editable = "external/contrastive-ne" },
+    { name = "contrastive-ne", specifier = ">=0.4.0" },
     { name = "h5py", specifier = ">=3.16.0" },
     { name = "ipykernel", specifier = ">=7.2.0" },
     { name = "matplotlib", specifier = ">=3.8" },
     { name = "numpy", specifier = ">=2.4.4" },
+    { name = "pandas", specifier = ">=2.3.3" },
     { name = "pillow", marker = "extra == 'data'", specifier = ">=12.2.0" },
     { name = "scanpy", marker = "extra == 'data'", specifier = ">=1.12.1" },
     { name = "scikit-learn", specifier = ">=1.8.0" },

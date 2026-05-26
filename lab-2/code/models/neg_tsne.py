@@ -2,8 +2,6 @@
 Neg-t-SNE: thin wrapper around ``cne.CNE`` (contrastive-ne).
 
 Spectrum via fixed Z_bar (Damrich et al., ICLR 2023). kNN graph: scikit-learn.
-
-Install: ``uv sync`` (``docs/INSTALL.md``). Import: ``from cne import CNE`` (package pip: ``contrastive-ne``).
 """
 
 from __future__ import annotations
@@ -14,10 +12,28 @@ from typing import Any, Optional
 
 import numpy as np
 from cne import CNE
-from utils.knn_graph import symmetrized_knn_graph
 
 from .base import BaseDR
+from utils.knn_graph import symmetrized_knn_graph
 
+__all__ = [
+    "DEFAULT_BATCH_SIZE",
+    "DEFAULT_K",
+    "DEFAULT_N_EPOCHS",
+    "DEFAULT_NEG_SAMPLES",
+    "DEFAULT_OPTIMIZER",
+    "NegTSNE",
+    "fit_neg_tsne_spectrum",
+    "make_cne_kwargs",
+    "symmetrized_knn_graph",
+    "z_bar_from_s",
+    "z_bars_full",
+    "z_bars_spectrum",
+    "z_ee",
+    "z_tsne",
+]
+
+# defaults
 DEFAULT_K = 15
 DEFAULT_NEG_SAMPLES = 5
 DEFAULT_BATCH_SIZE = 1024
@@ -25,17 +41,60 @@ DEFAULT_N_EPOCHS = 500
 DEFAULT_OPTIMIZER = "sgd"
 
 
+# Z_bar spectrum 
+def z_tsne(n_samples: int) -> float:
+    """t-SNE-like anchor (``s=0``): ``100 * n``."""
+    return float(100 * n_samples)
+
+
 def z_ee(n_samples: int, negative_samples: int = DEFAULT_NEG_SAMPLES) -> float:
-    """Early-exaggeration Z_bar (UMAP-like): n^2 / m."""
+    """UMAP-like anchor and early-exaggeration ``Z_bar``: ``n^2 / m``."""
     return float(n_samples**2 / negative_samples)
 
 
+def _z_spectrum_bounds(
+    n_samples: int,
+    negative_samples: int = DEFAULT_NEG_SAMPLES,
+) -> tuple[float, float]:
+    """Return ``(Z_t-SNE-like, Z_UMAP-like)`` for log-interpolation."""
+    return z_tsne(n_samples), z_ee(n_samples, negative_samples)
+
+
+def _z_bar_log_interp(z_lo: float, z_hi: float, s: float) -> float:
+    return float(z_lo * np.exp(float(s) * (np.log(z_hi) - np.log(z_lo))))
+
+
+def z_bar_from_s(
+    n_samples: int,
+    negative_samples: int,
+    s: float,
+) -> float:
+    """Log-interpolate ``Z_bar`` between t-SNE-like (``s=0``) and UMAP-like (``s=1``)."""
+    z_lo, z_hi = _z_spectrum_bounds(n_samples, negative_samples)
+    return _z_bar_log_interp(z_lo, z_hi, s)
+
+
+def z_bars_spectrum(
+    n_samples: int,
+    negative_samples: int = DEFAULT_NEG_SAMPLES,
+    *,
+    n_points: int = 9,
+) -> np.ndarray:
+    """Sweep ``geomspace(100*n, n^2/m, n_points)`` along the paper spectrum."""
+    z_lo, z_hi = _z_spectrum_bounds(n_samples, negative_samples)
+    return np.geomspace(z_lo, z_hi, int(n_points))
+
+
 def z_bars_full() -> np.ndarray:
-    """Geometric spectrum from 10^4 to 10^12 (Fig. 1 style)."""
+    """Fixed ``logspace(4, 12)`` — not tied to paper anchors; prefer ``z_bars_spectrum``."""
     return np.logspace(4, 12, 9)
 
 
+# CNE / graph helpers
+
+
 def epoch_split(n_epochs: int) -> tuple[int, int]:
+    """Split total epochs into early-exaggeration and main phases (1/3 + 2/3)."""
     ee = n_epochs // 3
     return ee, n_epochs - ee
 
@@ -87,6 +146,9 @@ def _resolve_graph(
     if graph is not None:
         return graph
     return symmetrized_knn_graph(X, k=k)
+
+
+# NegTSNE model
 
 
 class NegTSNE(BaseDR):
@@ -212,6 +274,9 @@ class NegTSNE(BaseDR):
         }
 
 
+# Spectrum pipeline
+
+
 def fit_neg_tsne_spectrum(
     X: np.ndarray,
     z_bars: Optional[np.ndarray] = None,
@@ -230,13 +295,13 @@ def fit_neg_tsne_spectrum(
     graph: Optional[Any] = None,
     verbose: bool = True,
 ) -> tuple[dict[float, np.ndarray], dict[float, float], np.ndarray]:
-    """Early exaggeration with ``CNE``, then one ``CNE`` fit per ``Z_bar``."""
+    """Early exaggeration at ``n^2/m``, then one ``NegTSNE`` fit per ``Z_bar``."""
     del y
 
     X = np.asarray(X, dtype=np.float32)
     n = X.shape[0]
     if z_bars is None:
-        z_bars = z_bars_full()
+        z_bars = z_bars_spectrum(n, negative_samples)
     z_bars = np.asarray(z_bars, dtype=float)
 
     if graph is None and verbose:

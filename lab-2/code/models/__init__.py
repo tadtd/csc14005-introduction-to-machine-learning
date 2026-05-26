@@ -7,6 +7,7 @@ from .laplacian_eigen import LaplacianEigenmaps
 from .lle import LLE
 from .pca import PCA
 from .t_sne import TSNE
+from .umap import UMAP
 
 __all__ = [
     "BaseDR",
@@ -16,4 +17,5 @@ __all__ = [
     "LLE",
     "PCA",
     "TSNE",
+    "UMAP",
 ]

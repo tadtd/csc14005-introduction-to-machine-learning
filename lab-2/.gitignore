@@ -15,7 +15,6 @@ code/data/raw/mnist.hdf5
 *.synctex.gz
 *.synctex(busy)
 *.synctex.gz(busy)
-*.synctex.gz(busy)
 *.pdf
 *.bbl
 *.blg

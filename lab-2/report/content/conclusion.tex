@@ -7,7 +7,7 @@
   \item \textbf{KPCA} làm việc với ma trận Gram $\mathbf{K}$, cho phép phi tuyến mà không cần $\Phi$ tường minh.
   \item \textbf{Isomap, Laplacian eigenmaps, LLE} xây kernel hoặc ma trận Laplacian từ đồ thị láng giềng; bảng~\ref{tab:dr-compare} so sánh mức ``toàn cục'' hay ``cục bộ'' mà mỗi phương pháp ưu tiên giữ.
   \item \textbf{Johnson--Lindenstrauss} cho thấy chiều $k = O(\log m / \varepsilon^2)$ đủ để bảo toàn khoảng cách cặp dưới chiếu ngẫu nhiên.
-  \item \textbf{t-SNE} và \textbf{UMAP} tối ưu nhúng phi tuyến qua KL hoặc cross-entropy trên đồ thị láng giềng; phù hợp trực quan hóa hơn so với eigenmaps tuyến tính thuần túy.
+  \item \textbf{[MỞ RỘNG] t-SNE} và \textbf{UMAP} (Mục~\ref{sec:extension-viz}): tối ưu nhúng phi tuyến qua KL hoặc cross-entropy fuzzy trên đồ thị láng giềng; phù hợp trực quan hóa hơn eigenmaps tuyến tính thuần túy trong sách.
 \end{itemize}
 
 \paragraph{Hạn chế cần nhớ khi áp dụng.}
@@ -15,13 +15,4 @@ Manifold lý tưởng (kiểu Swiss roll) hiếm khớp dữ liệu thật; $\ma
 
 \subsection{Các hướng nghiên cứu}
 
-\textit{(Phần khảo sát bài báo sau năm 2021 sẽ bổ sung sau.)}
-
-Hướng dự kiến khảo sát, có liên quan trực tiếp tới nội dung chương:
-\begin{itemize}
-  \item \textbf{PaCMAP và các biến thể layout:} so sánh thêm với UMAP đã trình bày.
-  \item \textbf{Diffusion maps và mô hình khuếch tán:} nối học manifold với quá trình ngẫu nhiên trên đồ thị.
-  \item \textbf{Học biểu diễn tự giám sát:} embedding từ dữ liệu không nhãn (contrastive learning), thay hoặc bổ sung PCA/KPCA cổ điển.
-\end{itemize}
-
-Mỗi bài báo sẽ được tóm tắt theo: bài toán, phương pháp, đóng góp, và liên hệ với PCA/KPCA/manifold/JL đã trình bày. Mục này hiện để \textbf{TODO} cho bản nộp đầy đủ.
+Khảo sát chi tiết các bài báo sau năm 2021 nằm ở Chương~\ref{sec:research-contrastive} (Một số hướng nghiên cứu). Các paper sẽ được liên hệ với lý thuyết sách (PCA, manifold, JL) và với UMAP \textbf{[MỞ RỘNG]} (Mục~\ref{sec:umap}).

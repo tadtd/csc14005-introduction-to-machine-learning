@@ -204,159 +204,133 @@ Cập nhật bằng gradient descent; Barnes--Hut xấp xỉ lực với độ p
 \subsubsection{[MỞ RỘNG] Uniform Manifold Approximation and Projection (UMAP)}
 \label{sec:umap}
 
-UMAP \cite{mcinnes2018umap} gồm ba giai đoạn: (1)~xấp xỉ hình học cục bộ của dữ liệu, (2)~ghép thành cấu trúc đồ thị fuzzy toàn cục, (3)~tối ưu nhúng $\mathbf{y}_i \in \R^d$ sao cho cấu trúc đó được giữ trong không gian thấp chiều.
+\paragraph{Ý tưởng chính.}
+UMAP \cite{mcinnes2018umap} giải quyết bài toán: cho tập dữ liệu cao chiều ($D$ chiều), tìm cách biểu diễn chúng trong không gian thấp chiều ($d = 2$ hoặc $3$) để trực quan hóa, sao cho \emph{những điểm gần nhau trong không gian gốc vẫn gần nhau, và những điểm xa nhau vẫn xa nhau} trong không gian mới.
 
-\paragraph{Bước 1 --- Đa tạp Riemann $(M,g)$ và metric cục bộ.}
-\begin{definition}[Đa tạp Riemann]
-\emph{Đa tạp} (manifold) $M$ chiều $d$ là một không gian có thể cong nhưng tại mỗi vùng nhỏ trông giống $\R^d$. Số $d$ gọi là \emph{chiều nội tại} (intrinsic dimension)---tức số tham số tự do cần để xác định vị trí một điểm trên $M$. Đa tạp $M$ thường nằm (\emph{nhúng}, embedding) trong một không gian lớn hơn $\R^D$ với $D > d$: mỗi điểm trên $M$ cần $D$ toạ độ để biểu diễn trong không gian bao, nhưng thực chất chỉ có $d$ bậc tự do.
+Cách tiếp cận: (1) mô hình hóa quan hệ láng giềng bằng một \emph{đồ thị có trọng số mờ} trong không gian gốc, (2) tìm tọa độ mới sao cho đồ thị mờ tương ứng trong không gian thấp giống đồ thị gốc nhất có thể.
 
-\emph{Ví dụ:} Mặt Swiss roll là mặt phẳng 2D bị cuộn trong $\R^3$: chiều nội tại $d = 2$ (chỉ cần hai toạ độ trên mặt phẳng gốc để xác định vị trí), nhưng mỗi điểm có $D = 3$ toạ độ trong không gian bao $\R^3$.
+\paragraph{Ý nghĩa.}
+\begin{itemize}
+  \item Giữ được cả cấu trúc \emph{cục bộ} (láng giềng gần) lẫn \emph{toàn cục} (quan hệ giữa các cụm) tốt hơn t-SNE.
+  \item Nhanh hơn t-SNE trên dữ liệu lớn nhờ tối ưu SGD trên đồ thị thưa.
+  \item Dùng để trực quan hóa dữ liệu cao chiều (giảm về 2D/3D).
+\end{itemize}
 
-Một \emph{đa tạp Riemann} $(M,g)$ bổ sung thêm \emph{metric Riemann} $g$: tại mỗi điểm $p \in M$, $g_p$ là một tích vô hướng trên không gian tiếp tuyến $T_pM$, cho phép đo độ dài đường cong nằm hoàn toàn trên $M$. \emph{Khoảng cách geodesic} giữa hai điểm là độ dài đường đi ngắn nhất nối chúng mà đi hoàn toàn trên $M$, khác với khoảng cách Euclid ``cắt thẳng'' qua không gian bao $\R^D$. Ví dụ trên mặt cầu bán kính $R$: khoảng cách Euclid giữa Bắc cực và Nam cực là $2R$, nhưng khoảng cách geodesic (đi theo đường tròn lớn) là $\pi R$.
+\paragraph{Các khái niệm nền tảng.}
+
+\begin{definition}[Đa tạp (Manifold)]
+\emph{Đa tạp} $M$ chiều $d$ là một ``bề mặt'' có thể cong, nhưng tại mỗi vùng nhỏ trông giống $\R^d$. Nói cách khác, dữ liệu tuy nằm trong không gian $D$ chiều nhưng thực sự chỉ có $d \ll D$ bậc tự do.
+
+\emph{Ví dụ:} Mặt quả cầu là đa tạp 2 chiều nhúng trong $\R^3$---mỗi điểm cần 3 tọa độ $(x,y,z)$, nhưng chỉ cần 2 tham số (kinh độ, vĩ độ) là xác định được vị trí.
+
+\emph{Đa tạp Riemann} $(M,g)$ bổ sung thêm \emph{metric} $g$: cho phép đo khoảng cách \emph{trên bề mặt} (geodesic) thay vì khoảng cách ``cắt thẳng'' xuyên qua không gian bao.
 \end{definition}
 
-Ta giả định mẫu $\mathcal{X} = \{\mathbf{x}_i\}_{i=1}^N \subset \R^D$ được lấy từ một đa tạp Riemann $(M,g)$ chưa biết. Ba giả định làm việc của UMAP \cite{mcinnes2018umap}:
+\begin{definition}[Cấu trúc tô-pô (Topology)]
+\emph{Tô-pô} của một tập hợp mô tả ``hình dạng'' bản chất của nó---những tính chất không thay đổi khi ta bẻ cong, kéo giãn (nhưng không cắt, dán). Trong ngữ cảnh UMAP, ``giữ cấu trúc tô-pô'' nghĩa là giữ \emph{quan hệ kết nối}: ai là láng giềng của ai, dữ liệu chia thành mấy cụm, cụm nào nối với cụm nào.
+\end{definition}
+
+\paragraph{Ba giả định.}
+UMAP giả định mẫu $\mathcal{X} = \{\mathbf{x}_i\}_{i=1}^N \subset \R^D$ nằm trên một đa tạp $(M,g)$ chưa biết, với:
 \begin{enumerate}
-  \item \textbf{Phân bố đều trên $M$:} dữ liệu phân bố gần đều theo metric $g$---mọi vùng có cùng thể tích trên $M$ chứa số điểm xấp xỉ nhau.
-  \item \textbf{Metric gần hằng cục bộ:} trong lân cận nhỏ của mỗi điểm, $g$ gần như không đổi, nên khoảng cách geodesic xấp xỉ khoảng cách Euclid (sau khi chia cho một hệ số tỉ lệ cục bộ).
-  \item \textbf{Liên thông cục bộ:} $M$ liên thông, tức từ mỗi điểm luôn tồn tại đường đi trên $M$ tới các láng giềng gần nhất.
+  \item \textbf{Phân bố đều:} dữ liệu trải đều trên $M$ (vùng nào cũng có mật độ tương đương).
+  \item \textbf{Metric gần hằng cục bộ:} trong vùng nhỏ, khoảng cách trên manifold $\approx$ khoảng cách Euclid (sau chuẩn hóa tỉ lệ).
+  \item \textbf{Liên thông cục bộ:} từ mỗi điểm luôn tồn tại đường đi trên $M$ tới các láng giềng.
 \end{enumerate}
-Trong thực tế dữ liệu hiếm khi phân bố đều. UMAP giải quyết bằng cách \emph{điều chỉnh metric cục bộ} quanh từng $\mathbf{x}_i$: chuẩn hoá khoảng cách tới các láng giềng sao cho vùng nào thưa hay dày đều được đối xử tương đương (tương đương với việc chọn metric Riemann riêng tại mỗi điểm để dữ liệu trở nên ``đều'' cục bộ). Gọi $\mathcal{N}_i$ là tập $n$ láng giềng gần nhất của $\mathbf{x}_i$, và $d_{ij} = \|\mathbf{x}_i - \mathbf{x}_j\|$.
+Khi dữ liệu thực tế không đều, UMAP tự điều chỉnh thước đo cục bộ ($\rho_i$, $\sigma_i$) quanh từng điểm để ``cân bằng'' vùng thưa và vùng dày.
 
-\paragraph{Bước 2 --- Tập mờ và phức đơn hình mờ.}
-Thay vì gán cạnh giữa hai điểm theo kiểu ``có hoặc không'', UMAP gán cho mỗi cạnh một \emph{mức thuộc} (membership strength) $w_{ij} \in [0,1]$, phản ánh mức độ tin cậy rằng hai điểm thực sự là láng giềng.
-\begin{definition}[Tập mờ (fuzzy set)]
-Một \emph{tập mờ} $A$ trên tập nền $X$ được xác định bởi \emph{hàm thuộc} $\mu_A : X \to [0,1]$, trong đó $\mu_A(x) = 1$ nghĩa là $x$ chắc chắn thuộc $A$, $\mu_A(x) = 0$ nghĩa là chắc chắn không thuộc, còn giá trị trung gian biểu thị ``thuộc một phần''. \emph{Hợp mờ} (probabilistic t-conorm) của hai tập mờ $A$, $B$:
-\[
-\mu_{A \cup B}(x) = \mu_A(x) + \mu_B(x) - \mu_A(x)\,\mu_B(x).
-\]
-Công thức này tương đương xác suất ``ít nhất một trong hai sự kiện xảy ra'' khi coi $\mu$ như xác suất.
-\end{definition}
-\begin{definition}[Phức đơn hình mờ (fuzzy simplicial set)]
-Một \emph{phức đơn hình} (simplicial complex) là cấu trúc tổ hợp gồm các \emph{đơn hình}: đỉnh (0-simplex), cạnh (1-simplex), tam giác (2-simplex),\ldots\ \emph{Phức đơn hình mờ} gán mức thuộc $\mu(\sigma) \in [0,1]$ cho mỗi đơn hình $\sigma$. Trong UMAP, ta chỉ xét \emph{1-skeleton} (đỉnh và cạnh), nên toàn bộ cấu trúc được biểu diễn như đồ thị có trọng số cạnh $w_{ij} \in [0,1]$.
-\end{definition}
+\paragraph{Các bước thực hiện.}
 
-\paragraph{Bước 3 --- Trọng số có hướng $v_{j|i}$ tại mỗi điểm.}
-Với mỗi $i$:
+\textbf{Bước 1 --- Xây đồ thị mờ cục bộ} (``ai là láng giềng của ai, ở mức nào?'')
+
+Với mỗi điểm $\mathbf{x}_i$, tìm $n$ láng giềng gần nhất $\mathcal{N}_i$. Gọi $d_{ij} = \|\mathbf{x}_i - \mathbf{x}_j\|$. Tính:
 \begin{align}
-\rho_i = \min\{ d_{ij} : d_{ij} > 0,\; j \in \mathcal{N}_i \}, \\
-\sum_{j \in \mathcal{N}_i} \exp\!\left(\frac{-\max(0,\, d_{ij} - \rho_i)}{\sigma_i}\right) = \log_2 n, \\
-v_{j \mid i} = \exp\!\left(\frac{-\max(0,\, d_{ij} - \rho_i)}{\sigma_i}\right).
+\rho_i &= \min\{ d_{ij} : d_{ij} > 0,\; j \in \mathcal{N}_i \}, \\
+v_{j \mid i} &= \exp\!\left(\frac{-\max(0,\, d_{ij} - \rho_i)}{\sigma_i}\right),
 \end{align}
-Ý nghĩa: $\rho_i$ là khoảng cách tới láng giềng gần nhất, dùng làm mốc ``nền'' để loại bỏ khoảng cách rất nhỏ và đảm bảo ít nhất một cạnh có trọng số bằng~$1$ (liên thông cục bộ). $\sigma_i$ là tham số tỉ lệ, điều chỉnh độ ``loang'' của nhân Gaussian quanh $i$; giá trị $\sigma_i$ được tìm bằng tìm kiếm nhị phân sao cho tổng membership cố định bằng $\log_2 n$. Kết quả $v_{j|i}$ lớn khi $j$ thực sự gần $i$ theo metric đã chuẩn hoá.
+trong đó $\sigma_i$ được chọn bằng tìm kiếm nhị phân sao cho $\sum_{j \in \mathcal{N}_i} v_{j|i} = \log_2 n$.
 
-\paragraph{Bước 4 --- Ma trận kề toàn cục $B_{ij}$.}
-Mỗi $i$ có view cục bộ riêng; thường $v_{j|i} \neq v_{i|j}$. Để có ma trận đối xứng dùng cho toàn bộ đồ thị, UMAP \emph{hợp mờ} hai hướng:
+Giải thích trực quan:
+\begin{itemize}
+  \item $\rho_i$ = khoảng cách tới láng giềng gần nhất. Trừ đi $\rho_i$ để đảm bảo luôn có ít nhất một cạnh với trọng số $= 1$ (liên thông cục bộ).
+  \item $\sigma_i$ = ``bán kính nhìn'' của $\mathbf{x}_i$. Vùng thưa $\to$ $\sigma_i$ lớn (nhìn xa hơn); vùng dày $\to$ $\sigma_i$ nhỏ.
+  \item $v_{j|i} \in [0,1]$ = mức tin cậy rằng ``$j$ là láng giềng thực sự của $i$''. Gần $\to$ gần $1$; xa $\to$ gần $0$.
+\end{itemize}
+
+\textbf{Bước 2 --- Hợp thành đồ thị toàn cục} (đối xứng hóa)
+
+Vì $v_{j|i}$ và $v_{i|j}$ thường khác nhau (mỗi điểm có ``góc nhìn'' riêng), UMAP đối xứng hóa bằng phép hợp xác suất:
 \begin{equation}
 B_{ij} = v_{j \mid i} + v_{i \mid j} - v_{j \mid i}\, v_{i \mid j}.
 \label{eq:umap-fuzzy-union}
 \end{equation}
-$B_{ij}$ cao nghĩa là $i$ và $j$ láng giềng mạnh ít nhất theo một hướng nhìn; đây là biểu diễn tô-pô toàn cục trước khi nhúng.
+Ý nghĩa: $B_{ij}$ cao khi \emph{ít nhất một trong hai} điểm coi điểm kia là láng giềng mạnh. Ma trận $\mathbf{B}$ mô tả toàn bộ cấu trúc tô-pô của dữ liệu gốc.
 
-\begin{remark}
-Bài gốc chứng minh có thể ghép các metric cục bộ không tương thích qua functor sang fuzzy simplicial set (cặp liên hợp metric--fuzzy set) \cite{mcinnes2018umap}. Ta dùng hệ quả tính toán \eqref{eq:umap-fuzzy-union}.
-\end{remark}
+\textbf{Bước 3 --- Khởi tạo spectral} (vị trí ban đầu trong 2D)
 
-\paragraph{Bước 5 --- Nhúng $\mathbf{y}_i$, độ tương đồng $w_{ij}$ và hàm mất mát $C$.}
-Ký hiệu theo Appendix~C của \cite{mcinnes2018umap}: $v_{ij} \equiv B_{ij}$ (không gian gốc), $w_{ij} \equiv \Phi_{ij}$ (không gian nhúng). Đặt
+Dùng Laplacian chuẩn hóa $\mathbf{L} = \mathbf{D}^{-\frac{1}{2}}(\mathbf{D}-\mathbf{B})\mathbf{D}^{-\frac{1}{2}}$ (với $D_{ii} = \sum_j B_{ij}$); lấy $d$ vector riêng ứng $d$ trị riêng nhỏ nhất (bỏ trivial) làm tọa độ ban đầu $\mathbf{Y}$. Bước này cho layout ban đầu đã phản ánh sơ bộ cấu trúc toàn cục, giúp SGD hội tụ nhanh hơn.
+
+\textbf{Bước 4 --- Tối ưu nhúng bằng SGD} (``kéo gần, đẩy xa'')
+
+Trong không gian nhúng, độ tương đồng giữa $\mathbf{y}_i$ và $\mathbf{y}_j$ được định nghĩa:
 \[
-\mathbf{r}_{ij} := \mathbf{y}_i - \mathbf{y}_j, \qquad
-d_{ij} := \|\mathbf{r}_{ij}\|_2, \qquad
-w_{ij} := \Phi_{ij} = \frac{1}{1 + a\, d_{ij}^{2b}},
+w_{ij} = \frac{1}{1 + a\, d_{ij}^{2b}}, \quad d_{ij} = \|\mathbf{y}_i - \mathbf{y}_j\|,
 \]
-với $a,b>0$ chọn từ đường cong mục tiêu $\Psi(\texttt{min\_dist})$. Phần phụ thuộc $\{\mathbf{y}_i\}$ của cross-entropy fuzzy là
+với $a, b > 0$ được chọn từ tham số \texttt{min\_dist}. Hàm $w_{ij}$ có dạng Student-$t$: gần $\to$ $w_{ij} \approx 1$; xa $\to$ $w_{ij} \approx 0$.
+
+UMAP tối thiểu \emph{fuzzy cross-entropy} giữa hai tập mờ cạnh: $B_{ij}$ (không gian gốc) và $w_{ij}$ (không gian nhúng):
 \begin{equation}
-C_{\mathrm{opt}}
-= -\sum_{i,j} \Bigl( v_{ij} \log w_{ij} + (1-v_{ij}) \log(1-w_{ij}) \Bigr),
+C = -\sum_{i,j} \left( B_{ij} \log w_{ij} + (1-B_{ij}) \log(1-w_{ij}) \right).
 \label{eq:umap-C-opt}
 \end{equation}
-(tổng trên cạnh thưa; các số hạng chỉ chứa $v_{ij}$ bỏ qua vì cố định). Ta \emph{tối thiểu} $C_{\mathrm{opt}}$ bằng SGD.
 
-\paragraph{Bước 6 --- Đạo hàm $\frac{\partial w_{ij}}{\partial \mathbf{y}_i}$ và định nghĩa lực $\mathbf{f}_{ij}$.}
-\begin{lemma}[Đạo hàm của $w_{ij}$ theo $\mathbf{y}_i$]
-\label{lem:umap-dw}
-Với $d_{ij} > 0$,
+\textbf{Tại sao cross-entropy?} Với mỗi cạnh $(i,j)$, ta có hai ``xác suất tồn tại'': $B_{ij}$ (từ dữ liệu gốc) và $w_{ij}$ (từ nhúng). Mỗi giá trị định nghĩa một phân phối Bernoulli (``cạnh tồn tại'' hoặc ``không''). Cross-entropy~\eqref{eq:umap-C-opt} đo \emph{sự khác nhau} giữa 2 phân phối này: 
+\begin{itemize}
+  \item Số hạng $B_{ij}\log w_{ij}$: phạt khi cạnh mạnh trong không gian gốc ($B_{ij}$ lớn) nhưng yếu trong không gian nhúng ($w_{ij}$ nhỏ)---tức hai điểm \emph{gần nhau bị đặt xa} $\to$ tạo \textbf{lực hút}.
+  \item Số hạng $(1-B_{ij})\log(1-w_{ij})$: phạt khi cạnh yếu trong không gian gốc ($B_{ij}$ nhỏ) nhưng mạnh trong không gian nhúng ($w_{ij}$ lớn)---tức hai điểm \emph{xa nhau bị đặt gần} $\to$ tạo \textbf{lực đẩy}.
+\end{itemize}
+So sánh: t-SNE dùng $\mathrm{KL}(P\|Q) = \sum p_{ij}\log\frac{p_{ij}}{q_{ij}}$, chỉ có số hạng dạng ``hút''---chỉ phạt khi điểm gần bị đặt xa, nhưng \emph{không trực tiếp} phạt khi điểm xa bị đặt gần (lực đẩy của t-SNE đến gián tiếp qua chuẩn hóa $q_{ij}$). UMAP cân bằng cả hai chiều nhờ cross-entropy, giúp giữ cấu trúc toàn cục tốt hơn \cite{mcinnes2018umap}.
+
+\textbf{Tính gradient.} Đặt $\mathbf{r}_{ij} = \mathbf{y}_i - \mathbf{y}_j$. Trước tiên tính đạo hàm của $w_{ij}$ theo $\mathbf{y}_i$:
 \[
 \frac{\partial w_{ij}}{\partial \mathbf{y}_i}
-= \frac{-2ab\, d_{ij}^{2b-2}}{\left(1 + a\, d_{ij}^{2b}\right)^2}\,\mathbf{r}_{ij}.
+= \frac{\partial w_{ij}}{\partial d_{ij}} \cdot \frac{\partial d_{ij}}{\partial \mathbf{y}_i}
+= \frac{-2ab\, d_{ij}^{2b-1}}{(1 + a\, d_{ij}^{2b})^2} \cdot \frac{\mathbf{r}_{ij}}{d_{ij}}
+= \frac{-2ab\, d_{ij}^{2b-2}}{(1 + a\, d_{ij}^{2b})^2}\,\mathbf{r}_{ij}.
 \]
-\end{lemma}
-\begin{proof}
-Ta có $w_{ij} = (1 + a\, d_{ij}^{2b})^{-1}$ và $\frac{\partial d_{ij}}{\partial \mathbf{y}_i} = \frac{\mathbf{r}_{ij}}{d_{ij}}$. Đặt $u = 1 + a\, d_{ij}^{2b}$:
+Gradient của $C$ theo $\mathbf{y}_i$ trên cạnh $(i,j)$:
 \[
-\frac{\partial w_{ij}}{\partial d_{ij}}
-= -u^{-2} \cdot a \cdot 2b\, d_{ij}^{2b-1}
-= \frac{-2ab\, d_{ij}^{2b-1}}{(1 + a\, d_{ij}^{2b})^2}.
+\frac{\partial C_{ij}}{\partial \mathbf{y}_i}
+= -\frac{B_{ij}}{w_{ij}}\,\frac{\partial w_{ij}}{\partial \mathbf{y}_i}
++ \frac{1-B_{ij}}{1-w_{ij}}\,\frac{\partial w_{ij}}{\partial \mathbf{y}_i}
+= \underbrace{\frac{2ab\, B_{ij}\, d_{ij}^{2b-2}}{1 + a\, d_{ij}^{2b}}}_{\text{hút}}\,\mathbf{r}_{ij}
+\;-\; \underbrace{\frac{2ab\,(1-B_{ij})\, d_{ij}^{2b-2}}{(1-w_{ij})(1 + a\, d_{ij}^{2b})^2}}_{\text{đẩy}}\,\mathbf{r}_{ij}.
 \]
-Kết hợp $\frac{\partial w_{ij}}{\partial \mathbf{y}_i} = \frac{\partial w_{ij}}{\partial d_{ij}} \cdot \frac{\partial d_{ij}}{\partial \mathbf{y}_i}$ cho kết quả.
-\end{proof}
+Cập nhật $\mathbf{y}_i \leftarrow \mathbf{y}_i - \eta\,\frac{\partial C_{ij}}{\partial \mathbf{y}_i}$, nên \emph{lực} (hướng cập nhật) là $\mathbf{f}_{ij} = -\frac{\partial C_{ij}}{\partial \mathbf{y}_i}$:
+\begin{itemize}
+  \item \textbf{Lực hút} (cặp láng giềng, $B_{ij}$ lớn)---kéo $\mathbf{y}_i$ về phía $\mathbf{y}_j$:
+  \[
+  \mathbf{f}_{ij}^{\mathrm{attr}} = \frac{-2ab\, B_{ij}\, d_{ij}^{2b-2}}{1 + a\, d_{ij}^{2b}}\,\mathbf{r}_{ij}.
+  \]
+  \item \textbf{Lực đẩy} (cặp không láng giềng, $B_{ik} \approx 0$)---đẩy $\mathbf{y}_i$ ra xa $\mathbf{y}_k$:
+  \[
+  \mathbf{f}_{ik}^{\mathrm{rep}} = \frac{2ab\, d_{ik}^{2b-2}}{(1-w_{ik})(1 + a\, d_{ik}^{2b})^2}\,\mathbf{r}_{ik}.
+  \]
+\end{itemize}
 
-\begin{lemma}[Gradient của $\log w_{ij}$ và $\log(1-w_{ij})$]
-\label{lem:umap-logw}
-\[
-\nabla_{\mathbf{y}_i} \log w_{ij}
-= \frac{1}{w_{ij}}\frac{\partial w_{ij}}{\partial \mathbf{y}_i}
-= \frac{-2ab\, d_{ij}^{2b-2}}{1 + a\, d_{ij}^{2b}}\,\mathbf{r}_{ij},
-\]
-và tương tự
-\[
-\nabla_{\mathbf{y}_i} \log(1-w_{ij})
-= \frac{2ab\, d_{ij}^{2b-2}}{(1-w_{ij})\left(1 + a\, d_{ij}^{2b}\right)^2}\,\mathbf{r}_{ij}.
-\]
-\end{lemma}
-\begin{proof}
-Áp dụng Lemma~\ref{lem:umap-dw} và $\nabla \log w = \frac{1}{w}\nabla w$. Với $\log(1-w)$, dùng $\nabla\log(1-w) = \frac{-1}{1-w}\nabla w$.
-\end{proof}
-
-\begin{definition}[Đóng góp lực của cặp $(i,j)$ lên $\mathbf{y}_i$]
-\label{def:umap-force}
-Gọi $L_{ij}$ là số hạng của \eqref{eq:umap-C-opt} phụ thuộc $w_{ij}$:
-$L_{ij} = -v_{ij}\log w_{ij} - (1-v_{ij})\log(1-w_{ij})$.
-\emph{Lực} (vector cập nhật theo gradient descent) mà cặp $(i,j)$ gây ra lên $\mathbf{y}_i$ là
-\[
-\mathbf{f}_{ij} := -\frac{\partial L_{ij}}{\partial \mathbf{y}_i}
-= v_{ij}\,\nabla_{\mathbf{y}_i}\log w_{ij}
-+ (1-v_{ij})\,\nabla_{\mathbf{y}_i}\log(1-w_{ij}).
-\]
-Khi $v_{ij}=B_{ij}$ lớn (cạnh láng giềng), số hạng thứ hai gần như bỏ qua; khi $v_{ik}\approx 0$ (negative sample), số hạng thứ nhất bỏ qua.
-\end{definition}
-
-\begin{theorem}[Lực hút và lực đẩy]
-\label{prop:umap-forces}
-(a) \textbf{Lực hút} trên cạnh láng giềng $(i,j)$ với $v_{ij}=B_{ij}$:
-\[
-\mathbf{f}_{ij}^{\mathrm{attr}}
-:= B_{ij}\,\nabla_{\mathbf{y}_i}\log w_{ij}
-= \frac{-2ab\, B_{ij}\, d_{ij}^{2b-2}}{1 + a\, d_{ij}^{2b}}\,\mathbf{r}_{ij}.
-\]
-Đây là hướng kéo $\mathbf{y}_i$ về phía $\mathbf{y}_j$ (vì $\mathbf{f}_{ij}^{\mathrm{attr}}$ cùng hướng $-\mathbf{r}_{ij}$).
-
-(b) \textbf{Lực đẩy} trên cặp $ik$ không láng giềng ($B_{ik}\approx 0$):
-\[
-\mathbf{f}_{ik}^{\mathrm{rep}}
-:= \nabla_{\mathbf{y}_i}\log(1-w_{ik})
-= \frac{2ab\, d_{ik}^{2b-2}}{(1-w_{ik})\left(1 + a\, d_{ik}^{2b}\right)^2}\,(\mathbf{y}_i-\mathbf{y}_k).
-\]
-Vector này cùng hướng $(\mathbf{y}_i-\mathbf{y}_k)$, đẩy hai điểm ra xa.
-\end{theorem}
-\begin{proof}
-(a) Khi $B_{ij}$ lớn, $(1-B_{ij})\approx 0$ nên $\mathbf{f}_{ij}\approx B_{ij}\nabla\log w_{ij}$. Cập nhật $\mathbf{y}_i \leftarrow \mathbf{y}_i - \eta\,\frac{\partial L_{ij}}{\partial\mathbf{y}_i} = \mathbf{y}_i + \eta\,\mathbf{f}_{ij}$ với $\mathbf{f}_{ij}\approx \mathbf{f}_{ij}^{\mathrm{attr}}$; dấu cho thấy $\mathbf{y}_i$ tiến về $\mathbf{y}_j$.
-
-(b) Khi $B_{ik}=0$, $\mathbf{f}_{ik}=\nabla\log(1-w_{ik})$. Thay Lemma~\ref{lem:umap-logw}.
-\end{proof}
-
-\paragraph{Bước 7 --- Cập nhật SGD.}
-Mỗi epoch: lấy cạnh $(i,j)$ với xác suất tỉ lệ $B_{ij}$; cập nhật $\mathbf{y}_i,\mathbf{y}_j$ theo $\mathbf{f}_{ij}^{\mathrm{attr}}$; lặp \texttt{n\_neg\_samples} lần chọn $k$ ngẫu nhiên, cập nhật theo $\mathbf{f}_{ik}^{\mathrm{rep}}$. Learning rate $\alpha$ giảm tuyến tính từ $1$ về $0$ theo số epoch.
-
-\paragraph{Bước 8 --- Khởi tạo spectral và tóm tắt thuật toán.}
-Trước khi chạy SGD, UMAP khởi tạo $\mathbf{Y}$ bằng spectral embedding: đặt $D_{ii} = \sum_j B_{ij}$, Laplacian chuẩn hoá $\mathbf{L} = \mathbf{D}^{-1/2}(\mathbf{D}-\mathbf{B})\mathbf{D}^{-1/2}$, rồi lấy $d$ vector riêng của $\mathbf{L}$ ứng với $d$ trị riêng nhỏ nhất (bỏ vector trivial) làm toạ độ ban đầu---cùng tinh thần Laplacian eigenmaps (Mục~\ref{sec:manifold}), giúp layout ban đầu đã phản ánh cấu trúc toàn cục.
-
-Toàn bộ UMAP gồm bốn bước chính \cite{mcinnes2018umap}:
+\textbf{Cập nhật SGD mỗi epoch.} Duyệt qua tất cả các cạnh $(i,j)$ trong đồ thị thưa (chỉ những cặp mà $B_{ij} > 0$). Với mỗi cạnh:
 \begin{enumerate}
-  \item Với mỗi $\mathbf{x}_i$, tìm $n$ láng giềng gần nhất (có thể dùng Nearest-Neighbor Descent khi $N$ lớn), tính $\rho_i$ và $\sigma_i$ (tìm kiếm nhị phân), xây tập mờ cạnh cục bộ với trọng số $v_{j|i}$.
-  \item Hợp tất cả tập mờ cục bộ bằng t-conorm xác suất~\eqref{eq:umap-fuzzy-union} $\to$ ma trận kề toàn cục $\mathbf{B}$.
+  \item Tung đồng xu với xác suất mặt ngửa $= B_{ij}$. Nếu ngửa: cập nhật $\mathbf{y}_i \leftarrow \mathbf{y}_i + \eta\,\mathbf{f}_{ij}^{\mathrm{attr}}$ (kéo $\mathbf{y}_i$ về phía $\mathbf{y}_j$). Cạnh có $B_{ij}$ lớn được chọn thường xuyên hơn $\to$ lực hút mạnh hơn.
+  \item Chọn ngẫu nhiên \texttt{n\_neg\_samples} điểm $k$ (lấy mẫu âm---giả định các cặp ngẫu nhiên không phải láng giềng). Với mỗi $k$: cập nhật $\mathbf{y}_i \leftarrow \mathbf{y}_i + \eta\,\mathbf{f}_{ik}^{\mathrm{rep}}$ (đẩy $\mathbf{y}_i$ ra xa $\mathbf{y}_k$).
+\end{enumerate}
+Learning rate $\eta$ giảm tuyến tính từ $1$ về $0$ qua các epoch (tương tự simulated annealing: bước lớn lúc đầu để thoát cực tiểu cục bộ, bước nhỏ lúc sau để tinh chỉnh).
+
+\paragraph{Tóm tắt pipeline.}
+\begin{enumerate}
+  \item Tìm $n$ láng giềng $\to$ tính $\rho_i$, $\sigma_i$ $\to$ trọng số mờ $v_{j|i}$.
+  \item Hợp mờ $\to$ ma trận kề toàn cục $\mathbf{B}$.
   \item Khởi tạo $\mathbf{Y}$ bằng spectral embedding trên $\mathbf{B}$.
-  \item Tối ưu $\mathbf{Y}$ bằng SGD: lấy mẫu cạnh dương với xác suất tỉ lệ $B_{ij}$, cập nhật lực hút; lấy mẫu âm ngẫu nhiên, cập nhật lực đẩy. Learning rate giảm tuyến tính.
+  \item SGD: lực hút giữ láng giềng gần, lực đẩy tách các cụm xa.
 \end{enumerate}
 
 \paragraph{So sánh t-SNE và UMAP.}

@@ -107,7 +107,7 @@ class BaseDR(ABC):
 
     t0 = time.perf_counter()
     self._fit(Xp)
-    self._fit_time_ = time.perf_counter() - t0
+    self._fit_time = time.perf_counter() - t0
 
     self._is_fitted = True
     return self
@@ -128,7 +128,7 @@ class BaseDR(ABC):
 
     t0 = time.perf_counter()
     Y = self._transform(Xp)
-    self._transform_time_ = time.perf_counter() - t0
+    self._transform_time = time.perf_counter() - t0
 
     return self._validate_output(Y)
 
@@ -147,7 +147,7 @@ class BaseDR(ABC):
 
     t0 = time.perf_counter()
     Y = self._fit_transform(Xp)
-    self._fit_time_ = time.perf_counter() - t0
+    self._fit_time = time.perf_counter() - t0
 
     self._is_fitted = True
     return self._validate_output(Y)
@@ -208,8 +208,13 @@ class BaseDR(ABC):
 
   def _validate_output(self, Y: np.ndarray) -> np.ndarray:
     """Ensure the subclass returned a well-shaped embedding."""
+    Y = np.asarray(Y, dtype=float)
+    if Y.ndim != 2:
+      raise RuntimeError(f"_transform must return a 2-D array, got shape {Y.shape}")
     if Y.shape[1] != self.n_components:
       raise RuntimeError(f"_transform must return shape (n_samples, {self.n_components}), got {Y.shape}")
+    if not np.isfinite(Y).all():
+      raise RuntimeError("_transform returned NaN or Inf values.")
     return Y
 
   def _check_fitted(self) -> None:
@@ -234,10 +239,8 @@ class BaseDR(ABC):
 
   @property
   def fit_time(self) -> float:
-    """Wall-clock seconds spent in the last fit() call."""
     return self._fit_time
 
   @property
   def transform_time(self) -> float:
-    """Wall-clock seconds spent in the last transform() call."""
     return self._transform_time

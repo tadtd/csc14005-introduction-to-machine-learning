@@ -4,41 +4,29 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
 import traceback
-from collections.abc import Callable, Iterable, Mapping
+import urllib.request
+import zipfile
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import NoReturn, Optional
 
 import h5py
 import numpy as np
-import pandas as pd
-import scanpy as sc
-from anndata import AnnData
 from PIL import Image
-from sklearn.datasets import (
-    fetch_20newsgroups,
-    load_iris as sklearn_load_iris,
-    load_wine as sklearn_load_wine,
-    make_circles,
-    make_swiss_roll,
-)
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.datasets import fetch_openml, make_circles, make_swiss_roll
 
 _HERE = Path(__file__).resolve().parent
 _RAW = _HERE / "raw"
 _RAW.mkdir(parents=True, exist_ok=True)
-_SKLEARN = _RAW / ".cache" / "sklearn"
-_SCANPY = _RAW / ".cache" / "scanpy"
-_SKLEARN.mkdir(parents=True, exist_ok=True)
-_SCANPY.mkdir(parents=True, exist_ok=True)
-# Default scanpy ``datasetdir`` is ``./data/``; pin PBMC (and other example datasets) under ``raw/``.
-sc.settings.cachedir = str(_SCANPY)
-sc.settings.datasetdir = str(_RAW)
-
-
-def _data_home() -> str:
-    return str(_SKLEARN)
+_CACHE = _RAW / ".cache"
+_CACHE.mkdir(parents=True, exist_ok=True)
+_MNIST_CACHE = _CACHE / "openml"
+_MNIST_CACHE.mkdir(parents=True, exist_ok=True)
+_COIL_CACHE = _CACHE / "coil20"
+_COIL_CACHE.mkdir(parents=True, exist_ok=True)
 
 
 def _under_here(p: str | Path) -> Path:
@@ -88,14 +76,30 @@ def make_circles_(
     return DatasetBundle("circles", X.astype(float), y.astype(int), "Nested circles.")
 
 
-def load_iris() -> DatasetBundle:
-    d = sklearn_load_iris()
-    return DatasetBundle("iris", d.data.astype(float), d.target.astype(int), "Iris.")
+def _download_file(url: str, destination: Path) -> None:
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    tmp = destination.with_suffix(destination.suffix + ".tmp")
+    request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(request) as response, tmp.open("wb") as stream:
+        shutil.copyfileobj(response, stream)
+    tmp.replace(destination)
 
 
-def load_wine() -> DatasetBundle:
-    d = sklearn_load_wine()
-    return DatasetBundle("wine", d.data.astype(float), d.target.astype(int), "Wine.")
+def _download_mnist_h5(path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    data = fetch_openml(
+        "mnist_784",
+        version=1,
+        as_frame=False,
+        data_home=str(_MNIST_CACHE),
+    )
+    X = np.asarray(data.data, dtype=float)
+    y = np.asarray(data.target, dtype=int)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    with h5py.File(tmp, "w") as f:
+        f.create_dataset("X", data=X, compression="gzip", compression_opts=1)
+        f.create_dataset("y", data=y, compression="gzip", compression_opts=1)
+    tmp.replace(path)
 
 
 _OBJ = re.compile(r"^obj(\d+)$", re.I)
@@ -201,7 +205,7 @@ def _coil_candidates(extra: Optional[Path] = None) -> list[Path]:
     for env in ("COIL20_PROCESSED_DIR", "COIL20_DIR", "COIL20_IMAGE_DIR"):
         if v := os.environ.get(env):
             add(Path(v))
-    for base in (_RAW, _HERE):
+    for base in (_RAW, _COIL_CACHE, _HERE):
         for name in ("coil-20", "coil-20-proc", "COIL-20", "COIL20", "coil20"):
             add(base / name)
     for name in ("coil-20", "coil-20-proc", "COIL-20", "COIL20", "coil20"):
@@ -218,6 +222,26 @@ def _first_proc(cands: list[Path]) -> Optional[Path]:
     return None
 
 
+def _resolve_coil_layout(root: Path) -> Optional[Path]:
+    root = root.resolve()
+    queue: list[Path] = [root]
+    seen: set[Path] = set()
+    while queue:
+        cur = queue.pop(0)
+        if cur in seen:
+            continue
+        seen.add(cur)
+        if _proc_layout_ok(cur):
+            return _unwrap_proc(cur)
+        if _flat_ok(cur):
+            return cur
+        try:
+            queue.extend(p for p in cur.iterdir() if p.is_dir())
+        except OSError:
+            continue
+    return None
+
+
 def _coil_hint(path: Path) -> str:
     try:
         names = sorted(p.name for p in path.iterdir())
@@ -226,12 +250,33 @@ def _coil_hint(path: Path) -> str:
     return f"entries ({len(names)}): {names[:30]}{'…' if len(names) > 30 else ''}"
 
 
+_COIL_URL = (
+    "http://www.cs.columbia.edu/CAVE/databases/SLAM_coil-20_coil-100/"
+    "coil-20/coil-20-proc.zip"
+)
+
+
+def _download_coil20(root: Path = _COIL_CACHE) -> Path:
+    root = root.resolve()
+    root.mkdir(parents=True, exist_ok=True)
+    archive = root / "coil-20-proc.zip"
+    if not archive.is_file():
+        _download_file(_COIL_URL, archive)
+    with zipfile.ZipFile(archive, "r") as zf:
+        zf.extractall(root)
+    layout = _resolve_coil_layout(root)
+    if layout is None:
+        raise ValueError(f"Downloaded COIL-20 archive did not contain a usable layout: {root}")
+    return layout
+
+
 def _raise_coil_bad() -> NoReturn:
     cands = _coil_candidates(None)
     dirs = [p for p in cands if p.is_dir()]
     if not dirs:
         raise FileNotFoundError(
-            f"COIL-20 not found. Put data under {_RAW / 'coil-20'} or set COIL20_PROCESSED_DIR."
+            f"COIL-20 not found. It will be downloaded automatically from {_COIL_URL} "
+            f"when load_coil20() runs, or you can point COIL20_PROCESSED_DIR at an extracted tree."
         )
     for key in ("coil-20", "coil-20-proc"):
         p = _RAW / key
@@ -247,20 +292,28 @@ def load_coil20(processed_dir: Optional[str | Path] = None) -> DatasetBundle:
         p = _under_here(processed_dir)
         if not p.is_dir():
             raise FileNotFoundError(f"Not a directory: {p}")
-        u = _unwrap_proc(p)
-        if _proc_layout_ok(u):
-            return _load_coil_proc(p)
-        if _flat_ok(p):
-            return _load_coil_flat(p)
+        layout = _resolve_coil_layout(p)
+        if layout is not None:
+            if _proc_layout_ok(layout):
+                return _load_coil_proc(layout)
+            return _load_coil_flat(layout)
         raise ValueError(f"Bad COIL path {p}: {_coil_hint(p)}")
 
     cands = _coil_candidates(None)
-    if (pr := _first_proc(cands)) is not None:
-        return _load_coil_proc(pr)
     for raw in cands:
-        if raw.is_dir() and _flat_ok(raw):
-            return _load_coil_flat(raw)
-    _raise_coil_bad()
+        if raw.is_dir():
+            layout = _resolve_coil_layout(raw)
+            if layout is not None:
+                if _proc_layout_ok(layout):
+                    return _load_coil_proc(layout)
+                return _load_coil_flat(layout)
+    try:
+        layout = _download_coil20()
+    except Exception as exc:
+        raise FileNotFoundError(f"Failed to download COIL-20 from {_COIL_URL}: {exc}") from exc
+    if _proc_layout_ok(layout):
+        return _load_coil_proc(layout)
+    return _load_coil_flat(layout)
 
 
 # PyMVPA ``mnist.hdf5`` (https://www.pymvpa.org/datadb/mnist.html) — nested paths in the published file.
@@ -286,13 +339,13 @@ def _mnist_h5_path(hdf5_path: Optional[str | Path]) -> Path:
 def _read_mnist_h5(path: Path) -> tuple[np.ndarray, np.ndarray]:
     """Load 70_000 × 784 ``X`` and int ``y`` from PyMVPA-style or compatible HDF5."""
     if not path.is_file():
-        raise FileNotFoundError(
-            f"MNIST HDF5 not found: {path}. "
-            "Download ``mnist.hdf5`` from http://data.pymvpa.org/datasets/mnist/ "
-            f"(see https://www.pymvpa.org/datadb/mnist.html) into {_RAW} "
-            "or pass ``hdf5_path`` to ``load_mnist``."
-        )
+        _download_mnist_h5(path)
     with h5py.File(path, "r") as f:
+        if "X" in f and "y" in f:
+            X = np.asarray(f["X"], dtype=float)
+            y = np.asarray(f["y"], dtype=int)
+            if X.ndim == 2 and X.shape[1] == 784 and y.ndim == 1 and len(X) == len(y):
+                return X, y
         if all(xp in f and yp in f for xp, yp in _MNIST_H5_KNOWN):
             X = np.vstack(
                 [np.asarray(f[xp], dtype=float) for xp, _ in _MNIST_H5_KNOWN]
@@ -350,9 +403,9 @@ def load_mnist(
     hdf5_path: Optional[str | Path] = None,
 ) -> DatasetBundle:
     """
-    MNIST from local HDF5 (default ``code/data/raw/mnist.hdf5``).
+    MNIST is cached under ``code/data/raw/mnist.hdf5`` and auto-downloaded from OpenML on first use.
 
-    File format: PyMVPA single archive ([download](http://data.pymvpa.org/datasets/mnist/), [description](https://www.pymvpa.org/datadb/mnist.html)).
+    If ``hdf5_path`` is provided, the file is read from or written to that path instead of the default cache.
     """
     path = _mnist_h5_path(hdf5_path)
     X, y = _read_mnist_h5(path)
@@ -368,90 +421,20 @@ def load_mnist(
     )
 
 
-def load_20newsgroups_tfidf(
-    *,
-    categories: Optional[Iterable[str]] = None,
-    max_samples: Optional[int] = None,
-    max_features: Optional[int] = 20_000,
-    random_state: Optional[int] = 0,
-) -> DatasetBundle:
-    cats = list(categories) if categories else [
-        "alt.atheism",
-        "talk.religion.misc",
-        "comp.graphics",
-        "sci.space",
-    ]
-    news = fetch_20newsgroups(
-        subset="train",
-        categories=cats,
-        remove=("headers", "footers", "quotes"),
-        shuffle=True,
-        random_state=random_state,
-        data_home=_data_home(),
-    )
-    y, texts = news.target.astype(int), news.data
-    if max_samples is not None and max_samples < len(texts):
-        rng = np.random.default_rng(random_state)
-        idx = rng.choice(len(texts), max_samples, replace=False)
-        texts, y = [texts[i] for i in idx], y[idx]
-    X = TfidfVectorizer(max_features=max_features).fit_transform(texts).toarray().astype(float)
-    return DatasetBundle(
-        "20newsgroups",
-        X,
-        y,
-        f"20NG TF-IDF; {len(cats)} cats, {len(texts)} docs, {X.shape[1]} feats",
-    )
-
-
-def _obs_labels(adata: AnnData) -> tuple[np.ndarray, str]:
-    obs = adata.obs
-    for col in ("louvain", "leiden", "cell_type", "clusters", "bulk_labels"):
-        if col in obs.columns:
-            return pd.Categorical(obs[col].astype(str)).codes.astype(int), f"obs[{col!r}]"
-    for col in obs.columns:
-        s = obs[col]
-        if pd.api.types.is_categorical_dtype(s) or s.dtype == object:
-            return pd.Categorical(s.astype(str)).codes.astype(int), f"obs[{col!r}]"
-    return np.zeros(adata.n_obs, dtype=int), "zeros"
-
-
-def load_pbmc3k() -> DatasetBundle:
-    alt = _RAW / "pbmc3k.h5ad"
-    adata = sc.read_h5ad(alt) if alt.is_file() else sc.datasets.pbmc3k()
-    X = adata.X.toarray() if hasattr(adata.X, "toarray") else np.asarray(adata.X, float)
-    y, src = _obs_labels(adata)
-    return DatasetBundle(
-        "pbmc3k",
-        np.asarray(X, dtype=float),
-        y.astype(int),
-        f"PBMC {X.shape}; labels {src}",
-    )
-
-
 ALL_DATASET_KEYS: tuple[str, ...] = (
-    "swiss_roll",
     "circles",
-    "iris",
-    "wine",
+    "swiss_roll",
     "mnist",
     "coil20",
-    "coil-20",
-    "20newsgroups",
-    "newsgroups",
-    "pbmc3k",
 )
 
 _REGISTRY: Mapping[str, Callable[..., DatasetBundle]] = {
-    "swiss_roll": load_swiss_roll,
     "circles": make_circles_,
-    "iris": lambda **_: load_iris(),
-    "wine": lambda **_: load_wine(),
+    "swiss_roll": load_swiss_roll,
     "mnist": load_mnist,
     "coil20": load_coil20,
+    "coil_20": load_coil20,
     "coil-20": load_coil20,
-    "20newsgroups": load_20newsgroups_tfidf,
-    "newsgroups": load_20newsgroups_tfidf,
-    "pbmc3k": lambda **_: load_pbmc3k(),
 }
 
 
@@ -464,14 +447,10 @@ def load_dataset(name: str, **kwargs) -> DatasetBundle:
 
 def _prefetch_all_datasets() -> int:
     tasks: list[tuple[str, Callable[[], DatasetBundle], bool]] = [
-        ("swiss_roll", lambda: load_swiss_roll(), False),
         ("circles", lambda: make_circles_(), False),
-        ("iris", load_iris, False),
-        ("wine", load_wine, False),
-        ("mnist (full)", lambda: load_mnist(), False),
-        ("coil20", load_coil20, True),
-        ("20newsgroups", lambda: load_20newsgroups_tfidf(), False),
-        ("pbmc3k", load_pbmc3k, False),
+        ("swiss_roll", lambda: load_swiss_roll(), False),
+        ("mnist", lambda: load_mnist(), False),
+        ("coil20", load_coil20, False),
     ]
     print(f"Prefetch → caches under {_RAW}\n", flush=True)
     failed, skipped = [], []

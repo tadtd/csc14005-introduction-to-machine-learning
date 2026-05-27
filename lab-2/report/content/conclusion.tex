@@ -1,18 +1,19 @@
-\section{Tổng kết và các hướng nghiên cứu}
+\section{Tổng kết}
 
-\subsection{Tổng kết}
+\subsection{Tóm tắt nội dung}
 
 \begin{itemize}
   \item \textbf{PCA} tìm chiếu tuyến tính bậc $k$ nhỏ nhất lỗi tái tạo Frobenius; nghiệm gắn với vector kỳ dị của ma trận hiệp phương sai $\mathbf{C}$ (Định lý~\ref{thm:pca}).
   \item \textbf{KPCA} làm việc với ma trận Gram $\mathbf{K}$, cho phép phi tuyến mà không cần $\Phi$ tường minh.
-  \item \textbf{Isomap, Laplacian eigenmaps, LLE} xây kernel hoặc ma trận Laplacian từ đồ thị láng giềng; bảng~\ref{tab:dr-compare} so sánh mức ``toàn cục'' hay ``cục bộ'' mà mỗi phương pháp ưu tiên giữ.
-  \item \textbf{Johnson--Lindenstrauss} cho thấy chiều $k = O(\log m / \varepsilon^2)$ đủ để bảo toàn khoảng cách cặp dưới chiếu ngẫu nhiên.
-  \item \textbf{[MỞ RỘNG] t-SNE} và \textbf{UMAP} (Mục~\ref{sec:extension-viz}): tối ưu nhúng phi tuyến qua KL hoặc cross-entropy fuzzy trên đồ thị láng giềng; phù hợp trực quan hóa hơn eigenmaps tuyến tính thuần túy trong sách.
+  \item \textbf{Isomap, Laplacian eigenmaps, LLE} xây kernel hoặc ma trận Laplacian từ đồ thị láng giềng; Bảng~\ref{tab:dr-compare} so sánh mức ``toàn cục'' hay ``cục bộ'' mà mỗi phương pháp ưu tiên giữ.
+  \item \textbf{Johnson--Lindenstrauss} cho thấy chiều $k = O\!\left(\frac{\log m}{\varepsilon^2}\right)$ đủ để bảo toàn khoảng cách cặp dưới chiếu ngẫu nhiên.
+  \item \textbf{[MỞ RỘNG] t-SNE} và \textbf{UMAP} (Mục~\ref{sec:extension-viz}): tối ưu nhúng phi tuyến qua KL (Định nghĩa~\ref{def:kl}) hoặc cross-entropy (Định nghĩa~\ref{def:binary-ce}) trên đồ thị láng giềng.
+  \item \textbf{Bài báo} \cite{damrich2023contrastive} (Chương~4): thống nhất t-SNE và UMAP dưới khung NCE/NEG (Mục~\ref{sec:nce-neg}); tham số $\overline{Z}$ điều khiển phổ nhúng liên tục từ t-SNE sang UMAP (Định lý~\ref{thm:cor2}).
 \end{itemize}
 
 \paragraph{Hạn chế cần nhớ khi áp dụng.}
 Manifold lý tưởng (kiểu Swiss roll) hiếm khớp dữ liệu thật; $\mathbf{K}_{\mathrm{Iso}}$ có thể không xác định dương bán trên mẫu hữu hạn; Laplacian và LLE nhạy với số láng giềng $t$, tham số $\sigma$ và cách nối cạnh; PCA/KPCA tuyến tính (kernel đơn giản) không tự khắc phục cấu trúc cong phức tạp nếu không chọn kernel hoặc thuật toán phù hợp.
 
-\subsection{Các hướng nghiên cứu}
+\subsection{Các hướng phát triển}
 
-Khảo sát chi tiết các bài báo sau năm 2021 nằm ở Chương~\ref{sec:research-contrastive} (Một số hướng nghiên cứu). Các paper sẽ được liên hệ với lý thuyết sách (PCA, manifold, JL) và với UMAP \textbf{[MỞ RỘNG]} (Mục~\ref{sec:umap}).
+Khảo sát chi tiết bài báo sau năm 2021 nằm ở Chương~4 (Mục~\ref{sec:research-contrastive}). Các hướng mở bao gồm: chọn $\overline{Z}$ tự động từ dữ liệu, mở rộng khung tương phản cho giảm chiều trực tuyến (online DR), và xây dựng đảm bảo lý thuyết cho các phương pháp phi tuyến tương tự bổ đề Johnson--Lindenstrauss (Mục~\ref{sec:jl}).

@@ -1,6 +1,6 @@
 \section{Cơ sở lý thuyết}
 
-Chương này gom các khái niệm cần dùng khi đọc PCA, KPCA và các phương pháp học manifold. Phần lớn là đại số ma trận quen thuộc; ta chỉ nhắc lại đủ để các chứng minh ở Chương~3 mạch lạc.
+Chương này gom các khái niệm cần dùng xuyên suốt báo cáo: đại số ma trận (Mục~2.1--2.4), kernel và đồ thị (2.5--2.6), hình học manifold (2.7), các độ đo phân phối (2.8), và khung ước lượng tương phản (2.9). Mỗi khái niệm được định nghĩa \emph{một lần} tại đây; các chương sau tham chiếu qua \texttt{\textbackslash ref}.
 
 \subsection{Ma trận dữ liệu và hiệp phương sai}
 
@@ -33,7 +33,7 @@ $\mathbf{U},\mathbf{V}$ có cột trực chuẩn, $\boldsymbol{\Sigma}$ đườn
 \qquad
 \mathbf{K} = \mathbf{X}^\top\mathbf{X} = \mathbf{V}\boldsymbol{\Lambda}\mathbf{V}^\top,
 \]
-với $\mathbf{K}$ là ma trận Gram (kernel tuyến tính trên các cột $\mathbf{x}_i$). Cùng một bộ giá trị kỳ dị $\lambda_i = \sigma_i^2/m$ xuất hiện ở $\mathbf{C}$ và $\mathbf{K}$, chỉ khác hệ vector kỳ dị trái/phải---đây là cầu nối giữa PCA và KPCA.
+với $\mathbf{K}$ là ma trận Gram (kernel tuyến tính trên các cột $\mathbf{x}_i$). Cùng một bộ giá trị kỳ dị $\lambda_i = \frac{\sigma_i^2}{m}$ xuất hiện ở $\mathbf{C}$ và $\mathbf{K}$, chỉ khác hệ vector kỳ dị trái/phải---đây là cầu nối giữa PCA và KPCA.
 
 \subsection{Chiếu trực giao và chuẩn Frobenius}
 
@@ -88,5 +88,112 @@ Ma trận căn giữa (centering) dùng trong Isomap:
 \mathbf{H} = \mathbf{I}_m - \frac{1}{m}\mathbf{1}\mathbf{1}^\top,
 \]
 với $\mathbf{1}$ là vector toàn $1$. Nhân $\mathbf{H}$ hai bên một ma trận khoảng cách giúp chuyển sang dạng tương tự tích vô hướng trong không gian đã trừ trung bình.
+
+\subsection{Đa tạp và cấu trúc tô-pô}
+\label{sec:manifold-topo}
+
+\begin{definition}[Đa tạp (Manifold)]
+\label{def:manifold}
+\emph{Đa tạp} $M$ chiều $d$ là một ``bề mặt'' có thể cong, nhưng tại mỗi vùng nhỏ trông giống $\R^d$. Nói cách khác, dữ liệu tuy nằm trong không gian $D$ chiều nhưng thực sự chỉ có $d \ll D$ bậc tự do.
+
+\emph{Ví dụ:} Mặt quả cầu là đa tạp 2 chiều nhúng trong $\R^3$---mỗi điểm cần 3 tọa độ $(x,y,z)$, nhưng chỉ cần 2 tham số (kinh độ, vĩ độ) là xác định được vị trí. Swiss roll (Hình~\ref{fig:swiss-roll}) là đa tạp 2 chiều ``cuộn'' trong $\R^3$.
+
+\emph{Đa tạp Riemann} $(M,g)$ bổ sung thêm \emph{metric} $g$: cho phép đo khoảng cách \emph{trên bề mặt} (geodesic) thay vì khoảng cách ``cắt thẳng'' xuyên qua không gian bao.
+\end{definition}
+
+\begin{definition}[Cấu trúc tô-pô (Topology)]
+\label{def:topology}
+\emph{Tô-pô} của một tập hợp mô tả ``hình dạng'' bản chất của nó---những tính chất không thay đổi khi ta bẻ cong, kéo giãn (nhưng không cắt, dán). Trong ngữ cảnh giảm chiều, ``giữ cấu trúc tô-pô'' nghĩa là giữ \emph{quan hệ kết nối}: ai là láng giềng của ai, dữ liệu chia thành mấy cụm, cụm nào nối với cụm nào.
+\end{definition}
+
+Giả định manifold---dữ liệu cao chiều nằm gần một đa tạp nhúng---là nền tảng chung cho Isomap, Laplacian eigenmaps, LLE (Chương~3, Mục~\ref{sec:manifold}) và UMAP (Mục~\ref{sec:umap}).
+
+\subsection{Phân kỳ KL và cross-entropy}
+\label{sec:kl-ce}
+
+\begin{definition}[Phân kỳ Kullback--Leibler]
+\label{def:kl}
+Cho hai phân phối rời rạc $p, q$ trên cùng không gian $\mathcal{X}$, phân kỳ KL đo ``khoảng cách'' (không đối xứng) từ $q$ đến $p$:
+\[
+\mathrm{KL}(p \| q) = \sum_{x \in \mathcal{X}} p(x) \log \frac{p(x)}{q(x)}.
+\]
+$\mathrm{KL}(p\|q) \geq 0$ với đẳng thức khi và chỉ khi $p = q$. Tối thiểu $\mathrm{KL}(p\|q)$ theo tham số của $q$ tương đương tối thiểu cross-entropy $H(p,q) = -\sum_x p(x)\log q(x)$.
+\end{definition}
+
+\begin{definition}[Cross-entropy nhị phân (Bernoulli)]
+\label{def:binary-ce}
+Với mỗi cặp $(i,j)$, cho hai ``xác suất tồn tại cạnh'' $a_{ij} \in [0,1]$ (dữ liệu gốc) và $b_{ij} \in [0,1]$ (nhúng). Cross-entropy nhị phân trên toàn bộ cạnh:
+\[
+C = -\sum_{i,j}\bigl[a_{ij}\log b_{ij} + (1-a_{ij})\log(1-b_{ij})\bigr].
+\]
+Số hạng đầu phạt khi cạnh mạnh trong gốc ($a_{ij}$ lớn) nhưng yếu trong nhúng ($b_{ij}$ nhỏ); số hạng sau phạt hướng ngược lại.
+\end{definition}
+
+KL divergence là hàm mục tiêu của t-SNE (Mục~\ref{sec:tsne}); cross-entropy nhị phân là hàm mục tiêu của UMAP (Mục~\ref{sec:umap}). Cả hai đều đo sự sai khác giữa phân phối láng giềng trong không gian gốc và không gian nhúng.
+
+\subsection{Ước lượng mật độ: hàm phân hoạch, NCE, NEG}
+\label{sec:nce-neg}
+
+Mục này trình bày khung \emph{ước lượng tương phản nhiễu} (NCE) \cite{gutmann2010nce} và biến thể \emph{lấy mẫu tiêu cực} (NEG) \cite{mikolov2013word2vec}---hai công cụ sẽ dùng ở Chương~4 để phân tích mối quan hệ giữa t-SNE và UMAP.
+
+\subsubsection{Bài toán ước lượng mật độ}
+
+Cho $N$ mẫu i.i.d.\ $s_1,\ldots,s_N$ rút từ phân phối chưa biết $p$ trên không gian hữu hạn $\mathcal{X}$. Mục tiêu: tìm $\theta$ sao cho mô hình $q_\theta$ xấp xỉ $p$.
+
+Cách tiếp cận cổ điển---ước lượng hợp lý cực đại (MLE)---cần $q_\theta$ là phân phối hợp lệ. Thường ta chỉ có hàm chưa chuẩn hóa $\phi_\theta(x)$ và phải chia cho \emph{hàm phân hoạch}:
+\begin{equation}
+Z(\theta) = \sum_{x \in \mathcal{X}} \phi_\theta(x), \qquad q_\theta(x) = \frac{\phi_\theta(x)}{Z(\theta)}.
+\label{eq:partition-function}
+\end{equation}
+Tính $Z(\theta)$ đòi hỏi cộng trên toàn bộ $|\mathcal{X}|$ phần tử ở \emph{mỗi} bước gradient---rất tốn kém khi $|\mathcal{X}|$ lớn.
+
+\subsubsection{Ước lượng tương phản nhiễu (NCE)}
+\label{sec:nce-def}
+
+Gutmann \& Hyvärinen \cite{gutmann2010nce} biến bài toán ước lượng mật độ thành bài toán \emph{phân loại nhị phân}: phân biệt mẫu dữ liệu thực với mẫu rút từ phân phối nhiễu $\xi$ đã biết.
+
+\begin{itemize}
+  \item $\xi(x)$ là phân phối nhiễu (thường đồng đều: $\xi(x)=1/|\mathcal{X}|$); mẫu từ $\xi$ gọi là \emph{mẫu âm}.
+  \item $m$ là tỷ số mẫu nhiễu trên mẫu dữ liệu.
+\end{itemize}
+
+Áp dụng Bayes cho hỗn hợp $N$ mẫu dữ liệu và $mN$ mẫu nhiễu, xác suất hậu nghiệm:
+\begin{equation}
+\boxed{
+P(\text{data} \mid x) = \frac{q_\theta(x)}{q_\theta(x) + m\xi(x)}, \qquad
+P(\text{noise} \mid x) = \frac{m\xi(x)}{q_\theta(x) + m\xi(x)}.
+}
+\label{eq:nce-posterior}
+\end{equation}
+
+Tối thiểu binary cross-entropy giữa nhãn thực và hậu nghiệm cho hàm loss NCE:
+\begin{equation}
+\boxed{
+\mathcal{L}_{\text{NCE}}(\theta) = -\E_{s \sim p}\log\frac{q_\theta(s)}{q_\theta(s) + m\xi(s)}
+- m\,\E_{t \sim \xi}\log\frac{m\xi(t)}{q_\theta(t) + m\xi(t)}.
+}
+\label{eq:nce-loss}
+\end{equation}
+
+\begin{theorem}[Gutmann \& Hyvärinen, 2010]
+\label{thm:nce}
+Giả sử $\xi$ có support đầy đủ trên $\mathcal{X}$ (tức $\xi(x)>0\;\forall x$) và tồn tại $\theta^*$ sao cho $q_{\theta^*} = p$. Khi đó $\theta^*$ là cực tiểu của $\mathcal{L}_{\emph{NCE}}(\theta)$, và mọi cực trị khác cũng thỏa $q_{\tilde{\theta}} = p$.
+\end{theorem}
+
+Ý nghĩa: NCE cho kết quả tương đương MLE nhưng \emph{không cần tính} $Z(\theta)$. Trong thực hành, viết $q_{\theta,Z}(x) = \phi_\theta(x)/Z$ với $Z$ là tham số có thể học; khi tối ưu, $Z$ tự hội tụ về $Z(\theta)$.
+
+\subsubsection{Lấy mẫu tiêu cực (NEG)}
+\label{sec:neg-def}
+
+NEG \cite{mikolov2013word2vec} là biến thể đơn giản hóa: bỏ tham số $Z$, dùng trực tiếp $\phi_\theta(x)$ chưa chuẩn hóa:
+\begin{equation}
+\boxed{
+\mathcal{L}_{\text{NEG}}(\theta) = -\E_{x \sim p}\log\frac{\phi_\theta(x)}{\phi_\theta(x) + 1}
+- m\,\E_{x \sim \xi}\log\frac{1}{\phi_\theta(x) + 1}.
+}
+\label{eq:neg-loss}
+\end{equation}
+
+So sánh \eqref{eq:nce-loss} và \eqref{eq:neg-loss}: NEG tương đương NCE khi chọn $\xi$ đồng đều và \emph{cố định} hằng số chuẩn hóa $\overline{Z} = |\mathcal{X}|/m$, thay vì để $Z$ tự học. Hệ quả: mô hình NEG hội tụ về $q_{\theta^*} = \overline{Z}\,p$ (phân phối \emph{phóng đại}), không phải $p$---sự khác biệt này sẽ là chìa khóa giải thích hành vi t-SNE so với UMAP ở Chương~4.
 
 \FloatBarrier

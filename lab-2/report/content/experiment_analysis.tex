@@ -4,11 +4,34 @@
 Phần này kiểm chứng ba phương pháp trọng tâm đã cài đặt là PCA, KPCA và
 Isomap. Toàn bộ hình và số liệu được tạo bởi tệp
 \texttt{code/experiments/report\_pca\_kpca\_isomap.py} với
-\texttt{random\_seed = 42}. Lõi ba thuật toán dùng các lớp trong
+\texttt{SEED = 42}. Lõi ba thuật toán dùng các lớp trong
 \texttt{code/models/}; thư viện ngoài chỉ hỗ trợ nạp dữ liệu, chuẩn hóa
 đặc trưng và tính chỉ số đánh giá.
 
 \subsection{Thiết lập thực nghiệm}
+
+Các thí nghiệm chính được tái lập trong môi trường phần mềm ở
+Bảng~\ref{tab:experiment-environment}. PCA, KPCA và Isomap không phụ thuộc
+vào \texttt{PyTorch} hay \texttt{contrastive-ne}; hai gói này chỉ liên quan
+đến phần khảo sát Neg-t-SNE bổ sung, tách khỏi các kết quả chính bên dưới.
+
+\begin{table}[H]
+  \centering
+  \caption{Phiên bản môi trường dùng để tái lập thực nghiệm chính.}
+  \label{tab:experiment-environment}
+  \begin{tabular}{p{0.29\textwidth}p{0.18\textwidth}p{0.40\textwidth}}
+    \toprule
+    Thành phần & Phiên bản & Vai trò \\
+    \midrule
+    Python & 3.13.3 & Môi trường thực thi \\
+    NumPy & 2.4.4 & Đại số tuyến tính và cài đặt thuật toán \\
+    SciPy & 1.17.1 & Hàm hỗ trợ tính toán số \\
+    scikit-learn & 1.8.0 & Dữ liệu, chuẩn hóa và chỉ số đánh giá \\
+    Matplotlib & 3.10.9 & Sinh hình trực quan hóa \\
+    umap-learn & 0.5.12 & Đối chiếu UMAP ở phần khảo sát bổ sung \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 \begin{table}[H]
   \centering
@@ -33,6 +56,12 @@ Isomap. Toàn bộ hình và số liệu được tạo bởi tệp
 Theo Bổ đề~\ref{lem:pca-error}, nghiệm PCA tối ưu phải làm lỗi tái tạo
 không tăng khi số chiều giữ lại $k$ tăng. Hình~\ref{fig:exp-pca-wine}
 kiểm chứng trực tiếp tính chất này trên dữ liệu Wine sau khi chuẩn hóa.
+Trong bảng và hình dưới đây, code báo cáo lỗi trung bình trên mỗi mẫu,
+\[
+  E_{\mathrm{rec}}=\frac{1}{m}
+  \|\widehat{\mathbf{X}}-\mathbf{X}\|_F^2,
+\]
+là phiên bản chuẩn hóa của lỗi tổng trong Bổ đề~\ref{lem:pca-error}.
 
 \begin{figure}[H]
   \centering
@@ -159,9 +188,18 @@ trong khi PCA chỉ mô hình hóa phương sai tuyến tính. Khi $t$ tăng lê
 hoặc 40, tương quan giảm rõ, phù hợp với nguy cơ cạnh tắt qua các lớp cuộn
 đã nêu ở phần lý thuyết. Chỉ số ở đây đo mức khớp với khoảng cách đồ thị
 tương ứng của mỗi thiết lập, tức là kiểm chứng trực tiếp mục tiêu nội tại
-của Isomap.
+của Isomap. Cài đặt còn có bước nối các thành phần liên thông bằng cạnh
+Euclidean ngắn nhất nếu đồ thị $t$-láng giềng bị rời; trong thí nghiệm
+này, đồ thị đã liên thông ở cả năm giá trị $t$ nên bước đó không thay đổi
+các khoảng cách hoặc kết quả báo cáo.
 
 \subsection{Các đoạn cài đặt chính}
+
+Trong phần lý thuyết, mỗi mẫu là một cột của
+$\mathbf{X}\in\R^{N\times m}$ và $\mathbf{Y}\in\R^{k\times m}$.
+Trong code Python, theo quy ước NumPy, mỗi mẫu là một hàng:
+\texttt{X.shape = (m, N)} và \texttt{Y.shape = (m, k)}. Do đó các phép
+nhân trong listing là chuyển vị tương đương của công thức lý thuyết.
 
 Cài đặt PCA dưới đây sử dụng SVD trên dữ liệu đã trừ trung bình và cung
 cấp trực tiếp hàm tính lỗi tái tạo dùng trong Hình~\ref{fig:exp-pca-wine}.
@@ -200,6 +238,14 @@ cấp trực tiếp hàm tính lỗi tái tạo dùng trong Hình~\ref{fig:exp-p
 
 \lstinputlisting[
   language=Python,
+  firstline=96,
+  lastline=126,
+  caption={Isomap: nối các thành phần của đồ thị k-NN nếu cần.},
+  label={lst:isomap-components}
+]{../code/models/isomap.py}
+
+\lstinputlisting[
+  language=Python,
   firstline=128,
   lastline=133,
   caption={Isomap: phép double centering từ khoảng cách bình phương.},
@@ -212,6 +258,10 @@ Các hình và bảng trong phần này được sinh lại bằng lệnh:
 uv run python code/experiments/report_pca_kpca_isomap.py
 \end{lstlisting}
 
-Các kiểm chứng mở rộng ngoài phạm vi PCA, KPCA và Isomap, chẳng hạn đánh
-giá thực nghiệm cho Johnson--Lindenstrauss, chưa được dùng làm căn cứ cho
-các kết luận trong phần này.
+Các kiểm chứng mở rộng ngoài phạm vi ba thực nghiệm trọng tâm được lưu trong
+notebook \texttt{baseline.ipynb} ở thư mục \texttt{code/experiments}.
+Notebook này đánh giá thêm LLE và Laplacian Eigenmaps do nhóm cài đặt, cùng
+các wrapper t-SNE và UMAP, trên bốn tập dữ liệu; kết quả MNIST được tóm tắt tại
+Bảng~\ref{tab:bonus-tsne-umap}. Đánh giá thực nghiệm cho
+Johnson--Lindenstrauss chưa được dùng làm căn cứ cho các kết luận trong
+phần này.

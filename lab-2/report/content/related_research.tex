@@ -72,9 +72,9 @@ PaCMAP xây dựng ba loại cặp điểm:
   \item \textit{further pairs}: các cặp xa giúp tránh việc embedding co cụm
   không hợp lý.
 \end{itemize}
-Thuật toán tối ưu theo ba giai đoạn. Giai đoạn đầu tăng trọng số của
-\textit{mid-near pairs} để dựng bố cục lớn; giai đoạn giữa cân bằng các
-loại cặp; giai đoạn cuối giảm vai trò của cặp trung gian và tinh chỉnh
+Thuật toán tối ưu theo ba giai đoạn. Giai đoạn đầu đặt trọng số rất lớn cho
+\textit{mid-near pairs} để dựng bố cục lớn; sau đó trọng số này giảm dần
+để cân bằng các loại cặp; giai đoạn cuối giảm vai trò của cặp trung gian và tinh chỉnh
 quan hệ lân cận. Theo các thí nghiệm trên dữ liệu ảnh, văn bản, dữ liệu
 sinh học và dữ liệu tổng hợp trong bài báo, PaCMAP đạt cân bằng tốt giữa
 đánh giá cục bộ và toàn cục, đồng thời có thời gian chạy cạnh tranh.
@@ -136,40 +136,51 @@ cách đánh đổi giữa cấu trúc gần và bố cục xa.
 
 \subsection{[MỞ RỘNG] Đối chiếu với cài đặt của nhóm}
 
-Trong mã nguồn của đồ án, lớp \texttt{TSNE} cung cấp giao diện thống nhất
-cho \texttt{sklearn.manifold.TSNE}, còn lớp \texttt{UMAP} được cài đặt với
-các bước xây đồ thị $k$-láng giềng, tính trọng số fuzzy, khởi tạo phổ và
-tối ưu với mẫu âm. Notebook thực nghiệm dùng mẫu cố định gồm 500 ảnh MNIST
-và \texttt{random\_state = 42}; nhãn chỉ được dùng để đánh giá sau khi
-nhúng. Hai chỉ số được báo cáo là \textit{trustworthiness@12}, đo mức bảo
-toàn láng giềng, và độ chính xác KNN năm láng giềng trên embedding hai
-chiều.
+Trong bài báo, PaCMAP sử dụng ba loại cặp: \textit{neighbor},
+\textit{mid-near} và \textit{further}. Một điểm mid-near được chọn bằng
+cách lấy điểm gần thứ hai trong sáu điểm lấy mẫu ngẫu nhiên; lực hút trên
+mid-near mạnh ở giai đoạn đầu rồi giảm dần, để dựng bố cục toàn cục trước
+khi tinh chỉnh láng giềng cục bộ \cite{wang2021pacmap}. Đồ án này khảo sát
+ý tưởng đó nhưng \emph{không cài đặt PaCMAP}, vì vậy không tuyên bố tái tạo
+kết quả PaCMAP của bài báo.
+
+Các artifact mở rộng hiện có gồm: lớp \texttt{TSNE} là wrapper cho
+\texttt{sklearn.manifold.TSNE}; lớp \texttt{UMAP} là wrapper cho thư viện
+\texttt{umap-learn}; và các lớp \texttt{LLE}, \texttt{LaplacianEigenmaps}
+là cài đặt của nhóm. Notebook \texttt{baseline.ipynb} chạy trên mẫu cố định
+gồm 10\,000 ảnh MNIST với \texttt{SEED = 42}; nhãn chỉ được dùng để đánh
+giá sau khi nhúng. Hai chỉ số được báo cáo là
+\textit{trustworthiness@12} và độ chính xác KNN năm láng giềng trên
+embedding hai chiều.
 
 \begin{table}[H]
   \centering
-  \caption{Thực nghiệm mở rộng trên 500 mẫu MNIST trong notebook.}
+  \caption{Thực nghiệm mở rộng trên 10\,000 mẫu MNIST trong
+  \texttt{baseline.ipynb} (\texttt{SEED = 42}).}
   \label{tab:bonus-tsne-umap}
   \begin{tabular}{lcc}
     \toprule
     Phương pháp & Trustworthiness@12 & KNN accuracy@5 \\
     \midrule
-    t-SNE, perplexity $=30$ & \textbf{0.9291} & \textbf{0.800} \\
-    t-SNE, perplexity $=10$ & 0.9284 & 0.798 \\
-    t-SNE, perplexity $=50$ & 0.9282 & 0.782 \\
-    t-SNE, perplexity $=5$  & 0.9195 & 0.766 \\
-    Isomap & 0.7525 & 0.424 \\
-    PCA & 0.7314 & 0.316 \\
-    UMAP tự cài & 0.5006 & 0.112 \\
+    t-SNE (wrapper, perplexity $=30$) & \textbf{0.9842} & \textbf{0.9454} \\
+    UMAP (\texttt{umap-learn} wrapper) & 0.9602 & 0.9429 \\
+    Laplacian Eigenmaps (nhóm cài đặt) & 0.8443 & 0.7414 \\
+    LLE (nhóm cài đặt) & 0.8286 & 0.7069 \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-Kết quả này phù hợp với cảnh báo của bài báo ở hai điểm. Thứ nhất, t-SNE
-nhạy với tham số: chỉ thay \texttt{perplexity} đã làm hai chỉ số thay đổi.
-Thứ hai, không nên suy diễn từ tên thuật toán rằng một embedding luôn tốt
-hơn thuật toán khác. Cài đặt UMAP hiện tại cho kết quả thấp, vì vậy chỉ
-được ghi nhận như thử nghiệm mở rộng cần hiệu chỉnh thêm; báo cáo không
-dùng kết quả đó để khẳng định UMAP kém về bản chất hay t-SNE luôn vượt trội.
+Các kết quả này chỉ là baseline của nhóm, không phải thí nghiệm PaCMAP.
+Chúng phù hợp với nhận xét định tính của Wang et al. rằng t-SNE và UMAP
+thường bảo toàn láng giềng cục bộ tốt; chúng không đủ để kết luận về bảo
+toàn cấu trúc toàn cục hay so sánh trực tiếp với PaCMAP khi thuật toán đó
+chưa được chạy trên cùng dữ liệu và cùng thước đo.
+
+Ngoài ra, notebook \texttt{contrastive\_learning.ipynb} là một mở rộng
+riêng: nó chạy phổ Neg-t-SNE trên mẫu nhanh 5\,000 ảnh MNIST, dựa trên
+\texttt{cne.CNE}, rồi đối chiếu với wrapper t-SNE và UMAP. Thử nghiệm này
+liên quan đến kết nối hiện đại giữa t-SNE và UMAP, nhưng không phải hiện
+thực PaCMAP và không được dùng để xác nhận các kết quả của Wang et al.
 
 \subsection{Xu hướng, hạn chế và câu hỏi mở}
 

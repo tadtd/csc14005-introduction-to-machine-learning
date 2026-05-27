@@ -5,7 +5,6 @@ description = "Dimensionality Reduction"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "torch>=2.0",
     "numpy>=2.4.4",
     "scipy>=1.17.1",
     "scikit-learn>=1.8.0",
@@ -14,8 +13,8 @@ dependencies = [
     "ipykernel>=7.2.0",
     "umap-learn>=0.5.12",
     "pandas>=2.3.3",
-    "contrastive-ne>=0.4.0",
 ]
 
 [project.optional-dependencies]
 data = ["scanpy>=1.12.1", "pillow>=12.2.0"]
+contrastive = ["torch>=2.0", "contrastive-ne>=0.4.0"]

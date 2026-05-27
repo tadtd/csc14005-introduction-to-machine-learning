@@ -644,7 +644,6 @@ name = "lab-2"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "contrastive-ne" },
     { name = "h5py" },
     { name = "ipykernel" },
     { name = "matplotlib" },
@@ -652,11 +651,14 @@ dependencies = [
     { name = "pandas" },
     { name = "scikit-learn" },
     { name = "scipy" },
-    { name = "torch" },
     { name = "umap-learn" },
 ]
 
 [package.optional-dependencies]
+contrastive = [
+    { name = "contrastive-ne" },
+    { name = "torch" },
+]
 data = [
     { name = "pillow" },
     { name = "scanpy" },
@@ -664,7 +666,7 @@ data = [
 
 [package.metadata]
 requires-dist = [
-    { name = "contrastive-ne", specifier = ">=0.4.0" },
+    { name = "contrastive-ne", marker = "extra == 'contrastive'", specifier = ">=0.4.0" },
     { name = "h5py", specifier = ">=3.16.0" },
     { name = "ipykernel", specifier = ">=7.2.0" },
     { name = "matplotlib", specifier = ">=3.8" },
@@ -674,10 +676,10 @@ requires-dist = [
     { name = "scanpy", marker = "extra == 'data'", specifier = ">=1.12.1" },
     { name = "scikit-learn", specifier = ">=1.8.0" },
     { name = "scipy", specifier = ">=1.17.1" },
-    { name = "torch", specifier = ">=2.0" },
+    { name = "torch", marker = "extra == 'contrastive'", specifier = ">=2.0" },
     { name = "umap-learn", specifier = ">=0.5.12" },
 ]
-provides-extras = ["data"]
+provides-extras = ["data", "contrastive"]
 
 [[package]]
 name = "legacy-api-wrap"

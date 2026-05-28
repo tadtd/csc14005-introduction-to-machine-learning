@@ -9,7 +9,8 @@ $DirPatterns = @(
     "__pycache__",
     ".pytest_cache",
     ".mypy_cache",
-    ".ipynb_checkpoints"
+    ".ipynb_checkpoints",
+    ".cache"
 )
 
 # Common generated files to remove (Python + LaTeX)

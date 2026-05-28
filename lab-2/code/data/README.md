@@ -2,6 +2,19 @@
 
 This folder contains the shared dataset loaders and cache for the dimensionality reduction experiments. Large or downloaded data should live under `code/data/raw/`.
 
+## Course dataset (Google Drive)
+
+Manual copies of large files are hosted on Google Drive:
+
+**[ML-LAB-2 — Google Drive](https://drive.google.com/drive/u/1/folders/1EacZk-p7jFkkpE4WnyKv4xTdL8j3wyMf)**
+
+| Item on Drive | Place under `code/data/raw/` |
+|---------------|------------------------------|
+| `mnist.hdf5` | `code/data/raw/mnist.hdf5` |
+| `coil-20/` (folder) | `code/data/raw/coil-20/` |
+
+You do not have to download these if you are fine with automatic fetching (OpenML for MNIST, Columbia URL for COIL-20). The Drive folder is useful when downloads are slow or blocked.
+
 `load_data.py` currently manages these datasets:
 
 | Kind | Name(s) | Notes |

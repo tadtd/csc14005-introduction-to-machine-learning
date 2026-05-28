@@ -1,21 +1,267 @@
 \section{Thực nghiệm và phân tích kết quả}
 \label{sec:experiments}
 
-\textit{Phần này sẽ hoàn thiện sau khi nhóm chạy xong pipeline thực nghiệm. Dưới đây chỉ là kế hoạch, chưa có số liệu hay hình kết quả.}
+Phần này kiểm chứng ba phương pháp trọng tâm đã cài đặt là PCA, KPCA và
+Isomap. Toàn bộ hình và số liệu được tạo bởi tệp
+\texttt{code/experiments/report\_pca\_kpca\_isomap.py} với
+\texttt{SEED = 42}. Lõi ba thuật toán dùng các lớp trong
+\texttt{code/models/}; thư viện ngoài chỉ hỗ trợ nạp dữ liệu, chuẩn hóa
+đặc trưng và tính chỉ số đánh giá.
 
-\subsection{Nội dung dự kiến}
+\subsection{Thiết lập thực nghiệm}
 
-\begin{itemize}
-  \item Cài đặt PCA và KPCA từ đầu: chỉ dùng NumPy/SciPy cho đại số tuyến tính; không gọi \texttt{sklearn.decomposition} cho lõi thuật toán.
-  \item Trực quan: dữ liệu tổng hợp kiểu Swiss roll hoặc tương tự; biểu đồ phương sai tích lũy; so sánh hai chiều sau PCA và sau một phương pháp manifold.
-  \item Kiểm chứng Johnson--Lindenstrauss: trên tập con MNIST, so sánh láng giềng gần sau chiếu ngẫu nhiên và sau PCA với nhiều giá trị $k$; đặt \texttt{random\_seed}, ghi phiên bản thư viện trong README.
-  \item Kiểm chứng lý thuyết: lỗi tái tạo PCA giảm khi $k$ tăng; méo khoảng cách cặp dưới chiếu ngẫu nhiên so với mức $\varepsilon$ trong định lý.
-\end{itemize}
+Các thí nghiệm chính được tái lập trong môi trường phần mềm ở
+Bảng~\ref{tab:experiment-environment}. PCA, KPCA và Isomap không phụ thuộc
+vào \texttt{PyTorch} hay \texttt{contrastive-ne}; hai gói này chỉ liên quan
+đến phần khảo sát Neg-t-SNE bổ sung, tách khỏi các kết quả chính bên dưới.
 
-\subsection{Hình, bảng và mã nguồn trong báo cáo}
+\begin{table}[H]
+  \centering
+  \caption{Phiên bản môi trường dùng để tái lập thực nghiệm chính.}
+  \label{tab:experiment-environment}
+  \begin{tabular}{p{0.29\textwidth}p{0.18\textwidth}p{0.40\textwidth}}
+    \toprule
+    Thành phần & Phiên bản & Vai trò \\
+    \midrule
+    Python & 3.13.3 & Môi trường thực thi \\
+    NumPy & 2.4.4 & Đại số tuyến tính và cài đặt thuật toán \\
+    SciPy & 1.17.1 & Hàm hỗ trợ tính toán số \\
+    scikit-learn & 1.8.0 & Dữ liệu, chuẩn hóa và chỉ số đánh giá \\
+    Matplotlib & 3.10.9 & Sinh hình trực quan hóa \\
+    umap-learn & 0.5.12 & Đối chiếu UMAP ở phần khảo sát bổ sung \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
-Hình kết quả sẽ có chú thích đầy đủ (trục, ý nghĩa). Chỉ trích các đoạn code quan trọng bằng \texttt{lstlisting}; tên biến và hàm trong code giữ tiếng Anh theo quy ước lập trình.
+\begin{table}[H]
+  \centering
+  \caption{Thiết lập cho ba thực nghiệm minh họa.}
+  \label{tab:experiment-setup}
+  \begin{tabular}{p{0.19\textwidth}p{0.34\textwidth}p{0.38\textwidth}}
+    \toprule
+    Dữ liệu & Mục tiêu & Thiết lập \\
+    \midrule
+    Wine & Kiểm chứng phương sai giữ lại và lỗi tái tạo của PCA &
+    178 mẫu, 13 thuộc tính được chuẩn hóa; $k=1,\ldots,13$ \\
+    Circles mở rộng & Kiểm chứng giảm chiều và độ nhạy kernel của KPCA &
+    1000 điểm; thêm 8 chiều nhiễu chuẩn độ lệch $0.03$; giảm $10D\to2D$ \\
+    Swiss roll & Đánh giá bảo toàn khoảng cách geodesic của Isomap &
+    700 điểm, nhiễu $0.05$; khảo sát $t\in\{4,8,12,20,40\}$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
-\subsection{Trạng thái}
+\subsection{PCA: phương sai và lỗi tái tạo}
 
-Chưa có đồ thị hay bảng số trong phiên bản hiện tại. Sau khi chạy thư mục \texttt{code/}, nhóm cập nhật mục này với phân tích so khớp Chương~3.
+Theo Bổ đề~\ref{lem:pca-error}, nghiệm PCA tối ưu phải làm lỗi tái tạo
+không tăng khi số chiều giữ lại $k$ tăng. Hình~\ref{fig:exp-pca-wine}
+kiểm chứng trực tiếp tính chất này trên dữ liệu Wine sau khi chuẩn hóa.
+Trong bảng và hình dưới đây, code báo cáo lỗi trung bình trên mỗi mẫu,
+\[
+  E_{\mathrm{rec}}=\frac{1}{m}
+  \|\widehat{\mathbf{X}}-\mathbf{X}\|_F^2,
+\]
+là phiên bản chuẩn hóa của lỗi tổng trong Bổ đề~\ref{lem:pca-error}.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.93\textwidth]{pca_wine_diagnostics.png}
+  \caption{Phương sai tích lũy và lỗi tái tạo PCA trên dữ liệu Wine đã chuẩn hóa.}
+  \label{fig:exp-pca-wine}
+\end{figure}
+
+\begin{table}[H]
+  \centering
+  \caption{Một số kết quả PCA trên Wine.}
+  \label{tab:pca-wine-results}
+  \begin{tabular}{ccc}
+    \toprule
+    Số thành phần $k$ & Phương sai tích lũy & Lỗi tái tạo trung bình \\
+    \midrule
+    1  & 0.3620 & 8.2941 \\
+    2  & 0.5541 & 5.7972 \\
+    13 & 1.0000 & $\approx 0$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Hai thành phần đầu giữ khoảng $55.41\%$ tổng phương sai. Khi giữ toàn bộ
+13 thành phần, lỗi tái tạo chỉ còn $1.17\times10^{-29}$, là sai số số học
+và phù hợp với việc phép đổi cơ sở trực chuẩn không làm mất thông tin.
+Trong phần lý thuyết, ma trận hiệp phương sai dùng hệ số $1/m$ để công
+thức gọn hơn; cài đặt dùng quy ước ước lượng phương sai mẫu $1/(m-1)$
+cho thuộc tính \texttt{explained\_variance\_}. Hai quy ước chỉ nhân toàn
+bộ trị riêng với cùng một hằng số, nên không đổi các hướng chính, tỉ lệ
+phương sai tích lũy hay kết luận về lỗi tái tạo.
+
+\subsection{KPCA: cấu trúc phi tuyến của hai vòng tròn}
+
+Dữ liệu hai vòng tròn đồng tâm ban đầu có hai chiều; thí nghiệm nối thêm
+tám chiều nhiễu Gaussian nhỏ để tạo đầu vào 10 chiều, sau đó giảm về hai
+chiều. Cách thiết kế này vừa giữ cấu trúc phi tuyến cần quan sát, vừa kiểm
+tra đúng một bài toán giảm chiều. Khi dùng kernel tuyến tính, khoảng cách
+cặp điểm trong embedding KPCA và PCA chỉ lệch tối đa
+$2.22\times10^{-15}$, phù hợp với quan hệ PCA là trường hợp riêng của
+KPCA. Với RBF và $\gamma=32$, hai trị riêng lớn nhất của ma trận kernel
+đã căn giữa lần lượt là $28.6625$ và $28.1265$.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.93\textwidth]{kpca_circles_embedding.png}
+  \caption{Dữ liệu Circles quan sát ở hai chiều gốc và kết quả giảm từ 10 chiều xuống 2 chiều bằng PCA, KPCA.}
+  \label{fig:exp-kpca-circles}
+\end{figure}
+
+Trong Hình~\ref{fig:exp-kpca-circles}, PCA giữ hình học tuyến tính chính,
+còn RBF-KPCA tái biểu diễn hai vòng theo độ tương tự kernel. Để lượng hóa
+ảnh hưởng của $\gamma$, ta dùng hệ số silhouette với nhãn đã biết của dữ
+liệu tổng hợp; nhãn này chỉ dùng để đánh giá sau khi nhúng, không tham gia
+huấn luyện KPCA.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.68\textwidth]{kpca_gamma_sensitivity.png}
+  \caption{Độ nhạy của RBF-KPCA theo $\gamma$ khi giảm Circles mở rộng từ 10 chiều xuống 2 chiều.}
+  \label{fig:exp-kpca-gamma}
+\end{figure}
+
+\begin{table}[H]
+  \centering
+  \caption{Silhouette theo nhãn tổng hợp cho PCA và RBF-KPCA.}
+  \label{tab:kpca-gamma-results}
+  \begin{tabular}{ccccccc}
+    \toprule
+    Phương pháp & PCA & \multicolumn{5}{c}{RBF-KPCA, $\gamma$} \\
+    \cmidrule(lr){3-7}
+    $\gamma$ & -- & 0.5 & 2 & 8 & 32 & 128 \\
+    \midrule
+    Silhouette & 0.1125 & 0.0496 & 0.0037 & 0.2359 & \textbf{0.3775} & 0.2411 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Giá trị $\gamma=32$ được chọn cho hình biểu diễn vì cho silhouette cao
+nhất trong năm giá trị khảo sát. Kết quả này chỉ khẳng định sự phù hợp của
+kernel trong ví dụ tổng hợp đang xét, không khẳng định một tham số tối ưu
+chung cho dữ liệu khác.
+
+\subsection{Isomap: bảo toàn khoảng cách geodesic trên Swiss roll}
+
+Đối với Swiss roll, khoảng cách Euclid trong không gian ba chiều có thể
+đưa hai điểm ở các lớp cuộn khác nhau đến gần nhau không đúng với cấu trúc
+mặt cong. Vì vậy, chỉ số đánh giá sử dụng ở đây là hệ số tương quan Pearson
+giữa khoảng cách geodesic trên đồ thị láng giềng của Isomap và khoảng cách
+Euclid giữa các cặp điểm sau khi nhúng xuống hai chiều.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{isomap_swiss_roll_embedding.png}
+  \caption{Swiss roll ban đầu và hai biểu diễn hai chiều bằng PCA, Isomap.}
+  \label{fig:exp-isomap-roll}
+\end{figure}
+
+\begin{table}[H]
+  \centering
+  \caption{Độ nhạy Isomap theo số láng giềng trên Swiss roll.}
+  \label{tab:isomap-correlation}
+  \begin{tabular}{ccccccc}
+    \toprule
+    Phương pháp & PCA & \multicolumn{5}{c}{Isomap, số láng giềng $t$} \\
+    \cmidrule(lr){3-7}
+    $t$ & 12 & 4 & 8 & 12 & 20 & 40 \\
+    \midrule
+    Tương quan Pearson & 0.2806 & 0.9964 & 0.9990 & \textbf{0.9996} & 0.8267 & 0.8671 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.68\textwidth]{isomap_neighbor_sensitivity.png}
+  \caption{Tương quan khoảng cách của Isomap thay đổi theo số láng giềng.}
+  \label{fig:exp-isomap-neighbors}
+\end{figure}
+
+Kết quả trong Bảng~\ref{tab:isomap-correlation} cho thấy Isomap với
+$t=12$ gần như duy trì khoảng cách geodesic trên dữ liệu tổng hợp này,
+trong khi PCA chỉ mô hình hóa phương sai tuyến tính. Khi $t$ tăng lên 20
+hoặc 40, tương quan giảm rõ, phù hợp với nguy cơ cạnh tắt qua các lớp cuộn
+đã nêu ở phần lý thuyết. Chỉ số ở đây đo mức khớp với khoảng cách đồ thị
+tương ứng của mỗi thiết lập, tức là kiểm chứng trực tiếp mục tiêu nội tại
+của Isomap. Cài đặt còn có bước nối các thành phần liên thông bằng cạnh
+Euclidean ngắn nhất nếu đồ thị $t$-láng giềng bị rời; trong thí nghiệm
+này, đồ thị đã liên thông ở cả năm giá trị $t$ nên bước đó không thay đổi
+các khoảng cách hoặc kết quả báo cáo.
+
+\subsection{Các đoạn cài đặt chính}
+
+Trong phần lý thuyết, mỗi mẫu là một cột của
+$\mathbf{X}\in\R^{N\times m}$ và $\mathbf{Y}\in\R^{k\times m}$.
+Trong code Python, theo quy ước NumPy, mỗi mẫu là một hàng:
+\texttt{X.shape = (m, N)} và \texttt{Y.shape = (m, k)}. Do đó các phép
+nhân trong listing là chuyển vị tương đương của công thức lý thuyết.
+
+Cài đặt PCA dưới đây sử dụng SVD trên dữ liệu đã trừ trung bình và cung
+cấp trực tiếp hàm tính lỗi tái tạo dùng trong Hình~\ref{fig:exp-pca-wine}.
+
+\lstinputlisting[
+  language=Python,
+  firstline=23,
+  lastline=58,
+  caption={Cài đặt lõi PCA và lỗi tái tạo.},
+  label={lst:pca-core}
+]{../code/models/pca.py}
+
+\lstinputlisting[
+  language=Python,
+  firstline=48,
+  lastline=76,
+  caption={KPCA: phân rã phổ trên Gram matrix đã căn giữa.},
+  label={lst:kpca-core}
+]{../code/models/kpca.py}
+
+\lstinputlisting[
+  language=Python,
+  firstline=106,
+  lastline=114,
+  caption={KPCA: căn giữa kernel cho tập huấn luyện và điểm mới.},
+  label={lst:kpca-centering}
+]{../code/models/kpca.py}
+
+\lstinputlisting[
+  language=Python,
+  firstline=43,
+  lastline=70,
+  caption={Isomap: khoảng cách geodesic và phân rã phổ.},
+  label={lst:isomap-core}
+]{../code/models/isomap.py}
+
+\lstinputlisting[
+  language=Python,
+  firstline=96,
+  lastline=126,
+  caption={Isomap: nối các thành phần của đồ thị k-NN nếu cần.},
+  label={lst:isomap-components}
+]{../code/models/isomap.py}
+
+\lstinputlisting[
+  language=Python,
+  firstline=128,
+  lastline=133,
+  caption={Isomap: phép double centering từ khoảng cách bình phương.},
+  label={lst:isomap-centering}
+]{../code/models/isomap.py}
+
+\paragraph{Tái tạo kết quả.}
+Các hình và bảng trong phần này được sinh lại bằng lệnh:
+\begin{lstlisting}
+uv run python code/experiments/report_pca_kpca_isomap.py
+\end{lstlisting}
+
+Các kiểm chứng mở rộng ngoài phạm vi ba thực nghiệm trọng tâm được lưu trong
+notebook \texttt{baseline.ipynb} ở thư mục \texttt{code/experiments}.
+Notebook này đánh giá thêm LLE và Laplacian Eigenmaps do nhóm cài đặt, cùng
+các wrapper t-SNE và UMAP, trên bốn tập dữ liệu; kết quả MNIST được tóm tắt tại
+Bảng~\ref{tab:bonus-tsne-umap}. Đánh giá thực nghiệm cho
+Johnson--Lindenstrauss chưa được dùng làm căn cứ cho các kết luận trong
+phần này.

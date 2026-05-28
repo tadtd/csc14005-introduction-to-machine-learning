@@ -1,6 +1,6 @@
 # Báo cáo
 
-Tệp chính: `main.tex`. Tài liệu tham khảo BibTeX: `references.bib`.
+Tệp chính: `main.tex`. Tài liệu tham khảo BibTeX: `ref/ref.bib` (được nạp qua `ref/ref.tex`).
 
 Biên dịch từ thư mục `report/`:
 
@@ -16,7 +16,6 @@ Kết quả nộp là `report.pdf`.
 ```text
 report/
 |-- main.tex
-|-- references.bib
 |-- report.pdf
 |-- content/
 |   |-- title.tex
@@ -30,5 +29,6 @@ report/
 |-- figures/
 |-- appendix/
 `-- ref/
-    `-- ref.tex
+    |-- ref.tex
+    `-- ref.bib
 ```

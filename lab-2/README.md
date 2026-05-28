@@ -84,7 +84,9 @@ lab-2/
 |-- pyproject.toml
 |-- report/
 |   |-- main.tex
-|   |-- references.bib
+|   |-- ref/
+|   |   |-- ref.tex
+|   |   `-- ref.bib
 |   |-- report.pdf
 |   |-- content/
 |   `-- figures/

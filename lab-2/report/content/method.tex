@@ -324,9 +324,22 @@ Phần sau không có trong \cite{mohri2018foundations}. Các phương pháp ở
 \subsubsection{t-Distributed Stochastic Neighbor Embedding (t-SNE)}
 \label{sec:tsne}
 
-Cho $\mathcal{X} = \{\mathbf{x}_i\}_{i=1}^N \subset \R^D$. t-SNE \cite{vandermaaten2008tsne} so khớp hai phân phối láng giềng: một trên $\mathcal{X}$, một trên $\{\mathbf{y}_i\}$.
+\paragraph{Ý tưởng chính.}
+t-SNE \cite{vandermaaten2008tsne} giải quyết bài toán: cho tập dữ liệu cao chiều $\mathcal{X} = \{\mathbf{x}_i\}_{i=1}^N \subset \R^D$, tìm biểu diễn thấp chiều $\mathbf{Y} = \{\mathbf{y}_i\}_{i=1}^N \subset \R^d$ với $d \ll D$ (thường $d=2$) để trực quan hóa, sao cho \emph{các điểm gần nhau trong không gian gốc vẫn có xác suất gần nhau cao trong không gian nhúng}.
 
-\paragraph{Bước 1 --- Láng giềng trong không gian gốc.}
+Cách tiếp cận: (1) mô hình hóa quan hệ láng giềng trong không gian gốc bằng phân phối xác suất $p_{ij}$, (2) mô hình hóa quan hệ láng giềng trong không gian nhúng bằng phân phối $q_{ij}$, (3) tối ưu tọa độ nhúng sao cho $Q$ giống $P$ nhất theo phân kỳ KL.
+
+\paragraph{Ý nghĩa.}
+\begin{itemize}
+  \item Giữ rất tốt cấu trúc \emph{cục bộ}: các điểm gần nhau trong dữ liệu gốc thường tạo thành cụm rõ trong hình 2D.
+  \item Phù hợp cho trực quan hóa dữ liệu cao chiều, đặc biệt khi mục tiêu chính là nhận diện cụm và láng giềng gần.
+  \item Khoảng cách giữa các cụm và kích thước cụm trong hình t-SNE không nên được diễn giải trực tiếp như quan hệ toàn cục thật.
+\end{itemize}
+
+\paragraph{Các bước thực hiện.}
+
+\textbf{Bước 1 --- Xây phân phối láng giềng trong không gian gốc} (``ai là láng giềng của ai, với xác suất nào?'')
+
 Với mỗi $i$, xác suất ``$j$ là láng giềng của $i$'' dùng nhân tử Gaussian; $\sigma_i$ chọn sao cho \emph{perplexity} (mức láng giềng hiệu dụng) cố định:
 \[
 p_{j \mid i} = \frac{\exp\!\left(-\frac{\|\mathbf{x}_i - \mathbf{x}_j\|^2}{2\sigma_i^2}\right)}
@@ -343,7 +356,8 @@ phù hợp với perplexity đã chọn: perplexity nhỏ nhấn mạnh cấu tr
 còn perplexity lớn nhìn nhiều láng giềng hơn. Ma trận đối xứng
 $p_{ij} = \frac{p_{j|i}+p_{i|j}}{2N}$ dùng khi tính phân kỳ.
 
-\paragraph{Bước 2 --- Láng giềng trong không gian nhúng.}
+\textbf{Bước 2 --- Xây phân phối láng giềng trong không gian nhúng} (``hai điểm trong hình 2D gần nhau đến mức nào?'')
+
 Dùng Student-$t$ (đuôi nặng) thay Gaussian để giảm \emph{crowding} (điểm chen chúc khi $d$ nhỏ):
 \[
 q_{ij} = \frac{\left(1 + \|\mathbf{y}_i - \mathbf{y}_j\|^2\right)^{-1}}
@@ -354,7 +368,8 @@ Khi giảm từ không gian cao chiều xuống hai chiều, không gian nhúng 
 Student-$t$ giúp các điểm tương đối xa trong không gian nhúng vẫn tạo lực đẩy
 đáng kể, nhờ đó các cụm ít bị nén chồng lên nhau.
 
-\paragraph{Bước 3 --- Tối ưu.}
+\textbf{Bước 3 --- Tối ưu nhúng bằng phân kỳ KL} (``kéo gần láng giềng, đẩy xa điểm không tương đồng'')
+
 Tìm $\{\mathbf{y}_i\}$ sao cho $q_{ij}$ gần $p_{ij}$ theo phân kỳ KL:
 \[
 \min_{\{\mathbf{y}_i\}} \mathrm{KL}(P \| Q) = \sum_{i \neq j} p_{ij} \log \frac{p_{ij}}{q_{ij}}.
@@ -380,20 +395,13 @@ early exaggeration ở giai đoạn đầu và learning rate thích hợp. Barne
 xấp xỉ lực với độ phức tạp $O(N \log N)$; các cài đặt hiện đại còn có thể dùng
 FFT/interpolation để tăng tốc.
 
-\begin{algorithm}[H]
-\caption{t-SNE (tóm tắt)}
-\label{alg:tsne}
-\begin{algorithmic}[1]
-\Require Tập $\mathbf{X}$, số chiều nhúng $d$, perplexity, số vòng lặp
-\State Tính ma trận $p_{ij}$ (Gaussian có $\sigma_i$ theo perplexity)
-\State Khởi tạo ngẫu nhiên $\mathbf{y}_i \in \R^d$
-\For{mỗi vòng lặp}
-  \State Tính $q_{ij}$ từ khoảng cách Student-$t$ giữa các $\mathbf{y}_i$
-  \State Cập nhật $\mathbf{y}_i \leftarrow \mathbf{y}_i - \eta \, \frac{\partial \mathrm{KL}}{\partial \mathbf{y}_i}$
-\EndFor
-\State \Return $\{\mathbf{y}_i\}$
-\end{algorithmic}
-\end{algorithm}
+\paragraph{Tóm tắt pipeline.}
+\begin{enumerate}
+  \item Chọn perplexity $\to$ tìm $\sigma_i$ cho từng điểm $\to$ tính xác suất có điều kiện $p_{j|i}$.
+  \item Đối xứng hóa $\to$ thu được phân phối láng giềng toàn cục $p_{ij}$.
+  \item Khởi tạo tọa độ nhúng $\mathbf{Y}$ trong $\R^d$.
+  \item SGD: tính $q_{ij}$ bằng Student-$t$ rồi cập nhật $\mathbf{Y}$ để giảm $\mathrm{KL}(P\|Q)$.
+\end{enumerate}
 
 Trong mã nguồn của đồ án, t-SNE được dùng như một baseline mở rộng thông qua
 wrapper \texttt{TSNE} quanh \texttt{sklearn.manifold.TSNE}, không phải phần

@@ -277,21 +277,161 @@ Neg-t-SNE dùng Cauchy kernel $\phi(d) = \frac{1}{1+d^2} \in (0,1]$ (chặn trê
 \end{tabular}
 \end{table}
 
-\subsection{Nhận xét tổng quan về xu hướng phát triển}
+\subsection{Cân bằng cục bộ--toàn cục trong trực quan hóa giảm chiều}
+\label{sec:research-pacmap}
+
+Bài báo \emph{Understanding How Dimension Reduction Tools Work: An Empirical Approach to Deciphering t-SNE, UMAP, TriMap, and PaCMAP for Data Visualization} của Wang, Huang, Rudin và Shaposhnik~\cite{wang2021pacmap} (JMLR 2021) đặt ra câu hỏi: \textbf{khi nhúng dữ liệu chiều cao xuống hai chiều, thành phần nào của hàm mất mát quyết định việc giữ cấu trúc cục bộ hay toàn cục?} Bài báo phân tích thực nghiệm lực hút--lực đẩy trên t-SNE, UMAP và TriMap, rồi đề xuất PaCMAP (\textit{Pairwise Controlled Manifold Approximation Projection})---thuật toán thiết kế trực tiếp ba loại cặp điểm và lịch trọng số theo giai đoạn thay vì chỉ tinh chỉnh siêu tham số trên đồ thị kNN.
+
+\subsubsection{Bài toán trực quan hóa}
+\label{sec:pacmap-problem}
+
+Cho $n$ điểm $\mathbf{x}_1,\ldots,\mathbf{x}_n \in \R^D$ và embedding $\theta = \{\mathbf{y}_1,\ldots,\mathbf{y}_n\} \subset \R^2$. Khi $D \gg 2$, không thể bảo toàn đồng thời mọi khoảng cách; scatter plot hai chiều dễ bị diễn giải sai nếu người xem coi khoảng cách giữa cụm hay kích thước cụm như cấu trúc thật của dữ liệu gốc. t-SNE và UMAP thường làm nổi bật láng giềng cục bộ nhưng có thể biến dạng bố cục toàn cục; ngược lại, phương pháp quá ưu tiên cấu trúc toàn cục có thể làm mờ các cụm nhỏ. Wang et al.~\cite{wang2021pacmap} muốn hiểu thành phần nào của loss, đồ thị và khởi tạo gây ra sự khác biệt đó, rồi thiết kế thuật toán cân bằng hai mục tiêu tốt hơn.
+
+\subsubsection{Rainbow figure và sáu nguyên tắc thiết kế loss}
+\label{sec:pacmap-forces}
+
+Các thuật toán nhúng láng giềng có thể diễn giải qua lực hút trên cặp cần gần nhau và lực đẩy trên cặp không nên chồng lên nhau. Wang et al.~\cite{wang2021pacmap} vẽ \emph{rainbow figure}---biểu diễn độ lớn gradient theo khoảng cách trong không gian gốc và không gian nhúng---để so sánh t-SNE, UMAP và TriMap thay vì chỉ đối chiếu công thức. Từ phân tích này, tác giả rút ra sáu nguyên tắc cho hàm mất mát giữ cục bộ tốt:
+\begin{enumerate}
+  \item Láng giềng bị đặt xa trong embedding phải chịu lực hút \emph{đủ mạnh}.
+  \item Điểm không lân cận đã ở xa không nên tiếp tục chi phối quá mức quá trình tối ưu.
+  \item Lực đẩy giữa điểm xa phải đủ để tránh chồng lấn, nhưng không được triệt tiêu lực hút cục bộ.
+  \item Chỉ thu hút láng giềng gần nhất và đẩy điểm xa \emph{chưa đủ} để phục hồi cấu trúc toàn cục.
+  \item Cặp ở khoảng cách trung gian mang thông tin quan trọng về bố cục tổng thể.
+  \item Kết quả embedding phụ thuộc cả hàm mất mát \emph{và} phép khởi tạo (TriMap nhạy cảm với khởi tạo PCA).
+\end{enumerate}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Phương pháp} & \textbf{Thông tin ưu tiên} & \textbf{Nhận xét trong bài báo} \\
+\midrule
+t-SNE  & Láng giềng cục bộ & Cụm rõ; bố cục toàn cục không nên diễn giải trực tiếp. \\[2pt]
+UMAP   & Đồ thị lân cận mờ & Lực đẩy yếu hơn t-SNE; cụm co chặt hơn. \\[2pt]
+TriMap & Quan hệ bộ ba & Giữ toàn cục tốt hơn nếu khởi tạo PCA phù hợp. \\[2pt]
+PaCMAP & Ba loại cặp + lịch trọng số & Cân bằng chủ động cục bộ--toàn cục. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsubsection{Bước 1 --- Ba loại cặp điểm}
+\label{sec:pacmap-pairs}
+
+PaCMAP xây dựng ba tập cặp trên không gian gốc $\R^D$:
+\begin{itemize}
+  \item \textbf{Neighbor pairs} $\mathcal{N}$: mỗi điểm $i$ nối với $n_{\text{NB}}$ láng giềng gần nhất (mặc định $n_{\text{NB}} = 10$), dùng khoảng cách chuẩn hóa theo độ lệch chuẩn địa phương.
+  \item \textbf{Mid-near pairs} $\mathcal{M}$: với mỗi $i$, lấy mẫu sáu điểm ngẫu nhiên và ghép $i$ với điểm \emph{gần thứ hai} trong sáu điểm đó; $|\mathcal{M}| = n_{\text{MN}} = \text{MN\_ratio} \cdot n_{\text{NB}}$ (mặc định $\text{MN\_ratio} = 0.5$).
+  \item \textbf{Further pairs} $\mathcal{F}$: ghép $i$ với điểm lấy mẫu ngẫu nhiên \emph{không} thuộc láng giềng; $|\mathcal{F}| = n_{\text{FP}} = \text{FP\_ratio} \cdot n_{\text{NB}}$ (mặc định $\text{FP\_ratio} = 2$).
+\end{itemize}
+Thay vì tăng số láng giềng để giữ toàn cục, PaCMAP dùng cặp trung gian $\mathcal{M}$ với lực hút \emph{yếu}: kéo các cụm gần nhau về phía nhau mà không phá cấu trúc cục bộ do $\mathcal{N}$ duy trì.
+
+\subsubsection{Bước 2 --- Hàm loss và lịch trọng số ba giai đoạn}
+\label{sec:pacmap-loss}
+
+Khoảng cách bình phương trong không gian nhúng (có dịch chuyển $+1$ để tránh chia cho không):
+\begin{equation}
+  \tilde{d}_{ab} = \|\mathbf{y}_a - \mathbf{y}_b\|^2 + 1, \quad a,b \in \{1,\ldots,n\}.
+  \label{eq:pacmap-dist}
+\end{equation}
+Hàm loss PaCMAP~\cite{wang2021pacmap}:
+\begin{equation}
+  \mathcal{L}_{\text{PaCMAP}}(\theta)
+  = w_{\text{NB}} \!\!\sum_{(i,j)\in\mathcal{N}} \frac{\tilde{d}_{ij}}{C_{\text{Med}} + \tilde{d}_{ij}}
+  + w_{\text{MN}} \!\!\sum_{(i,k)\in\mathcal{M}} \frac{\tilde{d}_{ik}}{C_{\text{Lg}} + \tilde{d}_{ik}}
+  + w_{\text{FP}} \!\!\sum_{(i,l)\in\mathcal{F}} \frac{1}{1 + \tilde{d}_{il}},
+  \label{eq:pacmap-loss}
+\end{equation}
+với $C_{\text{Med}} = 10$ (lực hút mạnh trên $\mathcal{N}$) và $C_{\text{Lg}} = 10\,000$ (lực hút yếu trên $\mathcal{M}$). Số hạng thứ ba là lực đẩy trên $\mathcal{F}$. Hệ số $C_{\text{Lg}} \gg C_{\text{Med}}$ đảm bảo mid-near chỉ tác động nhẹ so với neighbor.
+
+PaCMAP tối ưu~\eqref{eq:pacmap-loss} theo ba giai đoạn (Adam, mặc định 450 iteration):
+\begin{enumerate}
+  \item \textbf{Giai đoạn 1} (100 iter): $w_{\text{NB}} = 2$, $w_{\text{FP}} = 1$, $w_{\text{MN}}(t)$ giảm tuyến tính từ $1000$ xuống $3$---dựng bố cục toàn cục trước.
+  \item \textbf{Giai đoạn 2} (250 iter): $w_{\text{MN}}$ tiếp tục giảm, cân bằng dần ba loại cặp.
+  \item \textbf{Giai đoạn 3} (100 iter): giảm vai trò mid-near, tinh chỉnh quan hệ láng giềng cục bộ.
+\end{enumerate}
+
+\begin{center}
+\begin{tikzpicture}[
+  node distance=0.5cm and 1.0cm,
+  box/.style={rectangle, draw, rounded corners=3pt, minimum height=0.9cm,
+              minimum width=2.2cm, align=center, font=\small},
+  arrow/.style={->, thick, >=Stealth}
+]
+\node[box, fill=blue!10]   (s1) {Giai đoạn 1\\$w_{\text{MN}}\!\downarrow\!1000\!\to\!3$};
+\node[box, fill=green!10,  right=of s1] (s2) {Giai đoạn 2\\Cân bằng};
+\node[box, fill=orange!10, right=of s2] (s3) {Giai đoạn 3\\Tinh chỉnh NB};
+
+\draw[arrow] (s1) -- node[above, font=\scriptsize]{toàn cục trước} (s2);
+\draw[arrow] (s2) -- node[above, font=\scriptsize]{cục bộ sau} (s3);
+
+\node[below=0.3cm of s1, font=\scriptsize, align=center]{$\mathcal{M}$ chiếm ưu thế};
+\node[below=0.3cm of s3, font=\scriptsize, align=center]{$\mathcal{N}$ chiếm ưu thế};
+\end{tikzpicture}
+\end{center}
+
+Theo thí nghiệm trên dữ liệu ảnh, văn bản, sinh học và tổng hợp, PaCMAP đạt cân bằng tốt giữa đánh giá cục bộ (trustworthiness, KNN) và toàn cục (triplet accuracy), đồng thời có thời gian chạy cạnh tranh với t-SNE và UMAP~\cite{wang2021pacmap}.
+
+\begin{table}[H]
+\centering
+\caption{Tóm tắt PaCMAP so với các thuật toán trực quan hóa được phân tích}
+\label{tab:pacmap-compare}
+\begin{tabular}{@{}llll@{}}
+\toprule
+ & \textbf{t-SNE / UMAP} & \textbf{TriMap} & \textbf{PaCMAP} \\
+\midrule
+\textbf{Cặp điểm} & Láng giềng + mẫu âm & Bộ ba & $\mathcal{N}, \mathcal{M}, \mathcal{F}$ \\
+\textbf{Toàn cục} & Yếu (chỉ qua $k$NN) & Khởi tạo PCA & Mid-near + lịch $w_{\text{MN}}$ \\
+\textbf{Khởi tạo} & Ít nhạy & Nhạy PCA & Ổn định hơn \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Thí nghiệm baseline của nhóm}
+\label{sec:pacmap-implementation}
+
+\begin{extension}
+Đồ án khảo sát ý tưởng PaCMAP nhưng \emph{không cài đặt} thuật toán này; bảng~\ref{tab:bonus-tsne-umap} chỉ báo cáo baseline t-SNE, UMAP, LLE và Laplacian Eigenmaps trên MNIST.
+\end{extension}
+
+Notebook \texttt{baseline.ipynb} chạy trên 10\,000 ảnh MNIST (\texttt{SEED = 42}) với wrapper \texttt{TSNE}, \texttt{UMAP} và cài đặt nhóm \texttt{LLE}, \texttt{LaplacianEigenmaps}. Nhãn chỉ dùng đánh giá sau nhúng; hai chỉ số báo cáo là trustworthiness@12 và độ chính xác KNN@5.
+
+\begin{table}[H]
+\centering
+\caption{Baseline trên MNIST (\texttt{baseline.ipynb}, \texttt{SEED = 42})}
+\label{tab:bonus-tsne-umap}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Phương pháp} & \textbf{Trust.@12} & \textbf{KNN acc.@5} \\
+\midrule
+t-SNE (perplexity $= 30$) & \textbf{0.9842} & \textbf{0.9454} \\
+UMAP                      & 0.9602          & 0.9429 \\
+Laplacian Eigenmaps       & 0.8443          & 0.7414 \\
+LLE                       & 0.8286          & 0.7069 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+t-SNE và UMAP giữ láng giềng cục bộ tốt trên hai chỉ số trên, phù hợp nhận xét định tính của Wang et al. Hai chỉ số này không đo cấu trúc toàn cục (triplet accuracy), nên chưa thể kết luận về lợi thế PaCMAP khi thuật toán chưa được chạy trên cùng dữ liệu.
+
+\subsection{Nhận xét tổng quan: xu hướng, hạn chế và câu hỏi mở}
 \label{sec:research-trends}
 
-\paragraph{Xu hướng 1: Thống nhất các phương pháp DR dưới một khung toán học chung.}
-Bài báo \cite{damrich2023contrastive} là đại diện nổi bật cho xu hướng tìm kiếm \emph{nguyên lý chung} đằng sau các thuật toán DR có vẻ khác biệt. Trước đó, Böhm et al.~\cite{bohm2022attraction} đã chỉ ra phổ hút--đẩy (attraction-repulsion spectrum) trong t-SNE. Bài báo này đi xa hơn: chứng minh UMAP, t-SNE, NCVis đều là trường hợp riêng của NCE/NEG tổng quát áp dụng trên đồ thị lân cận. Xu hướng thống nhất này giúp cộng đồng nghiên cứu \emph{hiểu} thay vì chỉ \emph{dùng} các thuật toán, từ đó thiết kế phương pháp mới có cơ sở lý thuyết vững chắc hơn.
+\paragraph{Xu hướng 1: Thống nhất dưới khung toán học chung.}
+Damrich et al.~\cite{damrich2023contrastive} chứng minh t-SNE, NC-t-SNE, Neg-t-SNE và UMAP là các trường hợp của NCE/NEG trên đồ thị skNN; trước đó Böhm et al.~\cite{bohm2022attraction} đã mô tả phổ hút--đẩy trong t-SNE. Xu hướng này giúp cộng đồng \emph{hiểu} thay vì chỉ \emph{dùng} các thuật toán DR.
 
-\paragraph{Xu hướng 2: Liên hệ giữa DR và học biểu diễn tự giám sát (self-supervised learning).}
-Bài báo cũng chỉ ra rằng các phương pháp nhúng láng giềng tương phản (NC-t-SNE, Neg-t-SNE, UMAP) về bản chất rất gần với các phương pháp học biểu diễn tự giám sát như SimCLR \cite{damrich2023contrastive}. Sự khác biệt chính nằm ở cách xây dựng ``cặp tương đồng'': nhúng láng giềng dùng đồ thị kNN cố định, còn SimCLR dùng data augmentation. Điều này mở ra khả năng chuyển giao kỹ thuật giữa hai lĩnh vực.
+\paragraph{Xu hướng 2: Thiết kế mục tiêu lai cho trực quan hóa.}
+Wang et al.~\cite{wang2021pacmap} cho thấy nghiên cứu DR trực quan hóa chuyển từ tiêu chuẩn đơn (phương sai PCA, geodesic Isomap) sang thiết kế lai: cụm cục bộ phải rõ nhưng bố cục toàn cục không được tùy tiện. PaCMAP minh họa bằng cặp trung gian và lịch trọng số thay vì chỉ tinh chỉnh perplexity hay $k$.
+
+\paragraph{Xu hướng 3: Liên hệ với học biểu diễn tự giám sát.}
+NC-t-SNE, Neg-t-SNE và UMAP gần với SimCLR~\cite{damrich2023contrastive}: khác biệt chính là cách xây dựng cặp tương đồng (đồ thị kNN cố định vs.\ data augmentation), mở khả năng chuyển giao kỹ thuật giữa hai lĩnh vực.
 
 \paragraph{Hạn chế và câu hỏi mở.}
 \begin{itemize}
-  \item \textbf{Giả định mạnh:} Định lý~\ref{thm:nce} và Định lý~\ref{thm:cor2} đều giả định mô hình đủ phong phú để khớp chính xác phân phối dữ liệu---trong thực tế, phân phối $p$ trên đồ thị skNN có nhiều vị trí bằng 0 mà Cauchy kernel (luôn dương) không thể khớp hoàn hảo.
-  \item \textbf{Chọn $\overline{Z}$ tối ưu:} Hiện tại $\overline{Z}$ phải được đặt thủ công. Một câu hỏi mở tự nhiên là: liệu có thể \emph{học} $\overline{Z}$ từ dữ liệu (tương tự $Z$ trong NCE) nhưng vẫn giữ tính linh hoạt của NEG?
-  \item \textbf{DR cho dữ liệu động (streaming):} Tất cả các phương pháp trong bài báo đều yêu cầu toàn bộ dữ liệu có sẵn. Mở rộng khung tương phản cho bài toán giảm chiều trực tuyến (online DR) là một hướng nghiên cứu tiềm năng.
-  \item \textbf{Đảm bảo lý thuyết:} So với bổ đề Johnson--Lindenstrauss (Mục~\ref{sec:jl}) cung cấp chặn toán học rõ ràng về méo khoảng cách, các phương pháp DR phi tuyến (t-SNE, UMAP, Neg-t-SNE) vẫn thiếu các đảm bảo lý thuyết tương đương về chất lượng nhúng.
+  \item \textbf{Giả định mô hình:} Định lý~\ref{thm:nce} và Định lý~\ref{thm:cor2} giả định mô hình khớp được $p$; trong thực tế phân phối trên skNN có nhiều vị trí bằng 0 mà kernel luôn dương không khớp hoàn hảo.
+  \item \textbf{Chọn $\overline{Z}$ hay lịch trọng số:} Neg-t-SNE cần đặt $\overline{Z}$ thủ công; PaCMAP dùng lịch $w_{\text{MN}}$ cố định---câu hỏi mở là liệu có thể \emph{học} các hệ số này từ dữ liệu.
+  \item \textbf{Đánh giá đa thước đo:} Trustworthiness và KNN chỉ đo cục bộ; cần thêm triplet accuracy hay continuity để đánh giá toàn cục như Wang et al.
+  \item \textbf{DR trực tuyến:} Cả hai khung đều giả định toàn bộ dữ liệu có sẵn; mở rộng cho streaming là hướng tiềm năng.
+  \item \textbf{Đảm bảo lý thuyết:} So với JL (Mục~\ref{sec:jl}), các phương pháp phi tuyến (t-SNE, UMAP, PaCMAP) vẫn thiếu chặn toán học tương đương về chất lượng nhúng.
 \end{itemize}
 
 \FloatBarrier

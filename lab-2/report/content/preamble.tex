@@ -22,21 +22,10 @@
 
 \renewcommand{\proofname}{Chứng minh}
 
-\newtcolorbox{extension}{
-  colback=yellow!8!white,
-  colframe=orange!70!black,
-  title=\textbf{[MỞ RỘNG]},
-  fonttitle=\bfseries,
-  sharp corners,
-  boxrule=0.6pt
-}
-
-\newtcolorbox{notation}{
-  colback=blue!4!white,
-  colframe=blue!50!black,
-  title=\textbf{Quy tắc ký hiệu trong báo cáo},
-  fonttitle=\bfseries,
-  boxrule=0.5pt
+\newenvironment{extension}{%
+  \par\medskip\noindent\textbf{[MỞ RỘNG]}\enspace\ignorespaces
+}{%
+  \par\medskip
 }
 
 % Sets, vectors (bold lowercase), matrices (bold uppercase), scalars (italic)

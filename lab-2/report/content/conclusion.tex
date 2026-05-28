@@ -7,7 +7,7 @@
   \item \textbf{KPCA} làm việc với ma trận Gram $\mathbf{K}$, cho phép phi tuyến mà không cần $\Phi$ tường minh.
   \item \textbf{Isomap, Laplacian eigenmaps, LLE} xây kernel hoặc ma trận Laplacian từ đồ thị láng giềng; Bảng~\ref{tab:dr-compare} so sánh mức ``toàn cục'' hay ``cục bộ'' mà mỗi phương pháp ưu tiên giữ.
   \item \textbf{Johnson--Lindenstrauss} cho thấy chiều $k = O\!\left(\frac{\log m}{\varepsilon^2}\right)$ đủ để bảo toàn khoảng cách cặp dưới chiếu ngẫu nhiên.
-  \item \textbf{[MỞ RỘNG] t-SNE} và \textbf{UMAP} (Mục~\ref{sec:extension-viz}): tối ưu nhúng phi tuyến qua KL (Định nghĩa~\ref{def:kl}) hoặc cross-entropy (Định nghĩa~\ref{def:binary-ce}) trên đồ thị láng giềng.
+  \item \textbf{[MỞ RỘNG] t-SNE} và \textbf{UMAP} (Mục~\ref{sec:extension-viz}): tối ưu nhúng phi tuyến qua KL (Định nghĩa~\ref{def:kl}) hoặc cross-entropy (Định nghĩa~\ref{def:ce}) trên đồ thị láng giềng.
   \item \textbf{Bài báo} \cite{damrich2023contrastive} (Chương~4): thống nhất t-SNE và UMAP dưới khung NCE/NEG (Mục~\ref{sec:nce-neg}); tham số $\overline{Z}$ điều khiển phổ nhúng liên tục từ t-SNE sang UMAP (Định lý~\ref{thm:cor2}).
 \end{itemize}
 

@@ -2,244 +2,277 @@
 
 Chương này trình bày bài báo khoa học gần đây liên quan tới giảm chiều dữ liệu. Kiến thức nền về NCE và NEG đã trình bày ở Chương~2 (Mục~\ref{sec:nce-neg}); các phương pháp giảm chiều (PCA, KPCA, t-SNE, UMAP, \ldots) ở Chương~3 (Mục~\ref{sec:extension-viz}). Chương này \emph{không} lặp lại các định nghĩa đó mà tham chiếu trực tiếp.
 
-Bài báo được trình bày theo: bài toán đặt ra, đóng góp chính, phương pháp toán học chi tiết, và mối liên hệ với nội dung các chương trước.
-
 \subsection{Thống nhất t-SNE và UMAP qua học tương phản}
 \label{sec:research-contrastive}
 
-\subsubsection{Giới thiệu bài báo và bài toán đặt ra}
+Bài báo \emph{From t-SNE to UMAP with contrastive learning} của Damrich, Böhm, Hamprecht và Kobak~\cite{damrich2023contrastive} (ICLR 2023) đặt ra câu hỏi: \textbf{mối quan hệ toán học chính xác giữa t-SNE và UMAP là gì?} Hai phương pháp được xây dựng từ nền tảng dường như khác nhau---KL divergence (MLE) vs.\ fuzzy cross-entropy (negative sampling)---nhưng bài báo chỉ ra rằng chiếc cầu nối là \emph{học tương phản} (contrastive learning).
 
-Bài báo \emph{From t-SNE to UMAP with contrastive learning} của Damrich, Böhm, Hamprecht và Kobak \cite{damrich2023contrastive}, công bố tại hội nghị ICLR 2023, đặt ra câu hỏi: \textbf{mối quan hệ toán học chính xác giữa hai phương pháp trực quan hóa phổ biến nhất---t-SNE và UMAP---là gì?}
+\subsubsection{Khung nhúng láng giềng tương phản}
+\label{sec:neighbor-embedding-framework}
 
-Tại Mục~\ref{sec:tsne} và~\ref{sec:umap}, ta đã thấy t-SNE và UMAP được xây dựng từ hai nền tảng toán học dường như không liên quan:
-\begin{itemize}
-  \item \textbf{t-SNE} \cite{vandermaaten2008tsne} dùng hàm loss Kullback--Leibler (KL) divergence, thực chất là ước lượng hợp lý cực đại (MLE) trên phân phối cặp điểm dữ liệu:
-  \begin{equation}
-  \mathcal{L}_{\text{t-SNE}}(\theta) = -\sum_{i \neq j} p_{ij} \log q_{ij} = -\sum_{i \neq j} p_{ij}\log\frac{\phi(d_{ij})}{Z(\theta)},
-  \label{eq:tsne-loss-ch4}
-  \end{equation}
-  trong đó $\phi(d_{ij}) = \frac{1}{1 + d_{ij}^2}$ là Cauchy kernel, $d_{ij} = \|\mathbf{y}_i - \mathbf{y}_j\|$, và $Z(\theta) = \sum_{k \neq l}\phi(d_{kl})$ là hàm phân hoạch (partition function). Thuật toán đòi hỏi tính $Z(\theta)$ trên \emph{mọi} $\binom{n}{2}$ cặp điểm.
-
-  \item \textbf{UMAP} \cite{mcinnes2018umap} dùng hàm loss fuzzy cross-entropy (xem phương trình~\eqref{eq:umap-C-opt}):
-  \begin{equation}
-  \mathcal{L}_{\text{UMAP}}(\theta) = -\sum_{i,j}\bigl[B_{ij}\log\phi(d_{ij}) + (1-B_{ij})\log(1-\phi(d_{ij}))\bigr],
-  \label{eq:umap-loss-ch4}
-  \end{equation}
-  được luận giải từ lý thuyết tập mờ và hình học Riemann. Tuy nhiên, loss thực sự được cài đặt trong thuật toán UMAP lại có dạng hiệu dụng (effective loss) khác biệt đáng kể do cơ chế lấy mẫu cạnh đẩy \cite{bohm2022attraction}:
-  \begin{equation}
-  \mathcal{L}_{\text{UMAP}}^{\text{eff}}(\theta) = -\E_{ij \sim p}\log\phi(d_{ij}) - m\,\E_{ij \sim \xi}\log\bigl(1 - \phi(d_{ij})\bigr),
-  \label{eq:umap-eff-ch4}
-  \end{equation}
-  trong đó $p$ là phân phối trên đồ thị $k$-láng giềng đối xứng (skNN), $\xi$ gần đồng đều, và $m$ là số mẫu âm (mặc định $m = 5$).
-\end{itemize}
-
-Hệ quả thực nghiệm của hai loss function khác nhau: UMAP tạo ra các cụm \emph{siêu co chặt} (tighter clusters), trong khi t-SNE tạo ra các cụm \emph{dàn trải} hơn. Trước bài báo này, lý do toán học cho sự khác biệt hình thái đó vẫn chưa được giải thích.
-
-\textbf{Đóng góp chính.} Các tác giả chỉ ra rằng chiếc cầu nối duy nhất giữa t-SNE và UMAP chính là \emph{học tương phản} (contrastive learning): t-SNE có thể được tối ưu bằng ước lượng tương phản nhiễu (NCE), còn UMAP thực chất sử dụng lấy mẫu tiêu cực (NEG)---một biến thể đơn giản hóa của NCE. Sự khác biệt giữa NCE và NEG \emph{chính xác} giải thích tại sao UMAP và t-SNE cho ra các hình thái nhúng khác nhau.
-
-\subsubsection{Áp dụng NCE vào nhúng láng giềng}
-
-Như đã trình bày ở Mục~\ref{sec:nce-neg}, NCE biến bài toán ước lượng mật độ thành phân loại nhị phân, tránh phải tính hàm phân hoạch $Z(\theta)$ (phương trình~\eqref{eq:partition-function}). Ở đây ta cụ thể hóa cho bài toán nhúng láng giềng.
-
-\paragraph{Ngữ cảnh hóa ký hiệu.}
-Trong nhúng láng giềng: $\mathcal{X} = \{ij \mid 1 \leq i < j \leq n\}$ (tập $\binom{n}{2}$ cặp điểm); $p(ij) = p_{ij}$ là phân phối láng giềng cao chiều; $\theta = \{\mathbf{y}_1,\ldots,\mathbf{y}_n\}$ là tọa độ nhúng; $\phi(d_{ij}) = \frac{1}{1+d_{ij}^2}$ là Cauchy kernel; $q_{\theta,Z}(ij) = \phi(d_{ij})/Z$ với $Z$ có thể học.
-
-\paragraph{NC-t-SNE.}
-Áp dụng loss NCE (phương trình~\eqref{eq:nce-loss}) vào khung trên, với $\xi$ gần đồng đều, ta thu được thuật toán NC-t-SNE (NCVis) \cite{artemenkov2020ncvis}:
+\paragraph{Thiết lập chung.}
+Cho $n$ điểm $\mathbf{x}_1,\ldots,\mathbf{x}_n \in \R^D$ và tọa độ nhúng $\theta = \{\mathbf{y}_1,\ldots,\mathbf{y}_n\} \subset \R^d$. Định nghĩa \emph{không gian cặp}:
 \begin{equation}
-\mathcal{L}_{\text{NC-t-SNE}}(\theta, Z) = -\E_{ij \sim p}\log\dfrac{\dfrac{\phi(d_{ij})}{Z}}{\dfrac{\phi(d_{ij})}{Z} + m\xi(ij)}
-- m\,\E_{ij \sim \xi}\log\dfrac{m\xi(ij)}{\dfrac{\phi(d_{ij})}{Z} + m\xi(ij)}.
-\label{eq:nc-tsne-loss}
+  \mathcal{X} = \{(i,j) : 1 \le i < j \le n\}, \quad |\mathcal{X}| = \tbinom{n}{2}.
+  \label{eq:pair-space}
 \end{equation}
-Theo Định lý~\ref{thm:nce}, NC-t-SNE có cùng điểm tối ưu như t-SNE: tham số $Z$ học được hội tụ về hàm phân hoạch $Z(\theta)$.
+Từ đồ thị $k$-láng giềng đối xứng (skNN), xây dựng phân phối dữ liệu $p$ trên $\mathcal{X}$: $p(ij) > 0$ trên các cạnh skNN (chuẩn hóa $\sum_{ij} p(ij) = 1$) và $p(ij) = 0$ với các cặp còn lại. Nhiễu $\xi$ là phân phối đồng đều trên $\mathcal{X}$.
 
-\paragraph{Neg-t-SNE (dùng NEG thay NCE).}
-Như đã nêu ở Mục~\ref{sec:neg-def}, NEG cố định $\overline{Z} = |\mathcal{X}|/m$ thay vì để $Z$ tự học. Áp dụng loss NEG (phương trình~\eqref{eq:neg-loss}) với cùng Cauchy kernel cho ta thuật toán Neg-t-SNE.
+Kernel hạ chiều $\phi : \R_{\ge 0} \to (0,1]$ biến khoảng cách $d_{ij} = \|\mathbf{y}_i - \mathbf{y}_j\|$ thành ``xác suất tương đồng''. Phân phối mô hình:
+\begin{equation}
+  q_{\theta,Z}(ij) = \frac{\phi(d_{ij})}{Z}, \quad
+  Z(\theta) = \sum_{(k,l)\in\mathcal{X}} \phi(d_{kl}).
+  \label{eq:model-dist}
+\end{equation}
 
-\subsubsection{Mối quan hệ chính xác giữa NCE và NEG}
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lllll@{}}
+\toprule
+\textbf{Phương pháp} & \textbf{Kernel $\phi(d)$} & \textbf{Hằng số $Z$} & \textbf{Khung tối ưu} & \textbf{Nghiệm $q^*$} \\
+\midrule
+t-SNE        & $\dfrac{1}{1+d^2}$ & $Z(\theta)$ (tính đủ)  & MLE & $p$ \\[4pt]
+NC-t-SNE     & $\dfrac{1}{1+d^2}$ & $Z$ (học được)         & NCE & $p$ \\[4pt]
+Neg-t-SNE    & $\dfrac{1}{1+d^2}$ & $\overline{Z}$ (tùy chọn) & NEG & $\overline{Z}\,p$ \\[4pt]
+UMAP (hiệu dụng) & $\dfrac{1}{d^2}$ & $\dfrac{\binom{n}{2}}{m}$ (cố định) & NEG & $\overline{Z}\,p$ \\
+\bottomrule
+\end{tabular}
+\end{center}
 
-Đây là đóng góp lý thuyết trung tâm của bài báo. Định lý~\ref{thm:nce} nói rằng NCE học mô hình $q_\theta$ \emph{bằng} phân phối dữ liệu $p$. Câu hỏi tự nhiên: nếu ta \emph{không} cho mô hình tham số $Z$ có thể học (như NEG), thì mô hình sẽ hội tụ về đâu? Các tác giả trả lời bằng cách tổng quát hóa Định lý~\ref{thm:nce}: cho phép mô hình học một phân phối \emph{tỷ lệ} (proportional) với $p$, thay vì bằng đúng $p$.
+\subsubsection{Bước 1 --- t-SNE là MLE; NC-t-SNE xấp xỉ t-SNE bằng NCE}
+\label{sec:mle-to-nce}
+
+\paragraph{t-SNE $=$ MLE.}
+Hàm loss t-SNE là cross-entropy (tương đương MLE) giữa $p$ và $q_{\theta,Z(\theta)}$:
+\begin{equation}
+  \mathcal{L}_{\text{t-SNE}}(\theta)
+  = -\sum_{(i,j)\in\mathcal{X}} p(ij)\,\log q_{\theta,Z(\theta)}(ij)
+  = -\sum_{ij} p(ij)\log\frac{\phi(d_{ij})}{Z(\theta)}.
+  \label{eq:tsne-loss-ch4}
+\end{equation}
+Mỗi bước gradient đòi hỏi tính $Z(\theta) = \sum_{kl}\phi(d_{kl})$ trên toàn bộ $\binom{n}{2}$ cặp---chi phí $\mathcal{O}(n^2)$ mỗi epoch.
+
+\paragraph{NC-t-SNE $=$ NCE cho bài toán nhúng.}
+Áp dụng NCE (Mục~\ref{sec:nce-def}) với không gian $\mathcal{X}$, phân phối $p$, nhiễu $\xi$ đồng đều, và mô hình $q_{\theta,Z}$ từ~\eqref{eq:model-dist} (với $Z$ là \emph{tham số học được}). Thay vào loss NCE~\eqref{eq:nce-loss}:
+\begin{equation}
+  \mathcal{L}_{\text{NC-t-SNE}}(\theta, Z)
+  = -\E_{ij \sim p}\log\dfrac{\dfrac{\phi(d_{ij})}{Z}}{\dfrac{\phi(d_{ij})}{Z} + m\xi(ij)}
+  \;-\; m\,\E_{ij \sim \xi}\log\dfrac{m\xi(ij)}{\dfrac{\phi(d_{ij})}{Z} + m\xi(ij)}.
+  \label{eq:nc-tsne-loss}
+\end{equation}
+Theo Định lý~\ref{thm:nce}, mọi cực tiểu $(\theta^*, Z^*)$ thỏa $q_{\theta^*,Z^*} = p$, tức $Z^*$ hội tụ đúng về $Z(\theta^*)$. \textbf{Kết luận:} NC-t-SNE có cùng nghiệm tối ưu như t-SNE nhưng \emph{không} phải tính $Z(\theta)$ trực tiếp.
+
+\subsubsection{Bước 2 --- Cố định $Z$: từ NCE đến NEG}
+\label{sec:nce-to-neg}
+
+Bước từ NCE sang NEG---cố định $Z \leftarrow \overline{Z}$ thay vì để $Z$ tự học---là bước \emph{duy nhất} làm thay đổi nghiệm tối ưu, và là chìa khóa giải thích sự khác biệt hình thái giữa t-SNE và UMAP.
 
 \begin{theorem}[Hệ quả 2 --- Damrich et al., 2023]
 \label{thm:cor2}
-Cho $\overline{Z}, m \in \mathbb{R}^+$. Giả sử $\xi$ có support đầy đủ (tức $\xi(x) > 0\;\forall x \in \mathcal{X}$) và tồn tại $\theta^*$ sao cho $q_{\theta^*} = \overline{Z}\,p$ (mô hình khớp phân phối dữ liệu \emph{nhân với hằng số} $\overline{Z}$). Khi đó $\theta^*$ là cực tiểu của hàm loss NCE tổng quát:
+Cho $\overline{Z},\, m > 0$. Giả sử $\xi(x) > 0\ \forall x \in \mathcal{X}$ và tồn tại $\theta^*$ sao cho $q_{\theta^*} = \overline{Z}\,p$. Khi đó $\theta^*$ là cực tiểu (và mọi cực trị) của:
 \begin{equation}
-\mathcal{L}_{\overline{Z}}^{\emph{NCE}}(\theta) = -\E_{x \sim p}\log\frac{q_\theta(x)}{q_\theta(x) + \overline{Z}\,m\xi(x)}
-- m\,\E_{x \sim \xi}\log\frac{\overline{Z}\,m\xi(x)}{q_\theta(x) + \overline{Z}\,m\xi(x)},
-\label{eq:gen-nce-loss}
+  \mathcal{L}_{\overline{Z}}(\theta)
+  = -\E_{x \sim p}\log\frac{q_\theta(x)}{q_\theta(x) + \overline{Z}\,m\xi(x)}
+  - m\,\E_{x \sim \xi}\log\frac{\overline{Z}\,m\xi(x)}{q_\theta(x) + \overline{Z}\,m\xi(x)}.
+  \label{eq:gen-nce-loss}
 \end{equation}
-và mọi cực trị khác cũng thỏa $q_{\tilde{\theta}} = \overline{Z}\,p$.
 \end{theorem}
 
 \begin{proof}
-Đặt $\tilde{q}_\theta := q_\theta/\overline{Z}$. Khi đó $\tilde{q}_{\theta^*} = \overline{Z}\,p/\overline{Z} = p$. Thay vào \eqref{eq:gen-nce-loss}, chia cả tử và mẫu cho $\overline{Z}$:
-\[
-\frac{q_\theta(x)}{q_\theta(x) + \overline{Z}\,m\xi(x)} = \frac{q_\theta(x)/\overline{Z}}{q_\theta(x)/\overline{Z} + m\xi(x)} = \frac{\tilde{q}_\theta(x)}{\tilde{q}_\theta(x) + m\xi(x)}.
-\]
-Vậy $\mathcal{L}_{\overline{Z}}^{\text{NCE}}(\theta)$ chính là $\mathcal{L}_{\text{NCE}}$ (phương trình~\eqref{eq:nce-loss}) áp dụng cho mô hình $\tilde{q}_\theta$ thay vì $q_\theta$. Theo Định lý~\ref{thm:nce}, cực tiểu đạt khi $\tilde{q}_{\theta^*} = p$, tức $q_{\theta^*} = \overline{Z}\,p$.
+Đặt $\tilde{q}_\theta(x) := \frac{q_\theta(x)}{\overline{Z}}$. Chia cả tử và mẫu trong mỗi logarit của~\eqref{eq:gen-nce-loss} cho $\overline{Z}$:
+\begin{align*}
+  \frac{q_\theta(x)}{q_\theta(x) + \overline{Z}\,m\xi(x)}
+  &= \frac{\frac{q_\theta(x)}{\overline{Z}}}{\frac{q_\theta(x)}{\overline{Z}} + m\xi(x)}
+  = \frac{\tilde{q}_\theta(x)}{\tilde{q}_\theta(x) + m\xi(x)},\\[4pt]
+  \frac{\overline{Z}\,m\xi(x)}{q_\theta(x) + \overline{Z}\,m\xi(x)}
+  &= \frac{m\xi(x)}{\frac{q_\theta(x)}{\overline{Z}} + m\xi(x)}
+  = \frac{m\xi(x)}{\tilde{q}_\theta(x) + m\xi(x)}.
+\end{align*}
+Do đó $\mathcal{L}_{\overline{Z}}(\theta) \equiv \mathcal{L}_{\text{NCE}}[\tilde{q}_\theta]$---đúng dạng loss NCE chuẩn~\eqref{eq:nce-loss} áp dụng cho mô hình $\tilde{q}_\theta$. Theo Định lý~\ref{thm:nce}, cực tiểu đạt khi $\tilde{q}_{\theta^*} = p$, tức $q_{\theta^*} = \overline{Z}\,p$.
 \end{proof}
 
-\paragraph{Ý nghĩa đối với NEG.}
-Ta đã thấy ở phần trước rằng NEG tương đương với việc cố định $\overline{Z} = |\mathcal{X}|/m$. Kiểm chứng: khi $\xi$ đồng đều ($\xi(x) = 1/|\mathcal{X}|$), thay vào \eqref{eq:gen-nce-loss}:
+\paragraph{NEG là trường hợp riêng $\overline{Z} = \frac{|\mathcal{X}|}{m}$.}
+Với $\xi$ đồng đều ($\xi(x) = \frac{1}{|\mathcal{X}|}$), hệ số nhiễu trong~\eqref{eq:gen-nce-loss} rút gọn:
 \[
-\overline{Z}\,m\xi(x) = \frac{|\mathcal{X}|}{m} \cdot m \cdot \frac{1}{|\mathcal{X}|} = 1,
+  \overline{Z}\,m\xi(x) = \frac{|\mathcal{X}|}{m}\cdot m \cdot \frac{1}{|\mathcal{X}|} = 1,
 \]
-khiến loss NCE tổng quát rút gọn thành đúng loss NEG \eqref{eq:neg-loss}.
-
-Theo Định lý~\ref{thm:cor2}, mọi cực tiểu $\theta^*$ của NEG thỏa $q_{\theta^*} = (|\mathcal{X}|/m)\,p$---mô hình không học phân phối $p$ mà học $\overline{Z}\cdot p$, với $\overline{Z}$ rất lớn. Điều này có hệ quả quan trọng:
+và mẫu số trở thành $q_\theta(x) + 1$---đúng dạng loss NEG~\eqref{eq:neg-loss} (với $\phi_\theta \leftarrow q_\theta$). Theo Định lý~\ref{thm:cor2}, nghiệm NEG thỏa $q_{\theta^*} = \overline{Z}\,p$ với $\overline{Z} = \frac{|\mathcal{X}|}{m}$ rất lớn.
 
 \begin{center}
-\fbox{\parbox{0.85\textwidth}{
-\textbf{NCE} (có $Z$ học được) $\Rightarrow$ mô hình hội tụ về $q_{\theta^*} = p$ (phân phối đúng).\\[4pt]
-\textbf{NEG} (cố định $\overline{Z} = |\mathcal{X}|/m$) $\Rightarrow$ mô hình hội tụ về $q_{\theta^*} = \overline{Z}\,p$ (phân phối \emph{phóng đại}).\\[4pt]
-Hệ số phóng đại $\overline{Z} = |\mathcal{X}|/m$ thường rất lớn: với $n = 10\,000$ điểm và $m = 5$, ta có $\overline{Z} \approx 10^7$. Để $q_\theta(ij) = \phi(d_{ij})$ đạt giá trị lớn tương ứng, các điểm láng giềng phải được kéo \emph{rất gần nhau} trong không gian nhúng $\Rightarrow$ cụm siêu co chặt.
+\fbox{\parbox{0.85\textwidth}{%
+\textbf{NCE} ($Z$ học được): \quad $q_{\theta^*} = p$ \hfill (phân phối đúng).\\[4pt]
+\textbf{NEG} ($\overline{Z} = \frac{|\mathcal{X}|}{m}$ cố định): \quad $q_{\theta^*} = \overline{Z}\,p$ \hfill (phóng đại $\overline{Z}$ lần).%
 }}
 \end{center}
 
-\paragraph{UMAP chính là NEG trên khung t-SNE.}
-Các tác giả chứng minh rằng loss thực sự của UMAP (phương trình~\eqref{eq:umap-eff-ch4}) chính là loss NEG \eqref{eq:neg-loss} với mô hình $\tilde{q}_\theta(ij) = \frac{1}{d_{ij}^2}$ (inverse-square kernel), không phải Cauchy kernel $\phi(d_{ij}) = \frac{1}{1+d_{ij}^2}$. Thật vậy:
+\subsubsection{Bước 3 --- UMAP thực chất là NEG}
+\label{sec:umap-is-neg}
+
+\begin{lemma}[Bổ đề 3 --- Damrich et al., 2023]
+\label{lem:umap-neg}
+Loss hiệu dụng của UMAP (sau khi tính đến cơ chế lấy mẫu âm) chính là loss NEG~\eqref{eq:neg-loss} với kernel $\tilde{q}_\theta(ij) = \frac{1}{d_{ij}^2}$.
+\end{lemma}
+
+\begin{proof}
+Böhm et al.~\cite{bohm2022attraction} chỉ ra rằng loss hiệu dụng UMAP có dạng:
 \begin{equation}
-\phi(d_{ij}) = \frac{1}{1 + d_{ij}^2} = \frac{\frac{1}{d_{ij}^2}}{\frac{1}{d_{ij}^2} + 1} = \frac{\tilde{q}_\theta(ij)}{\tilde{q}_\theta(ij) + 1},
-\label{eq:umap-neg-equiv}
+  \mathcal{L}_{\text{UMAP}}(\theta)
+  = -\E_{ij \sim p}\log\phi(d_{ij})
+  - m\,\E_{ij \sim \xi}\log\!\bigl(1 - \phi(d_{ij})\bigr),
+  \label{eq:umap-eff-ch4}
 \end{equation}
-đúng dạng $\frac{q_\theta}{q_\theta + 1}$ trong loss NEG.
-
-Kết hợp với Định lý~\ref{thm:cor2}, trong ngữ cảnh nhúng láng giềng với $|\mathcal{X}| = \binom{n}{2}$ cặp điểm:
+với $\phi(d) = \frac{1}{1+d^2}$ và $m = 5$ (mặc định). Đặt $\tilde{q}(ij) := \frac{1}{d_{ij}^2}$. Khi đó:
 \begin{equation}
-\overline{Z}_{\text{UMAP}} = \frac{|\mathcal{X}|}{m} = \frac{\binom{n}{2}}{m} = \frac{n(n-1)}{2m} = \mathcal{O}(n^2).
-\label{eq:z-umap}
+  \phi(d_{ij})
+  = \frac{1}{1+d_{ij}^2}
+  = \frac{d_{ij}^{-2}}{1+d_{ij}^{-2}}
+  = \frac{\tilde{q}(ij)}{\tilde{q}(ij)+1}, \qquad
+  1-\phi(d_{ij}) = \frac{1}{\tilde{q}(ij)+1}.
+  \label{eq:umap-neg-equiv}
 \end{equation}
-Trong khi đó, hàm phân hoạch thực tế $Z(\theta)$ của t-SNE thường nằm trong khoảng $[50n, 100n]$ \cite{bohm2022attraction}---nhỏ hơn $\overline{Z}_{\text{UMAP}}$ \emph{bậc $n$}.
+Thay vào~\eqref{eq:umap-eff-ch4}:
+\[
+  \mathcal{L}_{\text{UMAP}}(\theta)
+  = -\E_{p}\log\frac{\tilde{q}(ij)}{\tilde{q}(ij)+1}
+  - m\,\E_{\xi}\log\frac{1}{\tilde{q}(ij)+1},
+\]
+đúng bằng loss NEG~\eqref{eq:neg-loss} với $\phi_\theta \leftarrow \tilde{q}_\theta$.
+\end{proof}
 
-\subsubsection{Gradient tương phản và hệ thống vector lực}
+Áp dụng Định lý~\ref{thm:cor2}: UMAP dùng NEG với hằng số cố định
+\begin{equation}
+  \overline{Z}_{\text{UMAP}} = \frac{|\mathcal{X}|}{m} = \dfrac{\binom{n}{2}}{m}
+  = \frac{n(n-1)}{2m} = \mathcal{O}(n^2),
+  \label{eq:z-umap}
+\end{equation}
+trong khi $Z(\theta)$ của t-SNE $\approx 50n$--$100n$ \cite{bohm2022attraction}---nhỏ hơn $\overline{Z}_{\text{UMAP}}$ bậc $n$.
 
-Để hiểu tại sao $\overline{Z}$ ảnh hưởng đến hình thái nhúng, ta phân tích gradient của các hàm loss. Xuất phát từ Cauchy kernel $\phi(ij) = \frac{1}{1+d_{ij}^2}$ với $d_{ij} = \|\mathbf{y}_i - \mathbf{y}_j\|$ và tham số $\theta = \{\mathbf{y}_1, \ldots, \mathbf{y}_n\}$, ta cần tính $\frac{\partial\mathcal{L}}{\partial\mathbf{y}_i}$.
+\paragraph{Chuỗi liên kết t-SNE $\boldsymbol{\to}$ UMAP.}
+\begin{center}
+\begin{tikzpicture}[
+  node distance=0.45cm and 1.2cm,
+  box/.style={rectangle, draw, rounded corners=3pt, minimum height=1cm,
+              minimum width=2.4cm, align=center, font=\small},
+  arrow/.style={->, thick, >=Stealth}
+]
+\node[box, fill=blue!10]    (tsne)   {t-SNE\\(MLE)};
+\node[box, fill=green!10,   right=of tsne]    (nctsne) {NC-t-SNE\\(NCE)};
+\node[box, fill=orange!10,  right=of nctsne]  (negtsne){Neg-t-SNE\\(NEG)};
+\node[box, fill=red!10,     right=of negtsne] (umap)   {UMAP\\(NEG)};
 
-\paragraph{Gradient chung cho MLE, NCE, NEG.}
-Bài báo chỉ ra ba gradient có cùng cấu trúc, chỉ khác ở hệ số chuẩn hóa và hệ số triệt tiêu (dampening):
+\draw[arrow] (tsne)   -- node[above, font=\scriptsize]{$Z$ tự học}       (nctsne);
+\draw[arrow] (nctsne) -- node[above, font=\scriptsize]{$\overline{Z}$ cố định} (negtsne);
+\draw[arrow, dashed]  (negtsne) -- node[above, font=\scriptsize]{kernel $\frac{1}{d^2}$} (umap);
+
+\node[below=0.25cm of tsne,    font=\scriptsize, blue!70!black,   align=center]{$q^*=p$\\$Z\!\approx\!50n$};
+\node[below=0.25cm of nctsne,  font=\scriptsize, green!50!black,  align=center]{$q^*=p$\\$Z\!\approx\!50n$};
+\node[below=0.25cm of negtsne, font=\scriptsize, orange!70!black, align=center]{$q^*=\overline{Z}p$\\$\overline{Z}\!=\!\mathcal{O}(n^2)$};
+\node[below=0.25cm of umap,    font=\scriptsize, red!70!black,    align=center]{$q^*=\overline{Z}p$\\$\overline{Z}\!=\!\mathcal{O}(n^2)$};
+\end{tikzpicture}
+\end{center}
+
+Bước NCE$\to$NEG (cố định $\overline{Z}$) là bước \emph{duy nhất} thay đổi nghiệm tối ưu. UMAP khác Neg-t-SNE chỉ ở kernel ($\frac{1}{d^2}$ vs.\ Cauchy), nhưng với $d_{ij}$ lớn cả hai xấp xỉ nhau ($\phi(d) \approx \frac{1}{d^2}$) nên sự khác biệt kernel gần như không ảnh hưởng hình thái nhúng.
+
+\subsubsection{Phổ nhúng: $\overline{Z}$ điều khiển tỷ lệ lực đẩy/hút}
+\label{sec:contrastive-gradients}
+
+\paragraph{Cấu trúc gradient.}
+Với Cauchy kernel $\phi(d) = \frac{1}{1+d^2}$ và $\mathbf{r}_{ij} = \mathbf{y}_i - \mathbf{y}_j$, ta có $\frac{\partial\phi(ij)}{\partial\mathbf{y}_i} = -2\phi(ij)^2\,\mathbf{r}_{ij}$ (khai triển tường minh tại Phụ lục~\ref{app:nce-gradient}). Ba gradient của MLE, NCE, NEG có cấu trúc song song, chỉ khác ở hệ số chuẩn hóa và hệ số \emph{dampening}:
 \begin{align}
-\frac{\partial\mathcal{L}_{\text{t-SNE}}}{\partial\mathbf{y}_i}
-  &= 2\sum_{j \neq i}\left(\frac{p(ij)}{q_\theta(ij)} - 1\right)\frac{1}{Z(\theta)}\cdot\frac{\partial\phi(ij)}{\partial\mathbf{y}_i},
-  \label{eq:grad-tsne}\\[4pt]
-\frac{\partial\mathcal{L}_{\text{NC-t-SNE}}}{\partial\mathbf{y}_i}
-  &= 2\sum_{j \neq i}\underbrace{\dfrac{m\xi(ij)}{\dfrac{\phi(ij)}{Z} + m\xi(ij)}}_{\to 1 \text{ khi } m \to \infty}\left(\dfrac{p(ij)}{q_{\theta,Z}(ij)} - 1\right)\dfrac{1}{Z}\cdot\dfrac{\partial\phi(ij)}{\partial\mathbf{y}_i},
-  \label{eq:grad-nctsne}\\[4pt]
-\frac{\partial\mathcal{L}_{\text{Neg-t-SNE}}}{\partial\mathbf{y}_i}
-  &= 2\sum_{j \neq i}\underbrace{\dfrac{m\xi(ij)}{\dfrac{\phi(ij)}{\overline{Z}} + m\xi(ij)}}_{\in [0.5, 1]}\left(\dfrac{p(ij)}{\dfrac{\phi(ij)}{\overline{Z}}} - 1\right)\dfrac{1}{\overline{Z}}\cdot\dfrac{\partial\phi(ij)}{\partial\mathbf{y}_i}.
+  \frac{\partial\mathcal{L}_{\text{t-SNE}}}{\partial\mathbf{y}_i}
+  &= 2\sum_{j \neq i}\!\left(\frac{p(ij)}{q_\theta(ij)} - 1\right)\frac{1}{Z(\theta)}
+    \cdot\frac{\partial\phi(ij)}{\partial\mathbf{y}_i},
+  \label{eq:grad-tsne}\\[6pt]
+  \frac{\partial\mathcal{L}_{\text{NC-t-SNE}}}{\partial\mathbf{y}_i}
+  &= 2\sum_{j \neq i}\underbrace{\dfrac{m\xi(ij)}{\dfrac{\phi(ij)}{Z} + m\xi(ij)}}_{\xrightarrow{m\to\infty} 1}
+    \!\left(\frac{p(ij)}{q_{\theta,Z}(ij)} - 1\right)\frac{1}{Z}
+    \cdot\frac{\partial\phi(ij)}{\partial\mathbf{y}_i},
+  \label{eq:grad-nctsne}\\[6pt]
+  \frac{\partial\mathcal{L}_{\text{Neg-t-SNE}}}{\partial\mathbf{y}_i}
+  &= 2\sum_{j \neq i}\underbrace{\dfrac{m\xi(ij)}{\dfrac{\phi(ij)}{\overline{Z}} + m\xi(ij)}}_{\in[0.5,\,1]}
+    \!\left(\dfrac{p(ij)}{\dfrac{\phi(ij)}{\overline{Z}}} - 1\right)\frac{1}{\overline{Z}}
+    \cdot\frac{\partial\phi(ij)}{\partial\mathbf{y}_i}.
   \label{eq:grad-negtsne}
 \end{align}
-Ở đây $\frac{\partial\phi(ij)}{\partial\mathbf{y}_i} = 2\phi(ij)^2(\mathbf{y}_j - \mathbf{y}_i)$, vì:
-\[
-\frac{\partial\phi}{\partial\mathbf{y}_i} = \frac{\partial}{\partial\mathbf{y}_i}\frac{1}{1 + \|\mathbf{y}_i - \mathbf{y}_j\|^2} = \frac{-2(\mathbf{y}_i - \mathbf{y}_j)}{(1 + d_{ij}^2)^2} = -2\phi(ij)^2\,\mathbf{r}_{ij},
-\]
-với $\mathbf{r}_{ij} = \mathbf{y}_i - \mathbf{y}_j$.
+Ba gradient chỉ khác ở: (i)~hệ số chuẩn hóa ($Z(\theta)$, $Z$, hay $\overline{Z}$), và (ii)~hệ số dampening (bằng $1$ cho MLE; hội tụ về $1$ khi $m\to\infty$ cho NCE; nằm trong $[0.5,1]$ cho NEG).
 
-Khai triển chi tiết từ loss NCE đến phương trình~\eqref{eq:grad-nctsne} (đặt $f = \phi_\theta/Z$, $c = m\xi$, tính đạo hàm từng số hạng rồi tổng hợp) xem tại Phụ lục~\ref{app:nce-gradient}. Gradient NEG thu được tương tự khi thay $Z \to \overline{Z}$ (cố định).
-
-\paragraph{Phân tích lực hút và lực đẩy.}
-Thay $\frac{\partial\phi}{\partial\mathbf{y}_i}$ vào \eqref{eq:grad-negtsne} và triệt tiêu hệ số dampening (xấp xỉ bằng 1 khi $\overline{Z}$ lớn), gradient Neg-t-SNE tách thành:
-\begin{equation}
-\frac{\partial\mathcal{L}_{\text{Neg-t-SNE}}}{\partial\mathbf{y}_i}
-\approx 2\sum_{j \neq i}\left(\dfrac{p(ij)}{\dfrac{\phi(ij)}{\overline{Z}}} - 1\right)\dfrac{\phi(ij)}{\overline{Z}} \cdot \phi(ij) \cdot 2(\mathbf{y}_j - \mathbf{y}_i).
-\label{eq:grad-expand}
-\end{equation}
-Tách tổng theo cạnh dữ liệu ($p(ij) > 0$, các cặp láng giềng trong skNN) và cạnh nhiễu ($p(ij) = 0$, các cặp ngẫu nhiên):
-
+\paragraph{Tách lực hút và lực đẩy.}
+Xét gradient Neg-t-SNE~\eqref{eq:grad-negtsne}. Tổng gồm hai loại cặp:
 \begin{itemize}
-  \item \textbf{Lực hút} (cạnh skNN, $p(ij) > 0$): số hạng $\frac{p(ij)}{\frac{\phi(ij)}{\overline{Z}}}$ chiếm ưu thế, \emph{kéo} $\mathbf{y}_i$ về phía $\mathbf{y}_j$. Lực hút tỷ lệ thuận với $p(ij)$ và \emph{không phụ thuộc} $\overline{Z}$.
+  \item \textbf{Cạnh skNN} ($p(ij) > 0$): số hạng $\dfrac{p(ij)}{\frac{\phi(ij)}{\overline{Z}}}$ chiếm ưu thế
+    $\Rightarrow$ \textbf{lực hút}, kéo $\mathbf{y}_i$ về phía $\mathbf{y}_j$.
+    Lực hút \emph{không phụ thuộc} $\overline{Z}$: $\dfrac{p(ij)\overline{Z}}{\phi(ij)} \cdot \dfrac{1}{\overline{Z}} = \dfrac{p(ij)}{\phi(ij)}$.
 
-  \item \textbf{Lực đẩy} (cạnh nhiễu, $p(ij) = 0$): còn lại số hạng $-1 \cdot \frac{\phi(ij)}{\overline{Z}}$, \emph{đẩy} $\mathbf{y}_i$ ra xa $\mathbf{y}_j$. Lực đẩy tỷ lệ \emph{nghịch} với $\overline{Z}$:
-  \begin{equation}
-  F_{\text{rep}} \propto \frac{1}{\overline{Z}}.
-  \label{eq:repulsion-scaling}
-  \end{equation}
+  \item \textbf{Cặp nhiễu} ($p(ij) = 0$): còn lại $-\dfrac{\phi(ij)}{\overline{Z}}$
+    $\Rightarrow$ \textbf{lực đẩy}, đẩy $\mathbf{y}_i$ ra xa $\mathbf{y}_j$. Lực đẩy tỷ lệ \emph{nghịch} với $\overline{Z}$:
 \end{itemize}
+\begin{equation}
+  F_{\text{rep}} \propto \frac{\phi(ij)^2}{\overline{Z}} \propto \frac{1}{\overline{Z}}.
+  \label{eq:repulsion-scaling}
+\end{equation}
+(Chi tiết khai triển và chứng minh tại Phụ lục~\ref{app:nce-gradient}.)
 
-\subsubsection{Phổ nhúng Neg-t-SNE (Embedding Spectrum)}
-
-Phương trình~\eqref{eq:repulsion-scaling} là chìa khóa giải thích phổ nhúng. Bằng cách thay đổi $\overline{Z}$ trong loss NCE tổng quát \eqref{eq:gen-nce-loss}, ta thu được một \emph{phổ liên tục} các kết quả nhúng:
-
+\paragraph{Phổ nhúng từ t-SNE đến UMAP.}
+Phương trình~\eqref{eq:repulsion-scaling} giải thích trực tiếp sự khác biệt hình thái:
 \begin{itemize}
-  \item \textbf{$\overline{Z}$ nhỏ} (bằng $Z(\theta)$ của t-SNE, khoảng $50n$--$100n$): Lực đẩy rất mạnh ($\propto \frac{1}{\overline{Z}}$ lớn). Không gian nhúng bị giãn rộng, các cụm dàn trải. Mô hình ưu tiên bảo toàn \emph{cấu trúc cục bộ chi tiết}---tương đương hành vi t-SNE.
-
-  \item \textbf{$\overline{Z}$ lớn} ($= \frac{\binom{n}{2}}{m} = \mathcal{O}(n^2)$): Lực đẩy suy yếu đáng kể. Lực hút chiếm thế thượng phong, kéo các điểm tương đồng về sát nhau, tạo ra \emph{cụm siêu co chặt}---tương đương hành vi UMAP.
-
-  \item \textbf{$\overline{Z}$ rất lớn} ($> \frac{\binom{n}{2}}{m}$): Lực đẩy gần như triệt tiêu, các cụm bắt đầu \emph{sáp nhập} lẫn nhau.
+  \item $\overline{Z} = Z(\theta) \approx 50n$--$100n$ \textbf{(t-SNE)}: lực đẩy mạnh, không gian nhúng dàn rộng, cụm phân tán rõ---mô hình ưu tiên bảo toàn \emph{cấu trúc cục bộ chi tiết}.
+  \item $\overline{Z} = \dfrac{\binom{n}{2}}{m} = \mathcal{O}(n^2)$ \textbf{(UMAP)}: lực đẩy yếu hơn bậc $n$, lực hút thống trị $\Rightarrow$ \emph{cụm siêu co chặt}.
+  \item $\overline{Z} \gg \dfrac{\binom{n}{2}}{m}$: lực đẩy gần triệt tiêu, các cụm bắt đầu sáp nhập.
 \end{itemize}
 
 \begin{remark}
-Hằng số chuẩn hóa $\overline{Z}$ chính là \emph{tham số trượt} (slider parameter) điều hướng dịch chuyển hình thái nhúng liên tục từ t-SNE sang UMAP. Bằng cách nội suy logarit $\overline{Z} = Z_{\text{lo}} \cdot \exp\!\bigl(s \cdot (\log Z_{\text{hi}} - \log Z_{\text{lo}})\bigr)$ với $s \in [0,1]$, $Z_{\text{lo}} = Z_{\text{t-SNE}}$ và $Z_{\text{hi}} = \frac{\binom{n}{2}}{m}$, ta có $s = 0$ ứng t-SNE và $s = 1$ ứng UMAP.
+$\overline{Z}$ là \emph{tham số trượt} (slider) cho phép nội suy liên tục giữa hành vi t-SNE và UMAP. Bằng cách đặt $\overline{Z} = Z_{\text{lo}}\cdot\exp\!\bigl(s(\log Z_{\text{hi}} - \log Z_{\text{lo}})\bigr)$ với $s \in [0,1]$, $Z_{\text{lo}} = Z_{\text{t-SNE}}$, $Z_{\text{hi}} = \dfrac{\binom{n}{2}}{m}$, ta thu được họ phương pháp gọi là \textbf{Neg-t-SNE spectrum}.
 \end{remark}
 
 \begin{figure}[H]
 \centering
-\begin{tikzpicture}[
-  scale=1,
-  >=Stealth,
-  every node/.style={font=\small}
-]
+\begin{tikzpicture}[scale=1, >=Stealth, every node/.style={font=\small}]
 \draw[->, thick] (0,0) -- (13,0) node[right] {$\log\overline{Z}$};
 
 \draw[thick, blue!70] (1.5,-0.15) -- (1.5,0.15);
-\node[below, blue!70, align=center] at (1.5,-0.3) {$\overline{Z} \ll Z_{\text{t-SNE}}$\\[-2pt]\scriptsize cụm chồng lấn};
+\node[below, blue!70, align=center] at (1.5,-0.35)
+  {$\overline{Z} \ll Z_{\text{t-SNE}}$\\[-2pt]\scriptsize cụm chồng lấn};
 
 \draw[thick, green!50!black] (4.5,-0.15) -- (4.5,0.15);
-\node[below, green!50!black, align=center] at (4.5,-0.3) {$\overline{Z} = Z_{\text{t-SNE}}$\\[-2pt]\scriptsize$\approx 50n$--$100n$\\[-2pt]\scriptsize\textbf{t-SNE}};
+\node[below, green!50!black, align=center] at (4.5,-0.35)
+  {$\overline{Z} = Z_{\text{t-SNE}}$\\[-2pt]\scriptsize$\approx 50n$--$100n$\\[-2pt]\textbf{t-SNE}};
 
 \draw[thick, red!70!black] (8.5,-0.15) -- (8.5,0.15);
-\node[below, red!70!black, align=center] at (8.5,-0.3) {$\overline{Z} = \frac{\binom{n}{2}}{m}$\\[-2pt]\scriptsize$= \mathcal{O}(n^2)$\\[-2pt]\scriptsize\textbf{UMAP}};
+\node[below, red!70!black, align=center] at (8.5,-0.35)
+  {$\overline{Z} = \tfrac{\binom{n}{2}}{m}$\\[-2pt]\scriptsize$= \mathcal{O}(n^2)$\\[-2pt]\textbf{UMAP}};
 
 \draw[thick, gray] (11.5,-0.15) -- (11.5,0.15);
-\node[below, gray, align=center] at (11.5,-0.3) {$\overline{Z} \gg \frac{\binom{n}{2}}{m}$\\[-2pt]\scriptsize cụm sáp nhập};
+\node[below, gray, align=center] at (11.5,-0.35)
+  {$\overline{Z} \gg \tfrac{\binom{n}{2}}{m}$\\[-2pt]\scriptsize cụm sáp nhập};
 
-\draw[<->, thick, blue!50!red] (4.5,0.8) -- node[above, font=\footnotesize] {Phổ Neg-t-SNE} (8.5,0.8);
-\draw[<->, thick, orange!80!black] (1.0,1.5) -- node[above, font=\footnotesize, align=center] {Lực đẩy mạnh $\longleftarrow$ $F_{\text{rep}} \propto \frac{1}{\overline{Z}}$ $\longrightarrow$ Lực đẩy yếu} (12.0,1.5);
-
-\node[font=\footnotesize, align=center] at (3.0,2.3) {cục bộ chi tiết\\(local structure)};
-\node[font=\footnotesize, align=center] at (10.0,2.3) {toàn cục, co cụm\\(global structure)};
+\draw[<->, thick, blue!50!red] (4.5,0.8) --
+  node[above, font=\footnotesize]{Neg-t-SNE spectrum} (8.5,0.8);
+\draw[<->, thick, orange!80!black] (1.0,1.5) --
+  node[above, font=\footnotesize]{$F_{\text{rep}}$ mạnh $\;\longleftarrow\;$ $F_{\text{rep}}\propto \frac{1}{\overline{Z}}$ $\;\longrightarrow\;$ $F_{\text{rep}}$ yếu} (12.0,1.5);
 \end{tikzpicture}
-\caption{Phổ nhúng Neg-t-SNE: thay đổi $\overline{Z}$ dịch chuyển liên tục giữa hành vi t-SNE (lực đẩy mạnh, cụm dàn trải) và UMAP (lực đẩy yếu, cụm co chặt).}
+\caption{Phổ Neg-t-SNE: $\overline{Z}$ nhỏ ($\approx 50n$, t-SNE) cho lực đẩy mạnh và cụm dàn trải; $\overline{Z}$ lớn ($\mathcal{O}(n^2)$, UMAP) cho lực đẩy yếu và cụm siêu co chặt.}
 \label{fig:neg-tsne-spectrum}
 \end{figure}
 
-\subsubsection{Phân tích kernel: tính ổn định toán học}
+\paragraph{Ổn định số trị: Cauchy vs.\ nghịch bình phương.}
+Neg-t-SNE dùng Cauchy kernel $\phi(d) = \frac{1}{1+d^2} \in (0,1]$ (chặn trên), nên lực đẩy tối đa là $\log 2$ dù $d_{ij} \to 0$. Ngược lại, UMAP dùng $\tilde{q}(d) = \frac{1}{d^2} \to \infty$ khi $d \to 0$, gây hiệu ứng ``catapult'' và bất ổn gradient---lý do UMAP cần \textit{learning rate annealing} trong thực hành. Đây là ưu điểm thực tiễn của Neg-t-SNE.
 
-Phần trên cho thấy UMAP và Neg-t-SNE cùng sử dụng NEG với $\overline{Z} = \frac{\binom{n}{2}}{m}$, nhưng dùng kernel khác nhau:
-\begin{itemize}
-  \item \textbf{Neg-t-SNE}: Cauchy kernel $\phi(d) = \dfrac{1}{1 + d^2}$, bị chặn $\phi \in (0, 1]$.
-  \item \textbf{UMAP (ngầm)}: Inverse-square kernel $\tilde{q}(d) = \dfrac{1}{d^2}$, phát tán $\tilde{q} \to \infty$ khi $d \to 0$.
-\end{itemize}
-
-Hệ quả cho \textbf{lực đẩy}: Số hạng đẩy của Neg-t-SNE là $\log\!\left(\frac{2+d^2}{1+d^2}\right)$, bị chặn trên bởi $\log 2$ tại $d = 0$. Trong khi đó, số hạng đẩy của UMAP là $\log\!\left(\frac{1+d^2}{d^2}\right)$, \emph{phân kỳ} khi $d \to 0$. Sự phân kỳ này gây \emph{bất ổn gradient} (gradient instability): khi hai điểm ngẫu nhiên tình cờ rất gần nhau trong không gian nhúng, chúng bị đẩy cực mạnh ra khỏi cụm (hiệu ứng ``catapult'').
-
-Thực nghiệm xác nhận: UMAP \emph{phụ thuộc nặng nề} vào kỹ thuật giảm tốc độ học (learning rate annealing) $\eta \to 0$ để khắc phục bất ổn này, trong khi Neg-t-SNE hoạt động ổn định ngay cả khi không dùng annealing. Đây là một ưu điểm thực tiễn quan trọng của Neg-t-SNE so với UMAP.
-
-\subsubsection{Đối chiếu với lý thuyết giảm chiều trong sách}
-
-\paragraph{Triết lý thiết kế.}
-Các phương pháp DR trong sách \cite{mohri2018foundations}---PCA, KPCA, Isomap, Laplacian eigenmaps, LLE---đều tìm $\mathbf{Y}$ bằng cách giải bài toán tối ưu tuyến tính (phân tích trị riêng hoặc kỳ dị). Ngược lại, NCE/NEG tối ưu \emph{phi tuyến trực tiếp} trên tọa độ nhúng thông qua SGD, dùng hàm mật độ xác suất phi tham số thay vì ma trận kernel cố định.
-
-\paragraph{Vai trò của kernel hạ chiều.}
-Trong KPCA, kernel $K(x_i, x_j) = \langle\Phi(x_i), \Phi(x_j)\rangle$ được chọn cố định trước (Gaussian, polynomial, ...). Trong Neg-t-SNE, Cauchy kernel $\phi(d) = \frac{1}{1+d^2}$ đóng vai trò tương tự nhưng ở \emph{không gian hạ chiều}: nó biến khoảng cách Euclidean thành ``xác suất tương đồng'' cho phép tối ưu bằng phương pháp tương phản. Đặc tính đuôi nặng (heavy-tailed) của Cauchy kernel giúp giải quyết bài toán \emph{crowding problem} (sụp đổ không gian khi ép từ $D$ chiều xuống $d = 2$) mà kernel Gaussian (đuôi nhẹ) không thể.
-
-\paragraph{Đánh đổi cục bộ -- toàn cục.}
-PCA bảo toàn \emph{phương sai toàn cục} (cực đại phương sai chiếu). JL bảo toàn \emph{khoảng cách cặp} (global pairwise distances). Các phương pháp manifold (Isomap, Laplacian, LLE) bảo toàn \emph{cấu trúc lân cận}. Bài báo \cite{damrich2023contrastive} chỉ ra rằng tham số $\overline{Z}$ trong Neg-t-SNE cho phép \emph{điều chỉnh linh hoạt} mức độ ưu tiên giữa cấu trúc cục bộ và toàn cục thông qua tỷ lệ lực đẩy/hút---một cơ chế động mà các phương pháp DR tuyến tính trong sách hoàn toàn không có.
-
+\paragraph{Tóm tắt so sánh.}
 \begin{table}[H]
 \centering
-\caption{So sánh các phương pháp giảm chiều: sách gốc và bài báo nghiên cứu}
+\caption{So sánh t-SNE, NC-t-SNE, Neg-t-SNE và UMAP qua khung NCE/NEG}
 \label{tab:dr-compare-ch4}
 \begin{tabular}{@{}lllll@{}}
 \toprule
- & \textbf{PCA} & \textbf{t-SNE} & \textbf{UMAP} & \textbf{Neg-t-SNE} \\
+ & \textbf{t-SNE} & \textbf{NC-t-SNE} & \textbf{Neg-t-SNE} & \textbf{UMAP} \\
 \midrule
-\textbf{Hàm mục tiêu} & $\min\|\mathbf{PX}-\mathbf{X}\|_F^2$ & KL$(P\|Q)$ & Cross-entropy & NCE tổng quát \\
-\textbf{Tối ưu} & SVD (đóng) & GD & SGD + NEG & SGD + NCE \\
-\textbf{Kernel hạ chiều} & Tuyến tính & Cauchy & $\frac{1}{d^2}$ (ngầm) & Cauchy \\
-\textbf{Chuẩn hóa} & --- & $Z(\theta)$ (tính) & $\overline{Z} = \frac{\binom{n}{2}}{m}$ (cố định) & $\overline{Z}$ (tùy chọn) \\
-\textbf{Lực đẩy} & --- & $\propto \frac{1}{Z(\theta)}$ & $\propto \frac{m}{\binom{n}{2}}$ & $\propto \frac{1}{\overline{Z}}$ \\
-\textbf{Bảo toàn} & Phương sai toàn cục & Cục bộ & Cục bộ + toàn cục & Phổ liên tục \\
-\textbf{Ổn định} & Luôn ổn định & Ổn định & Cần annealing & Ổn định \\
+\textbf{Khung tối ưu}          & MLE          & NCE           & NEG           & NEG \\
+\textbf{Hằng số $Z$}           & $Z(\theta)$ (tính) & $Z$ (học) & $\overline{Z}$ (chọn) & $\dfrac{\binom{n}{2}}{m}$ \\
+\textbf{Kernel $\phi$}         & Cauchy       & Cauchy        & Cauchy        & $\dfrac{1}{d^2}$ \\
+\textbf{Nghiệm $q^*$}          & $p$          & $p$           & $\overline{Z}p$ & $\overline{Z}p$ \\
+\textbf{Lực đẩy $F_{\text{rep}}$} & $\propto \dfrac{1}{Z(\theta)}$ & $\propto \dfrac{1}{Z}$ & $\propto \dfrac{1}{\overline{Z}}$ & $\propto \dfrac{m}{\tbinom{n}{2}}$ \\
+\textbf{Hình thái cụm}         & Dàn trải     & Dàn trải      & Linh hoạt     & Siêu co chặt \\
+\textbf{Ổn định số}            & Ổn định      & Ổn định       & Ổn định       & Cần annealing \\
 \bottomrule
 \end{tabular}
 \end{table}

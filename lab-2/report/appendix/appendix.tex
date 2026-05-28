@@ -6,7 +6,7 @@
 Bổ đề~\ref{lem:chi2-conc} được dùng trong chứng minh bổ đề Johnson--Lindenstrauss (Mục~\ref{sec:jl}). Dưới đây là chứng minh đầy đủ bằng kỹ thuật Chernoff bound.
 
 \begin{proof}[Chứng minh Bổ đề~\ref{lem:chi2-conc}]
-Dùng bất đẳng thức Chernoff (Markov trên $e^{tS}$). Với $t < \frac{1}{2}$, MGF của $Z_i^2$ là $\E[e^{tZ_i^2}] = (1-2t)^{-1/2}$, nên $\E[e^{tS}] = (1-2t)^{-k/2}$.
+Dùng bất đẳng thức Chernoff (Markov trên $e^{tS}$). Với $t < \frac{1}{2}$, MGF của $Z_i^2$ là $\E[e^{tZ_i^2}] = (1-2t)^{-\frac{1}{2}}$, nên $\E[e^{tS}] = (1-2t)^{-\frac{k}{2}}$.
 
 \textbf{Đuôi trên} ($S > (1+\varepsilon)k$): với $t \in \left(0, \frac{1}{2}\right)$,
 \[
@@ -57,41 +57,89 @@ Cập nhật $\mathbf{y}_i \leftarrow \mathbf{y}_i - \eta\,\frac{\partial C_{ij}
   \item Chọn ngẫu nhiên \texttt{n\_neg\_samples} điểm $k$ (lấy mẫu âm---giả định các cặp ngẫu nhiên không phải láng giềng). Với mỗi $k$: cập nhật $\mathbf{y}_i \leftarrow \mathbf{y}_i + \eta\,\mathbf{f}_{ik}^{\mathrm{rep}}$ (đẩy $\mathbf{y}_i$ ra xa $\mathbf{y}_k$).
 \end{enumerate}
 
-\subsection{Khai triển chi tiết gradient NCE}
+\subsection{Khai triển gradient MLE, NCE, NEG cho nhúng láng giềng}
 \label{app:nce-gradient}
 
-Phần này chứng minh phương trình~\eqref{eq:grad-nctsne} từ loss NCE (Mục~\ref{sec:nce-def}).
+Phần này khai triển tường minh ba gradient trong khung nhúng láng giềng (Mục~\ref{sec:research-contrastive}), đồng thời chứng minh $F_{\text{rep}} \propto \frac{1}{\overline{Z}}$ từ~\eqref{eq:repulsion-scaling}. Ký hiệu chung: $d_{ij} = \|\mathbf{y}_i - \mathbf{y}_j\|$, $\mathbf{r}_{ij} = \mathbf{y}_i - \mathbf{y}_j$, $\phi(ij) := \frac{1}{1+d_{ij}^2}$.
 
-Xuất phát từ:
+\paragraph{A. Đạo hàm kernel Cauchy.}
+Bằng chain rule:
+\begin{align*}
+  \frac{\partial \phi(ij)}{\partial \mathbf{y}_i}
+  &= \frac{d\phi}{d\,d_{ij}}\cdot\frac{\partial d_{ij}}{\partial \mathbf{y}_i}
+  = \frac{-2d_{ij}}{(1+d_{ij}^2)^2}\cdot\frac{\mathbf{r}_{ij}}{d_{ij}}
+  = -\frac{2}{(1+d_{ij}^2)^2}\,\mathbf{r}_{ij}
+  = -2\phi(ij)^2\,\mathbf{r}_{ij}.
+\end{align*}
+
+\paragraph{B. Gradient MLE (t-SNE).}
+Khai triển $\mathcal{L}_{\text{t-SNE}} = -\sum_{ij}p(ij)\log\phi(ij) + \log Z(\theta)$ (dùng $\sum_{ij}p(ij)=1$):
+\begin{align*}
+  \frac{\partial}{\partial\mathbf{y}_i}\bigl(-\log\phi(ij)\bigr)
+  &= -\frac{1}{\phi(ij)}\cdot\bigl(-2\phi(ij)^2\,\mathbf{r}_{ij}\bigr) = 2\phi(ij)\,\mathbf{r}_{ij},\\[4pt]
+  \frac{\partial \log Z(\theta)}{\partial \mathbf{y}_i}
+  &= \frac{1}{Z(\theta)}\sum_{j'\neq i}\frac{\partial\phi(ij')}{\partial\mathbf{y}_i}
+  = \frac{-2}{Z(\theta)}\sum_{j'\neq i}\phi(ij')^2\,\mathbf{r}_{ij'}.
+\end{align*}
+Kết hợp, với $q_\theta(ij) = \frac{\phi(ij)}{Z(\theta)}$:
+\begin{equation}
+  \frac{\partial\mathcal{L}_{\text{t-SNE}}}{\partial\mathbf{y}_i}
+  = 2\sum_{j\neq i}\!\left(\frac{p(ij)}{q_\theta(ij)}-1\right)\frac{1}{Z(\theta)}
+    \cdot\frac{\partial\phi(ij)}{\partial\mathbf{y}_i}.
+  \label{eq:grad-tsne-app}
+\end{equation}
+
+\paragraph{C. Gradient NCE tổng quát và NC-t-SNE.}
+Với $f = q_{\theta,Z}(x) = \frac{\phi_\theta(x)}{Z}$ và $c = m\xi(x)$, tính đạo hàm từng số hạng của~\eqref{eq:nce-loss}:
 \[
-\mathcal{L}_{\text{NCE}}(\theta, Z) = -\E_{x \sim p}\log\frac{q_{\theta,Z}(x)}{q_{\theta,Z}(x) + m\xi(x)} - m\,\E_{x \sim \xi}\log\frac{m\xi(x)}{q_{\theta,Z}(x) + m\xi(x)}.
+  \frac{d}{d\theta}\log\frac{f}{f+c} = \frac{c}{f(f+c)}\frac{df}{d\theta},
+  \qquad
+  \frac{d}{d\theta}\log\frac{c}{f+c} = \frac{-1}{f+c}\frac{df}{d\theta}.
 \]
-Đặt $f = q_{\theta,Z}(x) = \frac{\phi_\theta(x)}{Z}$ và $c = m\xi(x)$. Cần tính đạo hàm của hai số hạng.
+Lấy kỳ vọng và kết hợp (với $\frac{df}{d\theta} = \frac{1}{Z}\,\frac{d\phi_\theta}{d\theta}$):
+\begin{equation}
+  \frac{d\mathcal{L}_{\text{NCE}}}{d\theta}
+  = -\sum_x\frac{m\xi(x)}{q_{\theta,Z}(x) + m\xi(x)}\left(\frac{p(x)}{q_{\theta,Z}(x)} - 1\right)
+    \frac{1}{Z}\frac{d\phi_\theta(x)}{d\theta}.
+  \label{eq:nce-grad-general}
+\end{equation}
+Cụ thể hóa theo $\mathbf{y}_i$ cho nhúng láng giềng:
+\begin{equation}
+  \frac{\partial\mathcal{L}_{\text{NC-t-SNE}}}{\partial\mathbf{y}_i}
+  = 2\sum_{j \neq i}\underbrace{\dfrac{m\xi(ij)}{\dfrac{\phi(ij)}{Z} + m\xi(ij)}}_{\xrightarrow{m\to\infty} 1}
+    \!\left(\frac{p(ij)}{q_{\theta,Z}(ij)} - 1\right)\frac{1}{Z}
+    \cdot\frac{\partial\phi(ij)}{\partial\mathbf{y}_i},
+  \label{eq:grad-nctsne-app}
+\end{equation}
+và gradient Neg-t-SNE thu được khi thay $Z \to \overline{Z}$ (cố định):
+\begin{equation}
+  \frac{\partial\mathcal{L}_{\text{Neg-t-SNE}}}{\partial\mathbf{y}_i}
+  = 2\sum_{j \neq i}\underbrace{\dfrac{m\xi(ij)}{\dfrac{\phi(ij)}{\overline{Z}} + m\xi(ij)}}_{\in[0.5,\,1]}
+    \!\left(\dfrac{p(ij)}{\dfrac{\phi(ij)}{\overline{Z}}} - 1\right)\dfrac{1}{\overline{Z}}
+    \cdot\dfrac{\partial\phi(ij)}{\partial\mathbf{y}_i}.
+  \label{eq:grad-negtsne-app}
+\end{equation}
 
-\textbf{Số hạng 1}: $-\log\frac{f}{f+c} = \log\!\left(1 + \frac{c}{f}\right)$.
+\paragraph{D. Phân tách lực hút/đẩy và chứng minh $F_{\text{rep}} \propto \frac{1}{\overline{Z}}$.}
+Xấp xỉ hệ số dampening bằng $1$ (hợp lệ khi $\overline{Z}$ lớn) và tách tổng~\eqref{eq:grad-negtsne-app} theo hai nhóm:
 \begin{align*}
-\frac{d}{d\theta}\log\frac{f}{f+c}
-&= \frac{d}{d\theta}\bigl[-\log\!\left(1 + \frac{c}{f}\right)\bigr]
-= -\frac{1}{1 + \frac{c}{f}}\cdot\frac{-c}{f^2}\cdot\frac{df}{d\theta}
-= \frac{c}{f(f+c)}\cdot\frac{df}{d\theta}.
+  \frac{\partial\mathcal{L}_{\text{Neg-t-SNE}}}{\partial\mathbf{y}_i}
+  &\approx 2\sum_{j\neq i}\!\left(\frac{p(ij)}{\frac{\phi(ij)}{\overline{Z}}} - 1\right)\frac{1}{\overline{Z}}
+    \cdot\frac{\partial\phi(ij)}{\partial\mathbf{y}_i}\\
+  &= \underbrace{2\sum_{\substack{j:\,p(ij)>0}}\!\left(\frac{\overline{Z}\,p(ij)}{\phi(ij)}-1\right)
+      \frac{1}{\overline{Z}}\cdot\frac{\partial\phi}{\partial\mathbf{y}_i}}_{\text{lực hút}}
+  + \underbrace{2\sum_{\substack{j:\,p(ij)=0}}\!\left(-1\right)
+      \frac{1}{\overline{Z}}\cdot\frac{\partial\phi}{\partial\mathbf{y}_i}}_{\text{lực đẩy}}.
 \end{align*}
+\textbf{Lực hút}: $\frac{\overline{Z}\,p(ij)}{\phi(ij)}\cdot\frac{1}{\overline{Z}} = \frac{p(ij)}{\phi(ij)}$---\emph{không phụ thuộc $\overline{Z}$}.
 
-\textbf{Số hạng 2}: $-\log\frac{c}{f+c} = \log\!\left(\frac{f}{c} + 1\right)$.
-\begin{align*}
-\frac{d}{d\theta}\log\frac{c}{f+c}
-&= \frac{d}{d\theta}\bigl[-\log\!\left(\frac{f}{c} + 1\right)\bigr]
-= -\frac{1}{\frac{f}{c} + 1}\cdot\frac{1}{c}\cdot\frac{df}{d\theta}
-= -\frac{1}{f+c}\cdot\frac{df}{d\theta}.
-\end{align*}
-
-Tổng hợp gradient (nhân hệ số và lấy kỳ vọng):
-\begin{align*}
-\frac{d\mathcal{L}_{\text{NCE}}}{d\theta}
-&= -\sum_x\left[p(x)\cdot\frac{c}{f(f+c)} + m\xi(x)\cdot\frac{-1}{f+c}\right]\frac{df}{d\theta}\\
-&= -\sum_x\left[\frac{p(x)\cdot m\xi(x)}{f(f + m\xi(x))} - \frac{m\xi(x)}{f + m\xi(x)}\right]\frac{1}{Z}\frac{d\phi_\theta(x)}{d\theta}\\
-&= -\sum_x\frac{m\xi(x)}{f + m\xi(x)}\left[\frac{p(x)}{f} - 1\right]\frac{1}{Z}\frac{d\phi_\theta(x)}{d\theta}\\
-&= -\sum_x\frac{m\xi(x)}{q_{\theta,Z}(x) + m\xi(x)}\left(\frac{p(x)}{q_{\theta,Z}(x)} - 1\right)\frac{1}{Z}\frac{d\phi_\theta(x)}{d\theta}.
-\end{align*}
-Đây chính là phương trình~\eqref{eq:grad-nctsne}. Gradient NEG thu được hoàn toàn tương tự khi thay $Z \to \overline{Z}$ (cố định).
+\textbf{Lực đẩy}: thay $\frac{\partial\phi}{\partial\mathbf{y}_i} = -2\phi(ij)^2\,\mathbf{r}_{ij}$:
+\[
+  \mathbf{f}_{ij}^{\text{rep}}
+  = 2\cdot(-1)\cdot\frac{1}{\overline{Z}}\cdot\bigl(-2\phi(ij)^2\,\mathbf{r}_{ij}\bigr)
+  = \frac{4\phi(ij)^2}{\overline{Z}}\,\mathbf{r}_{ij}, \qquad
+  F_{\text{rep}} \propto \frac{\phi(ij)^2}{\overline{Z}} \propto \frac{1}{\overline{Z}}.
+\]
+Khi $\overline{Z}$ tăng (UMAP: $\mathcal{O}(n^2)$), lực đẩy suy yếu trong khi lực hút giữ nguyên---điểm tương đồng bị kéo sát nhau tạo cụm siêu co chặt, đúng hành vi quan sát được ở UMAP so với t-SNE.
 
 \FloatBarrier

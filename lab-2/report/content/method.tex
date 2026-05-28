@@ -543,7 +543,7 @@ Vậy với $k$ như giả thiết định lý, xác suất chọn được $\ma
 JL cho phép giảm $N$ xuống $k \approx \log m$ (bỏ qua hệ số $\frac{1}{\varepsilon^2}$) mà vẫn giữ hình học cặp điểm---cơ sở cho \emph{random projection} làm tiền xử lý nhanh, không cần SVD. Trong sách \cite{mohri2018foundations} dùng hằng số $20$ thay cho $8$; điều kiện $k > \frac{8\log m}{\varepsilon^2}$ ở trên là phiên bản tinh gọn từ lập luận union bound ở Bước~4.
 
 \begin{example}
-Với $m = 1000$, $\varepsilon = 0{,}1$, ngưỡng $k > \frac{8\ln(1000)}{0{,}01} \approx 5{,}5 \times 10^3$. Trên thực nghiệm, random projection có thể được dùng như một baseline nhanh để so sánh với PCA. Tuy nhiên, trong báo cáo này phần thực nghiệm chính tập trung vào PCA, KPCA, Isomap, LLE, Laplacian Eigenmaps, t-SNE và UMAP.
+Với $m = 1000$, $\varepsilon = 0{,}1$, ngưỡng $k > \frac{8\ln(1000)}{0{,}01} \approx 5{,}5 \times 10^3$. Trên thực nghiệm, random projection có thể được dùng như một baseline nhanh để so sánh với PCA. Tuy nhiên, trong báo cáo này phần thực nghiệm chính tập trung vào PCA, KPCA và Isomap; LLE, Laplacian Eigenmaps, t-SNE và UMAP được ghi nhận như các đối chiếu bổ sung trong notebook.
 \end{example}
 
 \begin{figure}[H]

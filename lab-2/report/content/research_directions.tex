@@ -352,7 +352,7 @@ PaCMAP tối ưu~\eqref{eq:pacmap-loss} theo ba giai đoạn (Adam, mặc địn
 
 \begin{center}
 \begin{tikzpicture}[
-  node distance=0.5cm and 1.0cm,
+  node distance=0.5cm and 1.9cm,
   box/.style={rectangle, draw, rounded corners=3pt, minimum height=0.9cm,
               minimum width=2.2cm, align=center, font=\small},
   arrow/.style={->, thick, >=Stealth}
@@ -361,8 +361,10 @@ PaCMAP tối ưu~\eqref{eq:pacmap-loss} theo ba giai đoạn (Adam, mặc địn
 \node[box, fill=green!10,  right=of s1] (s2) {Giai đoạn 2\\Cân bằng};
 \node[box, fill=orange!10, right=of s2] (s3) {Giai đoạn 3\\Tinh chỉnh NB};
 
-\draw[arrow] (s1) -- node[above, font=\scriptsize]{toàn cục trước} (s2);
-\draw[arrow] (s2) -- node[above, font=\scriptsize]{cục bộ sau} (s3);
+\draw[arrow] (s1) -- node[midway, above=3pt, fill=white, inner sep=1pt,
+  font=\scriptsize]{toàn cục trước} (s2);
+\draw[arrow] (s2) -- node[midway, above=3pt, fill=white, inner sep=1pt,
+  font=\scriptsize]{cục bộ sau} (s3);
 
 \node[below=0.3cm of s1, font=\scriptsize, align=center]{$\mathcal{M}$ chiếm ưu thế};
 \node[below=0.3cm of s3, font=\scriptsize, align=center]{$\mathcal{N}$ chiếm ưu thế};
@@ -411,7 +413,7 @@ LLE                       & 0.8286          & 0.7069 \\
 \end{tabular}
 \end{table}
 
-t-SNE và UMAP giữ láng giềng cục bộ tốt trên hai chỉ số trên, phù hợp nhận xét định tính của Wang et al. Hai chỉ số này không đo cấu trúc toàn cục (triplet accuracy), nên chưa thể kết luận về lợi thế PaCMAP khi thuật toán chưa được chạy trên cùng dữ liệu.
+t-SNE và UMAP giữ láng giềng cục bộ tốt trên hai chỉ số trên, phù hợp nhận xét định tính của Wang et al. Bảng~\ref{tab:bonus-tsne-umap} chỉ dùng để đối chiếu nhanh với nhận xét của Wang et al.; phần benchmark đầy đủ hơn trên 7 thuật toán và 4 bộ dữ liệu được trình bày ở Mục~\ref{sec:extended-benchmark}. Hai chỉ số này không đo cấu trúc toàn cục (triplet accuracy), nên chưa thể kết luận về lợi thế PaCMAP khi thuật toán chưa được chạy trên cùng dữ liệu.
 
 \subsection{Nhận xét tổng quan: xu hướng, hạn chế và câu hỏi mở}
 \label{sec:research-trends}

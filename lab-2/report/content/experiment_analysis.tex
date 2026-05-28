@@ -1,12 +1,12 @@
 \section{Thực nghiệm và phân tích kết quả}
 \label{sec:experiments}
 
-Phần này kiểm chứng ba phương pháp trọng tâm đã cài đặt là PCA, KPCA và
-Isomap. Toàn bộ hình và số liệu được tạo bởi tệp
-\texttt{code/experiments/report\_pca\_kpca\_isomap.py} với
-\texttt{SEED = 42}. Lõi ba thuật toán dùng các lớp trong
-\texttt{code/models/}; thư viện ngoài chỉ hỗ trợ nạp dữ liệu, chuẩn hóa
-đặc trưng và tính chỉ số đánh giá.
+Phần này gồm hai nhóm thực nghiệm. Nhóm thứ nhất là ba thực nghiệm trọng
+tâm cho PCA, KPCA và Isomap, trong đó các thuật toán được cài đặt từ đầu và
+được phân tích kỹ để kiểm chứng lý thuyết. Nhóm thứ hai là benchmark mở rộng
+trong notebook \texttt{baseline.ipynb}, so sánh PCA, KPCA, Isomap, LLE,
+Laplacian Eigenmaps, t-SNE và UMAP trên bốn bộ dữ liệu circles, swiss roll,
+COIL-20 và MNIST bằng trustworthiness@12, KNN accuracy@5 và thời gian chạy.
 
 \subsection{Thiết lập thực nghiệm}
 
@@ -47,6 +47,47 @@ vào \texttt{PyTorch} hay \texttt{contrastive-ne}; hai gói này chỉ liên qua
     1000 điểm; thêm 8 chiều nhiễu chuẩn độ lệch $0.03$; giảm $10D\to2D$ \\
     Swiss roll & Đánh giá bảo toàn khoảng cách geodesic của Isomap &
     700 điểm, nhiễu $0.05$; khảo sát $t\in\{4,8,12,20,40\}$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Ngoài ba thực nghiệm minh họa chính, notebook \texttt{baseline.ipynb} còn
+chạy benchmark mở rộng gồm 7 phương pháp trên 4 bộ dữ liệu: circles, swiss
+roll, COIL-20 và MNIST. Phần benchmark này dùng cùng \texttt{SEED = 42};
+nhãn chỉ dùng để đánh giá sau khi nhúng, không dùng trong quá trình huấn
+luyện hoặc tối ưu embedding.
+
+\begin{table}[H]
+  \centering
+  \caption{Thiết lập benchmark mở rộng trong \texttt{baseline.ipynb}.}
+  \label{tab:extended-benchmark-setup}
+  \begin{tabular}{@{}lll@{}}
+    \toprule
+    Dữ liệu & Số mẫu & Mục tiêu đánh giá \\
+    \midrule
+    Circles & 1000 & Kiểm tra cấu trúc phi tuyến đơn giản \\
+    Swiss roll & 1500 & Kiểm tra bảo toàn láng giềng/manifold \\
+    COIL-20 & 1440 & Kiểm tra dữ liệu ảnh nhiều lớp \\
+    MNIST & 10000 & Kiểm tra dữ liệu ảnh chữ số quy mô lớn hơn \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \caption{Nguồn cài đặt của các phương pháp trong benchmark \texttt{baseline.ipynb}.}
+  \label{tab:benchmark-implementations}
+  \begin{tabular}{@{}p{0.22\textwidth}p{0.27\textwidth}p{0.41\textwidth}@{}}
+    \toprule
+    Phương pháp & Nguồn cài đặt & Vai trò \\
+    \midrule
+    PCA & Nhóm tự cài đặt & Thực nghiệm chính và baseline tuyến tính \\
+    KPCA & Nhóm tự cài đặt & Thực nghiệm chính, kernel phi tuyến \\
+    Isomap & Nhóm tự cài đặt & Thực nghiệm chính, manifold/geodesic \\
+    LLE & Nhóm tự cài đặt & Benchmark manifold cục bộ \\
+    Laplacian Eigenmaps & Nhóm tự cài đặt & Benchmark đồ thị láng giềng \\
+    t-SNE & Wrapper/lớp gọi thư viện & Đối chiếu với paper và trực quan hóa hiện đại \\
+    UMAP & Wrapper/lớp gọi \texttt{umap-learn} & Đối chiếu với paper và trực quan hóa hiện đại \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -146,6 +187,7 @@ kernel trong ví dụ tổng hợp đang xét, không khẳng định một tham
 chung cho dữ liệu khác.
 
 \subsection{Isomap: bảo toàn khoảng cách geodesic trên Swiss roll}
+\label{sec:experiment-isomap}
 
 Đối với Swiss roll, khoảng cách Euclid trong không gian ba chiều có thể
 đưa hai điểm ở các lớp cuộn khác nhau đến gần nhau không đúng với cấu trúc
@@ -193,45 +235,197 @@ Euclidean ngắn nhất nếu đồ thị $t$-láng giềng bị rời; trong th
 này, đồ thị đã liên thông ở cả năm giá trị $t$ nên bước đó không thay đổi
 các khoảng cách hoặc kết quả báo cáo.
 
-\subsection{Đối chiếu mở rộng: t-SNE và UMAP}
+\subsection{Benchmark mở rộng trên 7 thuật toán}
+\label{sec:extended-benchmark}
 
-t-SNE và UMAP không thuộc nội dung bắt buộc của Chương~12 trong
-\cite{mohri2018foundations}; báo cáo dùng hai phương pháp này như các baseline
-trực quan hóa phi tuyến để liên hệ với các bài báo hiện đại về DR. Trong mã
-nguồn, lớp \texttt{TSNE} là wrapper cho \texttt{sklearn.manifold.TSNE}, còn
-lớp \texttt{UMAP} là wrapper cho gói \texttt{umap-learn}; cả hai không phải
-cài đặt from-scratch. Thực nghiệm bổ sung trong
-\texttt{code/experiments/baseline.ipynb} dùng \texttt{SEED = 42}. Cấu hình
-t-SNE là perplexity $30$, khởi tạo PCA, $750$ vòng lặp và learning rate tự
-động; cấu hình UMAP là $n_{\mathrm{neighbors}}=15$, \texttt{min\_dist = 0.1}
-và metric Euclid. Hai wrapper này chỉ được dùng để tạo embedding cho dữ liệu
-huấn luyện trong notebook; báo cáo không xem chúng là ba thực nghiệm chính
-của đồ án.
+Notebook \texttt{baseline.ipynb} chạy đủ $7\times4=28$ cấu hình để kiểm tra
+cùng một bộ metric trên dữ liệu tổng hợp và dữ liệu ảnh. Trustworthiness@12 đo
+mức bảo toàn láng giềng cục bộ khi chuyển từ không gian gốc xuống embedding hai
+chiều. KNN@5 đo mức độ các điểm cùng nhãn nằm gần nhau trong embedding, nên có
+ý nghĩa rõ nhất với dữ liệu có nhãn rời như COIL-20 và MNIST.
+\texttt{fit\_time\_s} đo thời gian fit embedding trong cấu hình notebook. Các
+chỉ số này chưa đo đầy đủ cấu trúc toàn cục; do đó khoảng cách giữa các cụm
+trong hình 2D chỉ nên được diễn giải định tính.
+
+Hình~\ref{fig:baseline-grid} cho thấy sự khác biệt định tính giữa các phương
+pháp: PCA và KPCA đóng vai trò baseline phổ tuyến tính/kernel, Isomap và các
+phương pháp đồ thị nhấn mạnh cấu trúc manifold, còn t-SNE và UMAP tối ưu mạnh
+hơn cho trực quan hóa láng giềng cục bộ.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{baseline_embedding_grid_4x7.png}
+  \caption{Embedding hai chiều của 7 phương pháp trên bốn bộ dữ liệu.}
+  \label{fig:baseline-grid}
+\end{figure}
 
 \begin{table}[H]
   \centering
-  \caption{Baseline t-SNE và UMAP trên MNIST trong \texttt{baseline.ipynb}.}
-  \label{tab:tsne-umap-mnist-baseline}
-  \begin{tabular}{lcccc}
+  \caption{Benchmark mở rộng trên COIL-20 và MNIST trong \texttt{baseline.ipynb}.}
+  \label{tab:extended-benchmark-coil-mnist}
+  \begin{tabular}{@{}lcccc@{}}
     \toprule
-    Phương pháp & Số mẫu & Trustworthiness@12 & KNN accuracy@5 & Thời gian fit (s) \\
+    \textbf{Phương pháp} & \multicolumn{2}{c}{\textbf{COIL-20}} & \multicolumn{2}{c}{\textbf{MNIST}} \\
+    \cmidrule(lr){2-3}\cmidrule(lr){4-5}
+    & Trust.@12 & KNN@5 & Trust.@12 & KNN@5 \\
     \midrule
-    t-SNE, perplexity $=30$ & 10\,000 & 0.9842 & 0.9454 & 14.7364 \\
-    UMAP, $n_{\mathrm{neighbors}}=15$ & 10\,000 & 0.9602 & 0.9429 & 24.7753 \\
+    PCA & 0.8902 & 0.7181 & 0.7367 & 0.4196 \\
+    KPCA & 0.8899 & 0.7188 & 0.7351 & 0.4096 \\
+    Isomap & 0.9482 & 0.8090 & 0.7661 & 0.5027 \\
+    LLE & 0.9543 & 0.8597 & 0.8286 & 0.7069 \\
+    Laplacian Eigenmaps & 0.9502 & 0.9660 & 0.8443 & 0.7414 \\
+    t-SNE & 0.9948 & 0.9778 & 0.9842 & 0.9454 \\
+    UMAP & 0.9934 & 0.8618 & 0.9602 & 0.9429 \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-Kết quả ở Bảng~\ref{tab:tsne-umap-mnist-baseline} cho thấy cả t-SNE và UMAP
-đều bảo toàn láng giềng cục bộ tốt trên MNIST. t-SNE đạt trustworthiness cao
-hơn và nhỉnh hơn nhẹ về KNN accuracy trong lần chạy này, phù hợp với nhận xét
-của Wang et al.~\cite{wang2021pacmap} rằng t-SNE thường tạo cụm cục bộ rõ.
-UMAP cho kết quả KNN gần tương đương, nhưng chất lượng và bố cục phụ thuộc vào
-tham số \texttt{n\_neighbors} và \texttt{min\_dist}. Theo phân tích của
-Wang et al., khoảng cách giữa các cụm và bố cục toàn cục của các phương pháp
-trực quan hóa như t-SNE/UMAP không nên được diễn giải trực tiếp nếu không có
-thước đo toàn cục bổ sung. Vì vậy, hai kết quả này chỉ được dùng để đối chiếu
-phần mở rộng, không thay thế ba thực nghiệm chính ở trên.
+Trên COIL-20 và MNIST, t-SNE và UMAP đạt trustworthiness cao nhất, cho thấy
+hai phương pháp trực quan hóa phi tuyến giữ láng giềng cục bộ tốt. Trên
+COIL-20, t-SNE đạt KNN@5 cao nhất, trong khi Laplacian Eigenmaps cũng đạt kết
+quả rất mạnh nhờ đồ thị láng giềng phản ánh tốt cấu trúc lớp của dữ liệu. PCA
+và KPCA là baseline quan trọng nhưng kém hơn rõ rệt trên MNIST khi chỉ giữ hai
+chiều đầu, vì hai chiều này chưa đủ biểu diễn cấu trúc phi tuyến của ảnh chữ
+số.
+
+\begin{table}[H]
+  \centering
+  \caption{Benchmark mở rộng trên Circles và Swiss roll trong \texttt{baseline.ipynb}.}
+  \label{tab:extended-benchmark-circles-swiss}
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    \textbf{Phương pháp} & \multicolumn{2}{c}{\textbf{Circles}} & \multicolumn{2}{c}{\textbf{Swiss roll}} \\
+    \cmidrule(lr){2-3}\cmidrule(lr){4-5}
+    & Trust.@12 & KNN@5 & Trust.@12 & KNN@5 \\
+    \midrule
+    PCA & 1.0000 & 1.0000 & 0.9725 & 0.0000 \\
+    KPCA & 0.9994 & 1.0000 & 0.6581 & 0.0000 \\
+    Isomap & 0.9102 & 1.0000 & 0.9996 & 0.0000 \\
+    LLE & 0.8571 & 1.0000 & 0.9964 & 0.0000 \\
+    Laplacian Eigenmaps & 0.8736 & 1.0000 & 0.8940 & 0.0000 \\
+    t-SNE & 0.9994 & 1.0000 & 0.9995 & 0.0000 \\
+    UMAP & 0.9982 & 1.0000 & 0.9989 & 0.0000 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Trên Circles, hầu hết phương pháp đều đạt KNN@5 = 1.0 vì cấu trúc hai lớp khá
+rõ sau khi giảm chiều; do đó trustworthiness và hình trực quan hữu ích hơn để
+phân biệt chất lượng embedding. Trên Swiss roll, KNN@5 bằng 0 không phản ánh
+thuật toán thất bại, vì nhãn của dữ liệu là tọa độ liên tục dọc theo cuộn chứ
+không phải nhãn lớp rời. Với Swiss roll, các chỉ số phù hợp hơn là
+trustworthiness, hình trực quan và tương quan khoảng cách geodesic ở
+Mục~\ref{sec:experiment-isomap}.
+
+\paragraph{LLE.}
+LLE đạt trustworthiness cao trên Swiss roll và COIL-20, lần lượt khoảng 0.9964
+và 0.9543, cho thấy quan hệ tái tạo tuyến tính cục bộ được giữ khá tốt. Tuy
+nhiên, trên MNIST, LLE thấp hơn t-SNE/UMAP rõ rệt về KNN@5, do giả định tuyến
+tính cục bộ và đồ thị láng giềng chưa đủ để tạo cụm lớp rõ trong embedding hai
+chiều. Neighbor sweep trên Swiss roll cho thấy LLE nhạy với số láng giềng: quá
+ít láng giềng làm đồ thị thiếu ổn định, quá nhiều láng giềng làm mất tính cục
+bộ của xấp xỉ tuyến tính.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{lle_neighbor_sweep_swiss_roll.png}
+  \caption{Ảnh hưởng của số láng giềng trong LLE trên Swiss roll.}
+  \label{fig:lle-neighbor-sweep}
+\end{figure}
+
+\paragraph{Laplacian Eigenmaps.}
+Laplacian Eigenmaps đạt KNN@5 rất cao trên COIL-20, khoảng 0.9660, chỉ thấp hơn
+t-SNE trong bảng benchmark. Điều này cho thấy đồ thị láng giềng xây từ dữ liệu
+ảnh có thể phản ánh khá tốt cấu trúc lớp. Trên MNIST, phương pháp này cũng tốt
+hơn PCA/KPCA/Isomap nhưng vẫn thấp hơn t-SNE/UMAP, vì Laplacian Eigenmaps chủ
+yếu bảo toàn quan hệ cục bộ và không tối ưu trực tiếp tiêu chí phân tách cụm.
+Sigma sweep trên Circles trong Hình~\ref{fig:laplacian-sigma-sweep} cho kết
+quả gần như không đổi trong dải $\sigma\in\{1,5,10\}$, cho thấy với cấu hình
+này cấu trúc đồ thị k-NN chi phối embedding mạnh hơn độ rộng kernel Gaussian.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.86\textwidth]{laplacian_sigma_sweep_circles.png}
+  \caption{Ảnh hưởng của tham số $\sigma$ trong Laplacian Eigenmaps trên dữ liệu Circles.}
+  \label{fig:laplacian-sigma-sweep}
+\end{figure}
+
+\begin{table}[H]
+  \centering
+  \caption{Ảnh hưởng của perplexity trong t-SNE trên MNIST.}
+  \label{tab:tsne-perplexity-sweep}
+  \begin{tabular}{ccc}
+    \toprule
+    Perplexity & Trustworthiness@12 & KNN@5 \\
+    \midrule
+    5  & 0.9794 & 0.9430 \\
+    10 & 0.9822 & 0.9475 \\
+    30 & 0.9842 & 0.9454 \\
+    50 & 0.9818 & 0.9436 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Với t-SNE trên MNIST, thay đổi perplexity từ 5 đến 50 cho kết quả khá ổn
+định. Perplexity 10 đạt KNN@5 cao nhất, trong khi perplexity 30 đạt
+trustworthiness@12 cao nhất. Điều này minh họa vai trò của perplexity như số
+láng giềng hiệu dụng: cần chọn tham số dựa trên cả hình trực quan lẫn metric,
+thay vì chỉ dùng mặc định.
+
+\paragraph{Độ nhạy của UMAP theo số láng giềng.}
+Notebook cũng khảo sát UMAP với \texttt{n\_neighbors} $\in \{5,15,30,50\}$ trên
+Swiss roll. Tham số này đóng vai trò tương tự mức nhìn cục bộ/toàn cục: giá trị
+nhỏ ưu tiên quan hệ rất gần, còn giá trị lớn cho phép đồ thị mờ xét nhiều quan
+hệ xa hơn. Trên Swiss roll, khi \texttt{n\_neighbors} tăng, embedding thường
+mượt hơn nhưng cũng dễ làm mất một số chi tiết cục bộ. Do đó, giống perplexity
+của t-SNE, \texttt{n\_neighbors} cần được chọn dựa trên cả hình trực quan và
+metric cục bộ.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{umap_neighbors_sweep_swiss_roll.png}
+  \caption{Ảnh hưởng của \texttt{n\_neighbors} trong UMAP trên Swiss roll.}
+  \label{fig:umap-neighbor-sweep}
+\end{figure}
+
+\begin{table}[H]
+  \centering
+  \caption{Thời gian chạy \texttt{fit\_time\_s} trong \texttt{baseline.ipynb}.}
+  \label{tab:extended-benchmark-runtime}
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    Phương pháp & Circles & Swiss roll & COIL-20 & MNIST \\
+    \midrule
+    PCA & 0.0024 & 0.0002 & 16.9738 & 1.4090 \\
+    KPCA & 0.2363 & 0.6065 & 25.8423 & 178.5856 \\
+    Isomap & 0.3734 & 1.7866 & 13.9593 & 164.4358 \\
+    LLE & 0.2014 & 0.6300 & 13.1555 & 132.5190 \\
+    Laplacian Eigenmaps & 0.5845 & 0.9274 & 0.7003 & 107.3471 \\
+    t-SNE & 0.9719 & 1.4251 & 2.6459 & 14.7364 \\
+    UMAP & 11.0375 & 2.8356 & 6.9804 & 24.7753 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Thời gian chạy phụ thuộc máy và backend, nhưng vẫn cho thấy xu hướng quan
+trọng. KPCA, Isomap và LLE chậm trên MNIST do cần xử lý ma trận kernel, đồ thị
+hoặc bài toán trị riêng kích thước lớn. Laplacian Eigenmaps nhanh trên COIL-20
+nhưng vẫn tốn thời gian trên MNIST do xây đồ thị và phân rã phổ. t-SNE và UMAP
+tuy là phương pháp tối ưu lặp nhưng trong cấu hình notebook chạy khá cạnh
+tranh, đặc biệt t-SNE đạt chất lượng cao với thời gian thấp hơn các phương pháp
+phổ nặng như KPCA/Isomap trên MNIST.
+
+\paragraph{Tổng kết benchmark 7 thuật toán.}
+Kết quả cho thấy không có một phương pháp thắng tuyệt đối trên mọi dữ liệu. PCA
+là baseline nhanh và dễ giải thích nhưng yếu trên dữ liệu ảnh khi chỉ giữ hai
+chiều. KPCA cải thiện với cấu trúc phi tuyến đơn giản như Circles nhưng nhạy
+kernel và tốn chi phí trên MNIST. Isomap rất phù hợp với Swiss roll nhờ xấp xỉ
+geodesic, nhưng trên MNIST/COIL-20 không vượt các phương pháp trực quan hóa
+hiện đại. LLE và Laplacian Eigenmaps giữ láng giềng cục bộ tốt; đặc biệt
+Laplacian đạt KNN@5 cao trên COIL-20. t-SNE và UMAP đạt trustworthiness cao
+nhất trên COIL-20/MNIST, phù hợp mục tiêu trực quan hóa phi tuyến, nhưng kết
+quả nhạy tham số và không nên diễn giải khoảng cách giữa các cụm như khoảng
+cách thật tuyệt đối.
 
 \subsection{Các đoạn cài đặt chính}
 
@@ -292,17 +486,38 @@ cấp trực tiếp hàm tính lỗi tái tạo dùng trong Hình~\ref{fig:exp-p
   label={lst:isomap-centering}
 ]{../code/models/isomap.py}
 
+\lstinputlisting[
+  language=Python,
+  firstline=40,
+  lastline=80,
+  caption={LLE: trọng số tái tạo cục bộ và bài toán trị riêng của $(I-W)^\top(I-W)$.},
+  label={lst:lle-core}
+]{../code/models/lle.py}
+
+\lstinputlisting[
+  language=Python,
+  firstline=16,
+  lastline=25,
+  caption={Laplacian Eigenmaps: xây đồ thị trọng số, Laplacian và lấy các vector riêng không tầm thường nhỏ nhất.},
+  label={lst:laplacian-core}
+]{../code/models/laplacian_eigen.py}
+
+\lstinputlisting[
+  language=Python,
+  firstline=45,
+  lastline=60,
+  caption={Laplacian Eigenmaps: trọng số Gaussian trên đồ thị k-NN.},
+  label={lst:laplacian-weights}
+]{../code/models/laplacian_eigen.py}
+
 \paragraph{Tái tạo kết quả.}
 Các hình và bảng trong phần này được sinh lại bằng lệnh:
 \begin{lstlisting}
 uv run python code/experiments/report_pca_kpca_isomap.py
 \end{lstlisting}
 
-Các kiểm chứng mở rộng ngoài phạm vi ba thực nghiệm trọng tâm được lưu trong
-notebook \texttt{baseline.ipynb} ở thư mục \texttt{code/experiments}.
-Notebook này đánh giá thêm LLE và Laplacian Eigenmaps do nhóm cài đặt, cùng
-các wrapper t-SNE và UMAP, trên bốn tập dữ liệu; Bảng~\ref{tab:tsne-umap-mnist-baseline}
-tóm tắt riêng kết quả MNIST của hai phương pháp này vì chúng liên quan trực tiếp
-đến phần nghiên cứu tiên tiến. Các kết quả chi tiết còn lại được lưu trực tiếp
-trong notebook. Đánh giá thực nghiệm cho Johnson--Lindenstrauss chưa được dùng
-làm căn cứ cho các kết luận trong phần này.
+Benchmark mở rộng ở Mục~\ref{sec:extended-benchmark} được tái lập bằng
+notebook \texttt{baseline.ipynb}. Notebook này đánh giá thêm LLE và Laplacian
+Eigenmaps do nhóm cài đặt, cùng các wrapper t-SNE và UMAP, trên bốn tập dữ
+liệu. Đánh giá thực nghiệm cho Johnson--Lindenstrauss chưa được dùng làm căn
+cứ cho các kết luận trong phần này.

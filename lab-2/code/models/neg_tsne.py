@@ -7,7 +7,6 @@ Spectrum via fixed Z_bar (Damrich et al., ICLR 2023). kNN graph: scikit-learn.
 from __future__ import annotations
 
 import time
-import warnings
 from typing import Any, Optional
 
 import numpy as np
@@ -192,6 +191,7 @@ class NegTSNE(BaseDR):
         self.embedding_: Optional[np.ndarray] = None
         self._cne: Optional[CNE] = None
         self._graph: Any = None
+        self._X_fit: Optional[np.ndarray] = None
 
     def _build_cne(self, n_epochs: Optional[int] = None) -> CNE:
         kwargs = make_cne_kwargs(
@@ -223,7 +223,7 @@ class NegTSNE(BaseDR):
         Xp = self._preprocess(X, fitting=True)
         t0 = time.perf_counter()
         Y = self._fit_transform(Xp, init=init, graph=graph)
-        self._fit_time_ = time.perf_counter() - t0
+        self._fit_time = time.perf_counter() - t0
         self._is_fitted = True
         return self._validate_output(Y)
 
@@ -243,20 +243,17 @@ class NegTSNE(BaseDR):
         self._cne = self._build_cne()
         Y = self._cne.fit_transform(X, init=init, graph=resolved)
         self.embedding_ = np.asarray(Y, dtype=float)
+        self._X_fit = X.copy()
         return self.embedding_
 
     def _transform(self, X: np.ndarray) -> np.ndarray:
-        if self.embedding_ is None or self._cne is None:
+        if self.embedding_ is None or self._cne is None or self._X_fit is None:
             raise RuntimeError("NegTSNE is not fitted.")
-        if X.shape[0] == self._n_samples_fit:
+        if X.shape == self._X_fit.shape and np.allclose(X, self._X_fit):
             return self.embedding_.copy()
-        warnings.warn(
-            "NegTSNE is non-parametric and cannot embed new points. "
-            "Returning the training embedding.",
-            UserWarning,
-            stacklevel=2,
+        raise NotImplementedError(
+            "NegTSNE is non-parametric and cannot embed new points."
         )
-        return self.embedding_.copy()
 
     def get_params(self) -> dict[str, Any]:
         return {

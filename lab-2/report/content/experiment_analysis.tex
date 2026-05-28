@@ -193,40 +193,45 @@ Euclidean ngắn nhất nếu đồ thị $t$-láng giềng bị rời; trong th
 này, đồ thị đã liên thông ở cả năm giá trị $t$ nên bước đó không thay đổi
 các khoảng cách hoặc kết quả báo cáo.
 
-\subsection{Đối chiếu mở rộng: t-SNE}
+\subsection{Đối chiếu mở rộng: t-SNE và UMAP}
 
-t-SNE không thuộc nội dung bắt buộc của Chương~12 trong
-\cite{mohri2018foundations}; báo cáo dùng phương pháp này như một baseline
+t-SNE và UMAP không thuộc nội dung bắt buộc của Chương~12 trong
+\cite{mohri2018foundations}; báo cáo dùng hai phương pháp này như các baseline
 trực quan hóa phi tuyến để liên hệ với các bài báo hiện đại về DR. Trong mã
-nguồn, lớp \texttt{TSNE} là wrapper cho \texttt{sklearn.manifold.TSNE}, không
-phải cài đặt from-scratch. Thực nghiệm bổ sung trong
-\texttt{code/experiments/baseline.ipynb} dùng \texttt{SEED = 42},
-\texttt{perplexity = 30}, \texttt{init = pca}, \texttt{max\_iter = 750} và
-\texttt{learning\_rate = auto}. Vì t-SNE là phương pháp phi tham số, wrapper
-chỉ trả embedding cho tập huấn luyện và không hỗ trợ \texttt{transform} cho
-điểm mới.
+nguồn, lớp \texttt{TSNE} là wrapper cho \texttt{sklearn.manifold.TSNE}, còn
+lớp \texttt{UMAP} là wrapper cho gói \texttt{umap-learn}; cả hai không phải
+cài đặt from-scratch. Thực nghiệm bổ sung trong
+\texttt{code/experiments/baseline.ipynb} dùng \texttt{SEED = 42}. Cấu hình
+t-SNE là perplexity $30$, khởi tạo PCA, $750$ vòng lặp và learning rate tự
+động; cấu hình UMAP là $n_{\mathrm{neighbors}}=15$, \texttt{min\_dist = 0.1}
+và metric Euclid. Hai wrapper này chỉ được dùng để tạo embedding cho dữ liệu
+huấn luyện trong notebook; báo cáo không xem chúng là ba thực nghiệm chính
+của đồ án.
 
 \begin{table}[H]
   \centering
-  \caption{Baseline t-SNE trên MNIST trong \texttt{baseline.ipynb}.}
-  \label{tab:tsne-mnist-baseline}
-  \begin{tabular}{lccc}
+  \caption{Baseline t-SNE và UMAP trên MNIST trong \texttt{baseline.ipynb}.}
+  \label{tab:tsne-umap-mnist-baseline}
+  \begin{tabular}{lcccc}
     \toprule
-    Phương pháp & Số mẫu & Trustworthiness@12 & KNN accuracy@5 \\
+    Phương pháp & Số mẫu & Trustworthiness@12 & KNN accuracy@5 & Thời gian fit (s) \\
     \midrule
-    t-SNE, perplexity $=30$ & 10\,000 & 0.9842 & 0.9454 \\
+    t-SNE, perplexity $=30$ & 10\,000 & 0.9842 & 0.9454 & 14.7364 \\
+    UMAP, $n_{\mathrm{neighbors}}=15$ & 10\,000 & 0.9602 & 0.9429 & 24.7753 \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-Kết quả ở Bảng~\ref{tab:tsne-mnist-baseline} cho thấy t-SNE bảo toàn láng
-giềng cục bộ rất tốt trên MNIST, phù hợp với nhận xét của
-Wang et al.~\cite{wang2021pacmap} rằng t-SNE thường tạo cụm cục bộ rõ.
-Tuy nhiên, cũng theo phân tích trong bài báo này, khoảng cách giữa các cụm
-và bố cục toàn cục của t-SNE không nên được diễn giải trực tiếp; phương pháp
-còn nhạy với \texttt{perplexity} và có thể tạo cụm giả trên dữ liệu không có
-cấu trúc cụm tự nhiên. Vì vậy, kết quả t-SNE chỉ được dùng để đối chiếu phần
-mở rộng, không thay thế ba thực nghiệm chính ở trên.
+Kết quả ở Bảng~\ref{tab:tsne-umap-mnist-baseline} cho thấy cả t-SNE và UMAP
+đều bảo toàn láng giềng cục bộ tốt trên MNIST. t-SNE đạt trustworthiness cao
+hơn và nhỉnh hơn nhẹ về KNN accuracy trong lần chạy này, phù hợp với nhận xét
+của Wang et al.~\cite{wang2021pacmap} rằng t-SNE thường tạo cụm cục bộ rõ.
+UMAP cho kết quả KNN gần tương đương, nhưng chất lượng và bố cục phụ thuộc vào
+tham số \texttt{n\_neighbors} và \texttt{min\_dist}. Theo phân tích của
+Wang et al., khoảng cách giữa các cụm và bố cục toàn cục của các phương pháp
+trực quan hóa như t-SNE/UMAP không nên được diễn giải trực tiếp nếu không có
+thước đo toàn cục bổ sung. Vì vậy, hai kết quả này chỉ được dùng để đối chiếu
+phần mở rộng, không thay thế ba thực nghiệm chính ở trên.
 
 \subsection{Các đoạn cài đặt chính}
 
@@ -296,8 +301,8 @@ uv run python code/experiments/report_pca_kpca_isomap.py
 Các kiểm chứng mở rộng ngoài phạm vi ba thực nghiệm trọng tâm được lưu trong
 notebook \texttt{baseline.ipynb} ở thư mục \texttt{code/experiments}.
 Notebook này đánh giá thêm LLE và Laplacian Eigenmaps do nhóm cài đặt, cùng
-các wrapper t-SNE và UMAP, trên bốn tập dữ liệu; Bảng~\ref{tab:tsne-mnist-baseline}
-tóm tắt riêng kết quả t-SNE trên MNIST vì phương pháp này liên quan trực tiếp
+các wrapper t-SNE và UMAP, trên bốn tập dữ liệu; Bảng~\ref{tab:tsne-umap-mnist-baseline}
+tóm tắt riêng kết quả MNIST của hai phương pháp này vì chúng liên quan trực tiếp
 đến phần nghiên cứu tiên tiến. Các kết quả chi tiết còn lại được lưu trực tiếp
 trong notebook. Đánh giá thực nghiệm cho Johnson--Lindenstrauss chưa được dùng
 làm căn cứ cho các kết luận trong phần này.

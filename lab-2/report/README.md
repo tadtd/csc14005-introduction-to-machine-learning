@@ -1,34 +1,53 @@
-# Báo cáo
+# Report
 
-Tệp chính: `main.tex`. Tài liệu tham khảo BibTeX: `ref/ref.bib` (được nạp qua `ref/ref.tex`).
+LaTeX source for the dimensionality reduction lab report.
 
-Biên dịch từ thư mục `report/`:
+## Full project download
+
+Source code, this report folder, and build scripts are bundled on Google Drive:
+
+**[ml-lab-2-code — Google Drive](https://drive.google.com/drive/folders/1o9qE7YEfH3MTnR-EyIGOmkCo16rRXGG9)**
+
+## Build
+
+From the repository root:
 
 ```powershell
-pdflatex -jobname=report -interaction=nonstopmode -halt-on-error main.tex
-bibtex report
-pdflatex -jobname=report -interaction=nonstopmode -halt-on-error main.tex
-pdflatex -jobname=report -interaction=nonstopmode -halt-on-error main.tex
+.\scripts\compile_latex.ps1
 ```
 
-Kết quả nộp là `report.pdf`.
+Or manually from `report/`:
 
-```text
+```powershell
+pdflatex -interaction=nonstopmode -halt-on-error main.tex
+bibtex main
+pdflatex -interaction=nonstopmode -halt-on-error main.tex
+pdflatex -interaction=nonstopmode -halt-on-error main.tex
+```
+
+Output: `report/main.pdf`.
+
+## Layout
+
+```
 report/
-|-- main.tex
-|-- report.pdf
-|-- content/
-|   |-- title.tex
-|   |-- preamble.tex
-|   |-- introduction.tex
-|   |-- fundamental.tex
-|   |-- method.tex
-|   |-- experiment_analysis.tex
-|   |-- related_research.tex
-|   `-- conclusion.tex
-|-- figures/
-|-- appendix/
-`-- ref/
-    |-- ref.tex
-    `-- ref.bib
+├── main.tex
+├── main.pdf              # after build (or from Drive bundle)
+├── content/
+│   ├── title.tex
+│   ├── preamble.tex
+│   ├── introduction.tex
+│   ├── fundamental.tex
+│   ├── method.tex
+│   ├── research_directions.tex
+│   ├── experiment_analysis.tex
+│   └── conclusion.tex
+├── figures/
+├── appendix/
+└── ref/
+    ├── ref.tex
+    └── ref.bib
 ```
+
+Figures for the experiment section can be regenerated with
+`code/experiments/report_pca_kpca_isomap.py` (writes to `report/figures/`).

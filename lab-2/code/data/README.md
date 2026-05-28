@@ -2,7 +2,9 @@
 
 This folder contains the shared dataset loaders and cache for the dimensionality reduction experiments. Large or downloaded data should live under `code/data/raw/`.
 
-## Course dataset (Google Drive)
+Full project (code + report): [ml-lab-2-code on Google Drive](https://drive.google.com/drive/folders/1o9qE7YEfH3MTnR-EyIGOmkCo16rRXGG9).
+
+## Course datasets (Google Drive)
 
 Manual copies of large files are hosted on Google Drive:
 

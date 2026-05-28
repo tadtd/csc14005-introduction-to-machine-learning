@@ -326,6 +326,7 @@ KPCA cải thiện rõ trên Circles nhưng tốn kém trên MNIST (Gram $m\time
 không vượt PCA nhiều trên COIL-20/MNIST với kernel RBF mặc định.
 
 \subsection{Isomap: khoảng cách geodesic}
+\label{sec:experiment-isomap}
 
 Isomap (Bổ đề~\ref{lem:isomap-spectral}) xấp xỉ geodesic bằng đồ thị $t$-láng giềng
 rồi MDS. Thí nghiệm Swiss roll 700 mẫu đo Pearson giữa geodesic và khoảng cách
@@ -688,6 +689,105 @@ giống UMAP---kiểm chứng tính liên tục của phổ đã phân tích ở
 ]{../code/models/neg_tsne.py}
 \end{extension}
 
+\subsection{Tổng hợp benchmark mở rộng}
+\label{sec:extended-benchmark}
+
+Notebook \texttt{baseline.ipynb} chạy đủ $7\times4=28$ cấu hình để kiểm tra
+cùng một bộ metric trên dữ liệu tổng hợp và dữ liệu ảnh. Trustworthiness@12 đo
+mức bảo toàn láng giềng cục bộ khi chuyển từ không gian gốc xuống embedding hai
+chiều. KNN@5 đo mức độ các điểm cùng nhãn nằm gần nhau trong embedding, nên có
+ý nghĩa rõ nhất với dữ liệu có nhãn rời như COIL-20 và MNIST.
+\texttt{fit\_time\_s} đo thời gian fit embedding trong cấu hình notebook. Các
+chỉ số này chưa đo đầy đủ cấu trúc toàn cục; do đó khoảng cách giữa các cụm
+trong hình 2D chỉ nên được diễn giải định tính.
+
+\begin{table}[H]
+  \centering
+  \caption{Benchmark mở rộng trên COIL-20 và MNIST trong \texttt{baseline.ipynb}.}
+  \label{tab:extended-benchmark-coil-mnist}
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    \textbf{Phương pháp} & \multicolumn{2}{c}{\textbf{COIL-20}} & \multicolumn{2}{c}{\textbf{MNIST}} \\
+    \cmidrule(lr){2-3}\cmidrule(lr){4-5}
+    & Trust.@12 & KNN@5 & Trust.@12 & KNN@5 \\
+    \midrule
+    PCA & 0.8902 & 0.7181 & 0.7367 & 0.4196 \\
+    KPCA & 0.8899 & 0.7188 & 0.7351 & 0.4096 \\
+    Isomap & 0.9482 & 0.8090 & 0.7661 & 0.5027 \\
+    LLE & 0.9543 & 0.8597 & 0.8286 & 0.7069 \\
+    Laplacian Eigenmaps & 0.9502 & 0.9660 & 0.8443 & 0.7414 \\
+    t-SNE & 0.9948 & 0.9778 & 0.9842 & 0.9454 \\
+    UMAP & 0.9934 & 0.8618 & 0.9602 & 0.9429 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Nhận xét.}
+Trên COIL-20 và MNIST, t-SNE và UMAP đạt trustworthiness cao nhất; Laplacian
+Eigenmaps đạt KNN@5 rất mạnh trên COIL-20. PCA/KPCA kém hơn rõ trên MNIST khi
+chỉ giữ hai chiều đầu.
+
+\begin{table}[H]
+  \centering
+  \caption{Benchmark mở rộng trên Circles và Swiss roll trong \texttt{baseline.ipynb}.}
+  \label{tab:extended-benchmark-circles-swiss}
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    \textbf{Phương pháp} & \multicolumn{2}{c}{\textbf{Circles}} & \multicolumn{2}{c}{\textbf{Swiss roll}} \\
+    \cmidrule(lr){2-3}\cmidrule(lr){4-5}
+    & Trust.@12 & KNN@5 & Trust.@12 & KNN@5 \\
+    \midrule
+    PCA & 1.0000 & 1.0000 & 0.9725 & 0.0000 \\
+    KPCA & 0.9994 & 1.0000 & 0.6581 & 0.0000 \\
+    Isomap & 0.9102 & 1.0000 & 0.9996 & 0.0000 \\
+    LLE & 0.8571 & 1.0000 & 0.9964 & 0.0000 \\
+    Laplacian Eigenmaps & 0.8736 & 1.0000 & 0.8940 & 0.0000 \\
+    t-SNE & 0.9994 & 1.0000 & 0.9995 & 0.0000 \\
+    UMAP & 0.9982 & 1.0000 & 0.9989 & 0.0000 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Nhận xét.}
+Trên Swiss roll, KNN@5 bằng 0 vì nhãn là tọa độ liên tục dọc cuộn, không phải
+lớp rời; nên đọc kèm trustworthiness, hình trực quan và Pearson geodesic ở
+Mục~\ref{sec:experiment-isomap}.
+
+\begin{table}[H]
+  \centering
+  \caption{Thời gian chạy \texttt{fit\_time\_s} trong \texttt{baseline.ipynb}.}
+  \label{tab:extended-benchmark-runtime}
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    Phương pháp & Circles & Swiss roll & COIL-20 & MNIST \\
+    \midrule
+    PCA & 0.0024 & 0.0002 & 16.9738 & 1.4090 \\
+    KPCA & 0.2363 & 0.6065 & 25.8423 & 178.5856 \\
+    Isomap & 0.3734 & 1.7866 & 13.9593 & 164.4358 \\
+    LLE & 0.2014 & 0.6300 & 13.1555 & 132.5190 \\
+    Laplacian Eigenmaps & 0.5845 & 0.9274 & 0.7003 & 107.3471 \\
+    t-SNE & 0.9719 & 1.4251 & 2.6459 & 14.7364 \\
+    UMAP & 11.0375 & 2.8356 & 6.9804 & 24.7753 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Nhận xét.}
+KPCA, Isomap và LLE chậm trên MNIST; t-SNE/UMAP cạnh tranh về thời gian và chất
+lượng trên ảnh. Không có phương pháp thắng tuyệt đối trên mọi tập.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{baseline_embedding_grid_4x7.png}
+  \caption{Embedding hai chiều của 7 phương pháp trên bốn bộ dữ liệu
+  (\texttt{baseline.ipynb}, \texttt{SEED = 42}).}
+  \label{fig:baseline-grid}
+\end{figure}
+
+\paragraph{Nhận xét.}
+Hình~\ref{fig:baseline-grid} tổng hợp 28 lần chạy: theo hàng là độ khó từng dữ
+liệu, theo cột là giả định hình học từng thuật toán.
+
 \subsection{Tái tạo kết quả}
 
 Thí nghiệm kiểm chứng lý thuyết và hình baseline:
@@ -695,8 +795,8 @@ Thí nghiệm kiểm chứng lý thuyết và hình baseline:
 uv run python code/experiments/report_pca_kpca_isomap.py
 uv run python code/experiments/export_baseline_figures.py
 \end{lstlisting}
-Baseline đầy đủ (metrics, heatmap): mở \texttt{code/experiments/baseline.ipynb}
-từ thư mục \texttt{lab-2/}. Neg-t-SNE:
+Benchmark mở rộng (Mục~\ref{sec:extended-benchmark}): mở
+\texttt{code/experiments/baseline.ipynb} từ thư mục \texttt{lab-2/}. Neg-t-SNE:
 \texttt{code/experiments/contrastive\_learning.ipynb} (cần \texttt{uv sync --extra contrastive}).
 
 Trong phần lý thuyết, mỗi mẫu là cột của $\mathbf{X}\in\R^{N\times m}$; trong

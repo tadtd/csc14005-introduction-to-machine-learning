@@ -2,19 +2,6 @@
 
 Khi số chiều đặc trưng rất lớn, nhiều thuật toán học máy tốn kém bộ nhớ và thời gian, đồng thời khó quan sát cấu trúc dữ liệu. \emph{Giảm chiều} (dimensionality reduction) nhằm tìm một biểu diễn có số chiều nhỏ hơn nhưng vẫn giữ được phần thông tin hoặc quan hệ hình học quan trọng của tập mẫu gốc.
 
-\paragraph{Quy ước ký hiệu.}
-\begin{itemize}
-  \item \textbf{Tập hợp và không gian:} $\mathcal{X}$ là không gian mẫu, $\mathcal{H}$ là không gian Hilbert, $P_k$ là tập ma trận chiếu hạng $k$, $\mathcal{N}_i$ là tập láng giềng của điểm $i$.
-  \item \textbf{Mẫu và chiều:} $S=(x_1,\ldots,x_m)$ gồm $m$ mẫu; $N$ là số chiều gốc, $k$ là số chiều sau giảm chiều, $d$ là số chiều trực quan hóa khi cần.
-  \item \textbf{Vector:} chữ thường in đậm, ví dụ $\mathbf{x}_i=\Phi(x_i)\in\R^N$, $\mathbf{y}_i\in\R^k$, $\mathbf{1}$ là vector toàn $1$.
-  \item \textbf{Ma trận:} chữ hoa in đậm, ví dụ $\mathbf{X}\in\R^{N\times m}$ là ma trận dữ liệu, $\mathbf{Y}\in\R^{k\times m}$ là embedding, $\mathbf{I}_m$ là ma trận đơn vị.
-  \item \textbf{Ma trận cốt lõi:} $\mathbf{C}$ là hiệp phương sai, $\mathbf{K}$ là Gram/kernel, $\widetilde{\mathbf{K}}$ là kernel đã căn giữa, $\mathbf{H}$ là ma trận centering, $\boldsymbol{\Delta}$ là ma trận khoảng cách bình phương.
-  \item \textbf{Đồ thị và manifold:} $\mathbf{W}$ là ma trận trọng số, $\mathbf{D}$ là ma trận bậc, $\mathbf{L}$ là Laplacian, $\mathbf{M}$ là ma trận LLE, $\mathbf{K}_{\mathrm{Iso}}$ là Gram matrix của Isomap.
-  \item \textbf{Phổ và phân rã:} $\lambda_i$ là trị riêng, $\sigma_i$ là giá trị kỳ dị, $\mathbf{u}_i,\mathbf{v}_i$ là vector riêng hoặc vector kỳ dị tùy ngữ cảnh; $\boldsymbol{\Lambda}$ và $\boldsymbol{\Sigma}$ là các ma trận đường chéo tương ứng.
-  \item \textbf{Phân phối và hàm mục tiêu:} $p_{ij},q_{ij}$ là xác suất cặp điểm trong t-SNE; $B_{ij},w_{ij}$ là trọng số mờ của UMAP; $\mathcal{L}$ là hàm loss, $Z$ là hằng số chuẩn hóa hoặc hàm phân hoạch.
-  \item \textbf{Toán tử:} $\|\cdot\|_F$ là chuẩn Frobenius, $\operatorname{Tr}(\cdot)$ là trace, $\Phi$ là ánh xạ đặc trưng. Các ký hiệu đặc thù hơn được định nghĩa lại tại nơi xuất hiện.
-\end{itemize}
-
 \subsection{Bài toán và ký hiệu}
 
 Cho tập mẫu $S = (x_1, \ldots, x_m)$ với $x_i \in \mathcal{X}$, ánh xạ đặc trưng $\Phi : \mathcal{X} \to \R^N$ và ma trận dữ liệu
@@ -22,6 +9,54 @@ Cho tập mẫu $S = (x_1, \ldots, x_m)$ với $x_i \in \mathcal{X}$, ánh xạ 
 \mathbf{X} = \big[\Phi(x_1), \ldots, \Phi(x_m)\big] \in \R^{N \times m},
 \]
 cột thứ $i$ là vector $\mathbf{x}_i = \Phi(x_i)$. Ta muốn tìm ma trận biểu diễn $\mathbf{Y} \in \R^{k \times m}$ với $k \ll N$ sao cho $\mathbf{Y}$ phản ánh $\mathbf{X}$ theo tiêu chí đã chọn (lỗi tái tạo, phương sai, khoảng cách, láng giềng,\ldots).
+
+\paragraph{Quy ước ký hiệu.}
+\begingroup
+\small
+\renewcommand{\arraystretch}{1.08}
+\setlength{\tabcolsep}{4pt}
+\setlength{\LTleft}{0pt plus 1fill}
+\setlength{\LTright}{0pt plus 1fill}
+\begin{longtable}{|p{0.22\textwidth}|p{0.70\textwidth}|}
+\hline
+\rowcolor{yellow!35}
+\textbf{Nhóm ký hiệu} & \textbf{Quy ước} \\
+\hline
+\endfirsthead
+\hline
+\rowcolor{yellow!35}
+\textbf{Nhóm ký hiệu} & \textbf{Quy ước} \\
+\hline
+\endhead
+Tập hợp và không gian &
+$\mathcal{X}$ là không gian mẫu, $\mathcal{H}$ là không gian Hilbert, $P_k$ là tập ma trận chiếu hạng $k$, $\mathcal{N}_i$ là tập láng giềng của điểm $i$. \\
+\hline
+Mẫu và chiều &
+$S=(x_1,\ldots,x_m)$ gồm $m$ mẫu; $N$ là số chiều gốc, $k$ là số chiều sau giảm chiều, $d$ là số chiều trực quan hóa khi cần. \\
+\hline
+Vector &
+Chữ thường in đậm, ví dụ $\mathbf{x}_i=\Phi(x_i)\in\R^N$, $\mathbf{y}_i\in\R^k$, $\mathbf{1}$ là vector toàn $1$. \\
+\hline
+Ma trận &
+Chữ hoa in đậm, ví dụ $\mathbf{X}\in\R^{N\times m}$ là ma trận dữ liệu, $\mathbf{Y}\in\R^{k\times m}$ là embedding, $\mathbf{I}_m$ là ma trận đơn vị. \\
+\hline
+Ma trận cốt lõi &
+$\mathbf{C}$ là hiệp phương sai, $\mathbf{K}$ là Gram/kernel, $\widetilde{\mathbf{K}}$ là kernel đã căn giữa, $\mathbf{H}$ là ma trận centering, $\boldsymbol{\Delta}$ là ma trận khoảng cách bình phương. \\
+\hline
+Đồ thị và manifold &
+$\mathbf{W}$ là ma trận trọng số, $\mathbf{D}$ là ma trận bậc, $\mathbf{L}$ là Laplacian, $\mathbf{M}$ là ma trận LLE, $\mathbf{K}_{\mathrm{Iso}}$ là Gram matrix của Isomap. \\
+\hline
+Phổ và phân rã &
+$\lambda_i$ là trị riêng, $\sigma_i$ là giá trị kỳ dị, $\mathbf{u}_i,\mathbf{v}_i$ là vector riêng hoặc vector kỳ dị tùy ngữ cảnh; $\boldsymbol{\Lambda}$ và $\boldsymbol{\Sigma}$ là các ma trận đường chéo tương ứng. \\
+\hline
+Phân phối và hàm mục tiêu &
+$p_{ij},q_{ij}$ là xác suất cặp điểm trong t-SNE; $B_{ij},w_{ij}$ là trọng số mờ của UMAP; $\mathcal{L}$ là hàm loss, $Z$ là hằng số chuẩn hóa hoặc hàm phân hoạch. \\
+\hline
+Toán tử &
+$\|\cdot\|_F$ là chuẩn Frobenius, $\operatorname{Tr}(\cdot)$ là trace, $\Phi$ là ánh xạ đặc trưng. Các ký hiệu đặc thù hơn được định nghĩa lại tại nơi xuất hiện. \\
+\hline
+\end{longtable}
+\endgroup
 
 \subsection{Động lực thực hiện}
 

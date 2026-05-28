@@ -41,15 +41,19 @@ uv sync --extra contrastive
 | `models/*.py` | Các mô hình giảm chiều nêu trên. |
 | `data/load_data.py` | Nạp hoặc tạo các tập Wine, circles, Swiss roll, COIL-20 và MNIST. |
 | `utils/knn_graph.py` | Xây đồ thị k-NN đối xứng cho Neg-t-SNE. |
-| `experiments/report_pca_kpca_isomap.py` | Sinh lại hình và số liệu chính được dùng trong báo cáo. |
-| `experiments/baseline.ipynb` | So sánh baseline bổ sung, gồm LLE/Laplacian và wrapper t-SNE/UMAP. |
+| `experiments/report_pca_kpca_isomap.py` | Sinh lại hình và số liệu kiểm chứng lý thuyết PCA/KPCA/Isomap. |
+| `experiments/export_baseline_figures.py` | Xuất lưới embedding baseline và hình độ nhạy tham số vào `report/figures/`. |
+| `experiments/baseline.ipynb` | So sánh baseline đầy đủ (metrics, heatmap) trên bốn tập dữ liệu. |
 | `experiments/contrastive_learning.ipynb` | Phần mở rộng Neg-t-SNE. |
 
 ## Chạy thực nghiệm chính
 
 ```powershell
 uv run python code/experiments/report_pca_kpca_isomap.py
+uv run python code/experiments/export_baseline_figures.py
 ```
 
-Script sử dụng `SEED = 42` và ghi hình vào `report/figures/`. Các notebook
-được mở từ thư mục `lab-2/` và sử dụng kernel của `.venv`.
+Script đầu dùng `SEED = 42` và ghi hình kiểm chứng lý thuyết (Wine, Circles
+mở rộng, Swiss roll) vào `report/figures/`. Script thứ hai xuất lưới baseline
+bốn tập và hình độ nhạy LLE/Laplacian. Các notebook được mở từ thư mục `lab-2/`
+và sử dụng kernel của `.venv`.

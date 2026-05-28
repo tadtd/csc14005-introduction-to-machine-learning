@@ -1,23 +1,28 @@
 \section{Thực nghiệm và phân tích kết quả}
 \label{sec:experiments}
 
-Phần này kiểm chứng ba phương pháp trọng tâm đã cài đặt là PCA, KPCA và
-Isomap. Toàn bộ hình và số liệu được tạo bởi tệp
-\texttt{code/experiments/report\_pca\_kpca\_isomap.py} với
-\texttt{SEED = 42}. Lõi ba thuật toán dùng các lớp trong
-\texttt{code/models/}; thư viện ngoài chỉ hỗ trợ nạp dữ liệu, chuẩn hóa
-đặc trưng và tính chỉ số đánh giá.
+\vietnameselst
 
-\subsection{Thiết lập thực nghiệm}
+Phần này đánh giá thực nghiệm cho toàn bộ thuật toán giảm chiều đã cài đặt trong đồ án:
+PCA, KPCA, Isomap, LLE, Laplacian Eigenmaps (theo Chương~3 trong
+\cite{mohri2018foundations}), cùng hai baseline trực quan hóa phi tuyến
+\textbf{[MỞ RỘNG]} t-SNE và UMAP, và demo Neg-t-SNE \textbf{[MỞ RỘNG]} liên
+kết với Chương~4.
 
-Các thí nghiệm chính được tái lập trong môi trường phần mềm ở
-Bảng~\ref{tab:experiment-environment}. PCA, KPCA và Isomap không phụ thuộc
-vào \texttt{PyTorch} hay \texttt{contrastive-ne}; hai gói này chỉ liên quan
-đến phần khảo sát Neg-t-SNE bổ sung, tách khỏi các kết quả chính bên dưới.
+Hai nguồn tái lập chính:
+\texttt{code/experiments/report\_pca\_kpca\_isomap.py} (kiểm chứng lý thuyết
+chuyên biệt trên Wine, Circles mở rộng, Swiss roll 700 mẫu) và
+\texttt{code/experiments/baseline.ipynb} / \texttt{export\_baseline\_figures.py}
+(baseline đồng nhất trên bốn tập \texttt{circles}, \texttt{swiss\_roll},
+\texttt{coil20}, \texttt{mnist} với 10\,000 mẫu, \texttt{SEED = 42}). Các lớp
+from-scratch nằm trong \texttt{code/models/}; thư viện ngoài chỉ dùng để nạp
+dữ liệu, chuẩn hóa và tính chỉ số đánh giá.
+
+\subsection{Thiết lập chung}
 
 \begin{table}[H]
   \centering
-  \caption{Phiên bản môi trường dùng để tái lập thực nghiệm chính.}
+  \caption{Phiên bản môi trường dùng để tái lập thực nghiệm.}
   \label{tab:experiment-environment}
   \begin{tabular}{p{0.29\textwidth}p{0.18\textwidth}p{0.40\textwidth}}
     \toprule
@@ -28,47 +33,137 @@ vào \texttt{PyTorch} hay \texttt{contrastive-ne}; hai gói này chỉ liên qua
     SciPy & 1.17.1 & Hàm hỗ trợ tính toán số \\
     scikit-learn & 1.8.0 & Dữ liệu, chuẩn hóa và chỉ số đánh giá \\
     Matplotlib & 3.10.9 & Sinh hình trực quan hóa \\
-    umap-learn & 0.5.12 & Đối chiếu UMAP ở phần khảo sát bổ sung \\
+    umap-learn & 0.5.12 & Wrapper UMAP (phần mở rộng) \\
     \bottomrule
   \end{tabular}
 \end{table}
+
+\paragraph{Nhận xét.}
+Các phiên bản trên đủ để chạy lại toàn bộ script và notebook; wrapper t-SNE/UMAP
+phụ thuộc \texttt{sklearn}/\texttt{umap-learn} nhưng không thay thế phần cài
+đặt from-scratch của năm thuật toán cốt lõi.
 
 \begin{table}[H]
   \centering
-  \caption{Thiết lập cho ba thực nghiệm minh họa.}
+  \caption{Tổng quan thiết kế thực nghiệm theo thuật toán.}
   \label{tab:experiment-setup}
-  \begin{tabular}{p{0.19\textwidth}p{0.34\textwidth}p{0.38\textwidth}}
+  \small
+  \begin{tabular}{p{0.17\textwidth}p{0.22\textwidth}p{0.24\textwidth}p{0.24\textwidth}}
     \toprule
-    Dữ liệu & Mục tiêu & Thiết lập \\
+    Thuật toán & Thí nghiệm chuyên biệt & Baseline 4 tập & Chỉ số chính \\
     \midrule
-    Wine & Kiểm chứng phương sai giữ lại và lỗi tái tạo của PCA &
-    178 mẫu, 13 thuộc tính được chuẩn hóa; $k=1,\ldots,13$ \\
-    Circles mở rộng & Kiểm chứng giảm chiều và độ nhạy kernel của KPCA &
-    1000 điểm; thêm 8 chiều nhiễu chuẩn độ lệch $0.03$; giảm $10D\to2D$ \\
-    Swiss roll & Đánh giá bảo toàn khoảng cách geodesic của Isomap &
-    700 điểm, nhiễu $0.05$; khảo sát $t\in\{4,8,12,20,40\}$ \\
+    PCA & Wine, $k=1,\ldots,13$ & Có & Phương sai tích lũy, lỗi tái tạo; Trust.@12, KNN@5 \\
+    KPCA & Circles 10D, sweep $\gamma$ & Có & Silhouette; Trust.@12, KNN@5 \\
+    Isomap & Swiss roll 700, sweep $t$ & Có & Pearson geodesic; Trust.@12, KNN@5 \\
+    LLE & Sweep $t$ trên Swiss roll & Có & Trust.@12, KNN@5 \\
+    Laplacian Eigenmaps & Sweep $\sigma$ trên Circles & Có & Trust.@12, KNN@5 \\
+    t-SNE$^\dagger$ & --- & Có & Trust.@12, KNN@5 \\
+    UMAP$^\dagger$ & --- & Có & Trust.@12, KNN@5 \\
+    Neg-t-SNE$^\ddagger$ & MNIST 5\,000, phổ $\overline{Z}$ & --- & Trực quan \\
+    \bottomrule
+  \end{tabular}
+  \vspace{0.4em}
+  {\footnotesize $^\dagger$~Wrapper \texttt{sklearn}/\texttt{umap-learn}.
+  $^\ddagger$~Demo nghiên cứu tiên tiến, \texttt{contrastive\_learning.ipynb}.}
+\end{table}
+
+\paragraph{Nhận xét.}
+Mỗi thuật toán đều có baseline công bằng trên cùng bốn tập (trừ Neg-t-SNE).
+Thí nghiệm chuyên biệt bổ sung kiểm chứng lý thuyết hoặc độ nhạy siêu tham số.
+Khi so sánh chéo, cần phân biệt \emph{chỉ số} (Pearson geodesic \emph{vs.}\
+trustworthiness) và \emph{cỡ mẫu} (700 \emph{vs.} 1\,500 trên Swiss roll).
+
+Mọi baseline dùng \texttt{trustworthiness@12} và \texttt{knn\_accuracy@5}
+(sau nhúng, nhãn không tham gia huấn luyện). Hàm đánh giá chung:
+
+\lstinputlisting[
+  language=Python,
+  firstline=234,
+  lastline=258,
+  caption={Hàm \texttt{evaluate\_embedding}: trustworthiness và KNN accuracy.},
+  label={lst:eval-embedding}
+]{../code/experiments/utils.py}
+
+\subsection{So sánh tổng quan trên bốn tập dữ liệu}
+
+\begin{table}[H]
+  \centering
+  \caption{Tóm tắt định tính baseline (\texttt{baseline.ipynb}, \texttt{SEED = 42}).}
+  \label{tab:summary-all-methods}
+  \small
+  \begin{tabular}{p{0.14\textwidth}p{0.19\textwidth}p{0.19\textwidth}p{0.19\textwidth}p{0.19\textwidth}}
+    \toprule
+    Thuật toán & Circles & Swiss roll & COIL-20 & MNIST \\
+    \midrule
+    PCA & Hai vòng chồng; Trust cao & Cuộn chưa phẳng; Trust 0.97 & Cụm mờ; KNN 0.72 & Chồng chữ số; KNN 0.42 \\
+    KPCA & Tách vòng; KNN 1.0 & Trust thấp (0.66) & Gần PCA & Gần PCA; chậm \\
+    Isomap & KNN 1.0 & Trải phẳng tốt & KNN 0.81 & KNN 0.50 \\
+    LLE & KNN 1.0 & Trust 0.996 & KNN 0.86 & KNN 0.71 \\
+    Laplacian & KNN 1.0 & Trust 0.89 & \textbf{KNN 0.97} & KNN 0.74 \\
+    t-SNE & KNN 1.0 & Trust $\approx$1 & KNN 0.98 & \textbf{KNN 0.95} \\
+    UMAP & KNN 1.0 & Trust 0.999 & KNN 0.86 & KNN 0.94 \\
     \bottomrule
   \end{tabular}
 \end{table}
 
+\paragraph{Nhận xét.}
+Trên \texttt{swiss\_roll}, \texttt{knn\_accuracy@5 = 0} cho mọi phương pháp vì
+nhãn là tọa độ liên tục dọc cuộn, không phải lớp rời. t-SNE/UMAP mạnh nhất trên
+ảnh có nhãn (COIL-20, MNIST); Isomap/LLE nổi bật trên manifold tổng hợp; PCA/KPCA
+nhanh nhưng kém tách cụm trên MNIST. Laplacian Eigenmaps đặc biệt tốt trên
+COIL-20 trong lần chạy này.
+
+\begin{table}[H]
+  \centering
+  \caption{So sánh chéo trên COIL-20 ($m=1\,440$, \texttt{baseline.ipynb}).}
+  \label{tab:baseline-coil20-comparison}
+  \begin{tabular}{lccc}
+    \toprule
+    Phương pháp & Trust.@12 & KNN acc.@5 & Thời gian fit (s) \\
+    \midrule
+    PCA               & 0.8902 & 0.7181          &  16.9738 \\
+    KPCA              & 0.8899 & 0.7188          &  25.8423 \\
+    Isomap            & 0.9482 & 0.8090          &  13.9593 \\
+    LLE               & 0.9543 & 0.8597          &  13.1555 \\
+    Laplacian Eigenmaps & 0.9502 & \textbf{0.9660} &   0.7003 \\
+    t-SNE$^\dagger$   & 0.9948 & 0.9778          &   2.6459 \\
+    UMAP$^\dagger$    & 0.9934 & 0.8618          &   6.9804 \\
+    \bottomrule
+  \end{tabular}
+  \vspace{0.4em}
+  {\footnotesize $^\dagger$~Wrapper \texttt{sklearn}/\texttt{umap-learn}.}
+\end{table}
+
+\paragraph{Nhận xét.}
+Laplacian Eigenmaps đạt KNN cao nhất among from-scratch trên COIL-20, phù hợp
+cấu trúc xoay liên tục của 20 vật thể. t-SNE vượt mọi phương pháp về cả hai chỉ
+số nhưng là baseline mở rộng, không phải cài đặt from-scratch. PCA/KPCA gần
+như tương đương trên tập ảnh này.
+
 \subsection{PCA: phương sai và lỗi tái tạo}
 
-Theo Bổ đề~\ref{lem:pca-error}, nghiệm PCA tối ưu phải làm lỗi tái tạo
-không tăng khi số chiều giữ lại $k$ tăng. Hình~\ref{fig:exp-pca-wine}
-kiểm chứng trực tiếp tính chất này trên dữ liệu Wine sau khi chuẩn hóa.
-Trong bảng và hình dưới đây, code báo cáo lỗi trung bình trên mỗi mẫu,
-\[
-  E_{\mathrm{rec}}=\frac{1}{m}
-  \|\widehat{\mathbf{X}}-\mathbf{X}\|_F^2,
-\]
-là phiên bản chuẩn hóa của lỗi tổng trong Bổ đề~\ref{lem:pca-error}.
+Theo Bổ đề~\ref{lem:pca-error}, lỗi tái tạo PCA không tăng khi $k$ tăng.
+Thí nghiệm Wine kiểm chứng trực tiếp; baseline bốn tập đánh giá khả năng tách
+cụm tuyến tính.
+
+\lstinputlisting[
+  language=Python,
+  firstline=46,
+  lastline=49,
+  caption={Vòng lặp đo phương sai tích lũy và lỗi tái tạo trên Wine (\texttt{report\_pca\_kpca\_isomap.py}).},
+  label={lst:pca-wine-loop}
+]{../code/experiments/report_pca_kpca_isomap.py}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.93\textwidth]{pca_wine_diagnostics.png}
-  \caption{Phương sai tích lũy và lỗi tái tạo PCA trên dữ liệu Wine đã chuẩn hóa.}
+  \caption{Phương sai tích lũy và lỗi tái tạo PCA trên Wine đã chuẩn hóa.}
   \label{fig:exp-pca-wine}
 \end{figure}
+
+\paragraph{Nhận xét.}
+Hai thành phần đầu giữ $55.41\%$ phương sai; lỗi tái tạo giảm đơn điệu theo
+$k$, khớp Bổ đề~\ref{lem:pca-error}. Với $k=13$, lỗi chỉ còn mức sai số số học.
 
 \begin{table}[H]
   \centering
@@ -76,58 +171,104 @@ là phiên bản chuẩn hóa của lỗi tổng trong Bổ đề~\ref{lem:pca-e
   \label{tab:pca-wine-results}
   \begin{tabular}{ccc}
     \toprule
-    Số thành phần $k$ & Phương sai tích lũy & Lỗi tái tạo trung bình \\
+    $k$ & Phương sai tích lũy & Lỗi tái tạo trung bình \\
     \midrule
     1  & 0.3620 & 8.2941 \\
     2  & 0.5541 & 5.7972 \\
+    5  & 0.8016 & 2.5789 \\
+    8  & 0.9202 & 1.0377 \\
     13 & 1.0000 & $\approx 0$ \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-Hai thành phần đầu giữ khoảng $55.41\%$ tổng phương sai. Khi giữ toàn bộ
-13 thành phần, lỗi tái tạo chỉ còn $1.17\times10^{-29}$, là sai số số học
-và phù hợp với việc phép đổi cơ sở trực chuẩn không làm mất thông tin.
-Trong phần lý thuyết, ma trận hiệp phương sai dùng hệ số $1/m$ để công
-thức gọn hơn; cài đặt dùng quy ước ước lượng phương sai mẫu $1/(m-1)$
-cho thuộc tính \texttt{explained\_variance\_}. Hai quy ước chỉ nhân toàn
-bộ trị riêng với cùng một hằng số, nên không đổi các hướng chính, tỉ lệ
-phương sai tích lũy hay kết luận về lỗi tái tạo.
+\paragraph{Nhận xét.}
+Cài đặt dùng quy ước phương sai mẫu $1/(m-1)$ cho \texttt{explained\_variance\_},
+khác hệ số $1/m$ trong lý thuyết nhưng không đổi hướng chính hay tỉ lệ tích lũy.
 
-\subsection{KPCA: cấu trúc phi tuyến của hai vòng tròn}
+\lstinputlisting[
+  language=Python,
+  firstline=23,
+  lastline=58,
+  caption={Cài đặt SVD và \texttt{reconstruction\_error} trong \texttt{pca.py}.},
+  label={lst:pca-core}
+]{../code/models/pca.py}
 
-Dữ liệu hai vòng tròn đồng tâm ban đầu có hai chiều; thí nghiệm nối thêm
-tám chiều nhiễu Gaussian nhỏ để tạo đầu vào 10 chiều, sau đó giảm về hai
-chiều. Cách thiết kế này vừa giữ cấu trúc phi tuyến cần quan sát, vừa kiểm
-tra đúng một bài toán giảm chiều. Khi dùng kernel tuyến tính, khoảng cách
-cặp điểm trong embedding KPCA và PCA chỉ lệch tối đa
-$2.22\times10^{-15}$, phù hợp với quan hệ PCA là trường hợp riêng của
-KPCA. Với RBF và $\gamma=32$, hai trị riêng lớn nhất của ma trận kernel
-đã căn giữa lần lượt là $28.6625$ và $28.1265$.
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.93\textwidth]{pca_baseline_embedding.png}
+  \caption{Embedding PCA ($k=2$) trên bốn tập baseline.}
+  \label{fig:exp-pca-baseline}
+\end{figure}
+
+\paragraph{Nhận xét.}
+Trên Circles, hai vòng vẫn lồng nhau dù trustworthiness cao---PCA không ``mở''
+manifold phi tuyến. COIL-20/MNIST chỉ giữ $\approx 40\%/17\%$ phương sai trong
+2D nên cụm mờ; KNN thấp hơn rõ các phương pháp phi tuyến.
+
+\begin{table}[H]
+  \centering
+  \caption{Baseline PCA trên bốn tập (\texttt{baseline.ipynb}, \texttt{SEED = 42}).}
+  \label{tab:pca-baseline}
+  \begin{tabular}{lcccc}
+    \toprule
+    Tập dữ liệu & Trust.@12 & KNN acc.@5 & Thời gian fit (s) & EV tích lũy \\
+    \midrule
+    Circles    & 1.0000 & 1.0000 & 0.0024 & 1.0000 \\
+    Swiss roll & 0.9725 & 0.0000$^\ast$ & 0.0002 & 0.7145 \\
+    COIL-20    & 0.8902 & 0.7181 & 16.9738 & 0.3967 \\
+    MNIST      & 0.7367 & 0.4196 & 1.4090 & 0.1692 \\
+    \bottomrule
+  \end{tabular}
+  \vspace{0.3em}
+  {\footnotesize $^\ast$~Nhãn liên tục trên Swiss roll; KNN không có ý nghĩa.}
+\end{table}
+
+\paragraph{Nhận xét.}
+PCA là baseline tuyến tính nhanh, phù hợp tiền xử lý; trên MNIST và manifold
+phi tuyến cần phương pháp mạnh hơn.
+
+\subsection{KPCA: kernel và cấu trúc phi tuyến}
+
+KPCA (Định lý~\ref{thm:kpca-coord}) là PCA trên ma trận Gram đã căn giữa.
+Thí nghiệm Circles mở rộng (10D có nhiễu) và sweep $\gamma$ kiểm tra kernel RBF;
+baseline bốn tập so sánh với PCA.
+
+\lstinputlisting[
+  language=Python,
+  firstline=86,
+  lastline=100,
+  caption={Vòng lặp RBF-KPCA và đo silhouette theo $\gamma$.},
+  label={lst:kpca-gamma-loop}
+]{../code/experiments/report_pca_kpca_isomap.py}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.93\textwidth]{kpca_circles_embedding.png}
-  \caption{Dữ liệu Circles quan sát ở hai chiều gốc và kết quả giảm từ 10 chiều xuống 2 chiều bằng PCA, KPCA.}
+  \caption{Hai chiều gốc; PCA và RBF-KPCA ($\gamma=32$) giảm từ 10 chiều có nhiễu xuống 2 chiều.}
   \label{fig:exp-kpca-circles}
 \end{figure}
 
-Trong Hình~\ref{fig:exp-kpca-circles}, PCA giữ hình học tuyến tính chính,
-còn RBF-KPCA tái biểu diễn hai vòng theo độ tương tự kernel. Để lượng hóa
-ảnh hưởng của $\gamma$, ta dùng hệ số silhouette với nhãn đã biết của dữ
-liệu tổng hợp; nhãn này chỉ dùng để đánh giá sau khi nhúng, không tham gia
-huấn luyện KPCA.
+\paragraph{Nhận xét.}
+PCA giữ hình học tuyến tính; RBF-KPCA tách hai vòng theo độ tương tự kernel.
+Khoảng cách cặp giữa embedding PCA và KPCA tuyến tính lệch tối đa
+$2.22\times10^{-15}$, xác nhận PCA là trường hợp riêng.
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.68\textwidth]{kpca_gamma_sensitivity.png}
-  \caption{Độ nhạy của RBF-KPCA theo $\gamma$ khi giảm Circles mở rộng từ 10 chiều xuống 2 chiều.}
+  \caption{Silhouette theo $\gamma$ khi giảm Circles mở rộng $10D\to2D$.}
   \label{fig:exp-kpca-gamma}
 \end{figure}
 
+\paragraph{Nhận xét.}
+$\gamma=32$ cho silhouette cao nhất trong năm giá trị khảo sát; giá trị nhỏ chưa
+tách cụm theo nhãn tổng hợp. Silhouette chỉ đo trên ví dụ này, không phải tham
+số tối ưu chung.
+
 \begin{table}[H]
   \centering
-  \caption{Silhouette theo nhãn tổng hợp cho PCA và RBF-KPCA.}
+  \caption{Silhouette theo nhãn tổng hợp (Circles mở rộng).}
   \label{tab:kpca-gamma-results}
   \begin{tabular}{ccccccc}
     \toprule
@@ -140,169 +281,424 @@ huấn luyện KPCA.
   \end{tabular}
 \end{table}
 
-Giá trị $\gamma=32$ được chọn cho hình biểu diễn vì cho silhouette cao
-nhất trong năm giá trị khảo sát. Kết quả này chỉ khẳng định sự phù hợp của
-kernel trong ví dụ tổng hợp đang xét, không khẳng định một tham số tối ưu
-chung cho dữ liệu khác.
-
-\subsection{Isomap: bảo toàn khoảng cách geodesic trên Swiss roll}
-
-Đối với Swiss roll, khoảng cách Euclid trong không gian ba chiều có thể
-đưa hai điểm ở các lớp cuộn khác nhau đến gần nhau không đúng với cấu trúc
-mặt cong. Vì vậy, chỉ số đánh giá sử dụng ở đây là hệ số tương quan Pearson
-giữa khoảng cách geodesic trên đồ thị láng giềng của Isomap và khoảng cách
-Euclid giữa các cặp điểm sau khi nhúng xuống hai chiều.
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\textwidth]{isomap_swiss_roll_embedding.png}
-  \caption{Swiss roll ban đầu và hai biểu diễn hai chiều bằng PCA, Isomap.}
-  \label{fig:exp-isomap-roll}
-\end{figure}
-
-\begin{table}[H]
-  \centering
-  \caption{Độ nhạy Isomap theo số láng giềng trên Swiss roll.}
-  \label{tab:isomap-correlation}
-  \begin{tabular}{ccccccc}
-    \toprule
-    Phương pháp & PCA & \multicolumn{5}{c}{Isomap, số láng giềng $t$} \\
-    \cmidrule(lr){3-7}
-    $t$ & 12 & 4 & 8 & 12 & 20 & 40 \\
-    \midrule
-    Tương quan Pearson & 0.2806 & 0.9964 & 0.9990 & \textbf{0.9996} & 0.8267 & 0.8671 \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.68\textwidth]{isomap_neighbor_sensitivity.png}
-  \caption{Tương quan khoảng cách của Isomap thay đổi theo số láng giềng.}
-  \label{fig:exp-isomap-neighbors}
-\end{figure}
-
-Kết quả trong Bảng~\ref{tab:isomap-correlation} cho thấy Isomap với
-$t=12$ gần như duy trì khoảng cách geodesic trên dữ liệu tổng hợp này,
-trong khi PCA chỉ mô hình hóa phương sai tuyến tính. Khi $t$ tăng lên 20
-hoặc 40, tương quan giảm rõ, phù hợp với nguy cơ cạnh tắt qua các lớp cuộn
-đã nêu ở phần lý thuyết. Chỉ số ở đây đo mức khớp với khoảng cách đồ thị
-tương ứng của mỗi thiết lập, tức là kiểm chứng trực tiếp mục tiêu nội tại
-của Isomap. Cài đặt còn có bước nối các thành phần liên thông bằng cạnh
-Euclidean ngắn nhất nếu đồ thị $t$-láng giềng bị rời; trong thí nghiệm
-này, đồ thị đã liên thông ở cả năm giá trị $t$ nên bước đó không thay đổi
-các khoảng cách hoặc kết quả báo cáo.
-
-\subsection{Đối chiếu mở rộng: t-SNE và UMAP}
-
-t-SNE và UMAP không thuộc nội dung bắt buộc của Chương~12 trong
-\cite{mohri2018foundations}; báo cáo dùng hai phương pháp này như các baseline
-trực quan hóa phi tuyến để liên hệ với các bài báo hiện đại về DR. Trong mã
-nguồn, lớp \texttt{TSNE} là wrapper cho \texttt{sklearn.manifold.TSNE}, còn
-lớp \texttt{UMAP} là wrapper cho gói \texttt{umap-learn}; cả hai không phải
-cài đặt from-scratch. Thực nghiệm bổ sung trong
-\texttt{code/experiments/baseline.ipynb} dùng \texttt{SEED = 42}. Cấu hình
-t-SNE là perplexity $30$, khởi tạo PCA, $750$ vòng lặp và learning rate tự
-động; cấu hình UMAP là $n_{\mathrm{neighbors}}=15$, \texttt{min\_dist = 0.1}
-và metric Euclid. Hai wrapper này chỉ được dùng để tạo embedding cho dữ liệu
-huấn luyện trong notebook; báo cáo không xem chúng là ba thực nghiệm chính
-của đồ án.
-
-\begin{table}[H]
-  \centering
-  \caption{Baseline t-SNE và UMAP trên MNIST trong \texttt{baseline.ipynb}.}
-  \label{tab:tsne-umap-mnist-baseline}
-  \begin{tabular}{lcccc}
-    \toprule
-    Phương pháp & Số mẫu & Trustworthiness@12 & KNN accuracy@5 & Thời gian fit (s) \\
-    \midrule
-    t-SNE, perplexity $=30$ & 10\,000 & 0.9842 & 0.9454 & 14.7364 \\
-    UMAP, $n_{\mathrm{neighbors}}=15$ & 10\,000 & 0.9602 & 0.9429 & 24.7753 \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-Kết quả ở Bảng~\ref{tab:tsne-umap-mnist-baseline} cho thấy cả t-SNE và UMAP
-đều bảo toàn láng giềng cục bộ tốt trên MNIST. t-SNE đạt trustworthiness cao
-hơn và nhỉnh hơn nhẹ về KNN accuracy trong lần chạy này, phù hợp với nhận xét
-của Wang et al.~\cite{wang2021pacmap} rằng t-SNE thường tạo cụm cục bộ rõ.
-UMAP cho kết quả KNN gần tương đương, nhưng chất lượng và bố cục phụ thuộc vào
-tham số \texttt{n\_neighbors} và \texttt{min\_dist}. Theo phân tích của
-Wang et al., khoảng cách giữa các cụm và bố cục toàn cục của các phương pháp
-trực quan hóa như t-SNE/UMAP không nên được diễn giải trực tiếp nếu không có
-thước đo toàn cục bổ sung. Vì vậy, hai kết quả này chỉ được dùng để đối chiếu
-phần mở rộng, không thay thế ba thực nghiệm chính ở trên.
-
-\subsection{Các đoạn cài đặt chính}
-
-Trong phần lý thuyết, mỗi mẫu là một cột của
-$\mathbf{X}\in\R^{N\times m}$ và $\mathbf{Y}\in\R^{k\times m}$.
-Trong code Python, theo quy ước NumPy, mỗi mẫu là một hàng:
-\texttt{X.shape = (m, N)} và \texttt{Y.shape = (m, k)}. Do đó các phép
-nhân trong listing là chuyển vị tương đương của công thức lý thuyết.
-
-Cài đặt PCA dưới đây sử dụng SVD trên dữ liệu đã trừ trung bình và cung
-cấp trực tiếp hàm tính lỗi tái tạo dùng trong Hình~\ref{fig:exp-pca-wine}.
-
-\lstinputlisting[
-  language=Python,
-  firstline=23,
-  lastline=58,
-  caption={Cài đặt lõi PCA và lỗi tái tạo.},
-  label={lst:pca-core}
-]{../code/models/pca.py}
+\paragraph{Nhận xét.}
+Bảng khẳng định ảnh hưởng của $\gamma$ lên cấu trúc cục bộ trong không gian
+kernel; cần đi kèm scatter, không chỉ một chỉ số.
 
 \lstinputlisting[
   language=Python,
   firstline=48,
   lastline=76,
-  caption={KPCA: phân rã phổ trên Gram matrix đã căn giữa.},
+  caption={Phân rã phổ trên Gram matrix đã căn giữa (\texttt{kpca.py}).},
   label={lst:kpca-core}
 ]{../code/models/kpca.py}
 
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.93\textwidth]{kpca_baseline_embedding.png}
+  \caption{Baseline KPCA RBF ($k=2$) trên bốn tập.}
+  \label{fig:exp-kpca-baseline}
+\end{figure}
+
+\paragraph{Nhận xét.}
+Trên Circles baseline (không thêm nhiễu 8D), KPCA tách vòng rõ với KNN $=1.0$.
+Trên Swiss roll, trustworthiness thấp hơn PCA/Isomap/LLE do $\gamma$ mặc định
+chưa phù hợp cấu trúc cuộn.
+
+\begin{table}[H]
+  \centering
+  \caption{Baseline KPCA RBF trên bốn tập (\texttt{baseline.ipynb}).}
+  \label{tab:kpca-baseline}
+  \begin{tabular}{lcccc}
+    \toprule
+    Tập dữ liệu & Trust.@12 & KNN acc.@5 & Thời gian fit (s) & Số mẫu \\
+    \midrule
+    Circles    & 0.9994 & 1.0000 & 0.2363 & 1\,000 \\
+    Swiss roll & 0.6581 & 0.0000$^\ast$ & 0.6065 & 1\,500 \\
+    COIL-20    & 0.8899 & 0.7188 & 25.8423 & 1\,440 \\
+    MNIST      & 0.7351 & 0.4096 & 178.5856 & 10\,000 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Nhận xét.}
+KPCA cải thiện rõ trên Circles nhưng tốn kém trên MNIST (Gram $m\times m$) và
+không vượt PCA nhiều trên COIL-20/MNIST với kernel RBF mặc định.
+
+\subsection{Isomap: khoảng cách geodesic}
+
+Isomap (Bổ đề~\ref{lem:isomap-spectral}) xấp xỉ geodesic bằng đồ thị $t$-láng giềng
+rồi MDS. Thí nghiệm Swiss roll 700 mẫu đo Pearson giữa geodesic và khoảng cách
+nhúng; baseline bốn tập dùng trustworthiness.
+
 \lstinputlisting[
   language=Python,
-  firstline=106,
-  lastline=114,
-  caption={KPCA: căn giữa kernel cho tập huấn luyện và điểm mới.},
-  label={lst:kpca-centering}
-]{../code/models/kpca.py}
+  firstline=150,
+  lastline=161,
+  caption={Vòng lặp Isomap và hệ số tương quan Pearson với geodesic.},
+  label={lst:isomap-pearson}
+]{../code/experiments/report_pca_kpca_isomap.py}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{isomap_swiss_roll_embedding.png}
+  \caption{Swiss roll gốc; PCA và Isomap ($t=12$) trên 700 mẫu.}
+  \label{fig:exp-isomap-roll}
+\end{figure}
+
+\paragraph{Nhận xét.}
+Isomap trải phẳng cuộn tốt hơn PCA trên cùng dữ liệu; PCA chỉ tối đa phương sai
+tuyến tính nên méo cấu trúc manifold.
+
+\begin{table}[H]
+  \centering
+  \caption{Độ nhạy Isomap theo $t$ trên Swiss roll ($m=700$).}
+  \label{tab:isomap-correlation}
+  \begin{tabular}{ccccccc}
+    \toprule
+    Phương pháp & PCA (tham chiếu) & \multicolumn{5}{c}{Isomap, $t$} \\
+    \cmidrule(lr){3-7}
+    $t$ & -- & 4 & 8 & 12 & 20 & 40 \\
+    \midrule
+    Pearson & 0.2806 & 0.9964 & 0.9990 & \textbf{0.9996} & 0.8267 & 0.8671 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Nhận xét.}
+$t=12$ gần như bảo toàn geodesic; $t$ quá lớn tạo cạnh tắt qua các lớp cuộn,
+phù hợp phân tích lý thuyết về chọn $t$. Chỉ số Pearson khác trustworthiness
+trên baseline 1\,500 mẫu---không trộn hai bảng khi so sánh.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.68\textwidth]{isomap_neighbor_sensitivity.png}
+  \caption{Tương quan Pearson thay đổi theo số láng giềng ($m=700$).}
+  \label{fig:exp-isomap-neighbors}
+\end{figure}
+
+\paragraph{Nhận xét.}
+Đồ thị cho thấy vùng $t$ trung bình (8--12) ổn định; hai điểm $t=20,40$ giảm do
+shortcut geodesic.
 
 \lstinputlisting[
   language=Python,
   firstline=43,
   lastline=70,
-  caption={Isomap: khoảng cách geodesic và phân rã phổ.},
+  caption={Xây geodesic và phân rã phổ trong \texttt{isomap.py}.},
   label={lst:isomap-core}
 ]{../code/models/isomap.py}
 
-\lstinputlisting[
-  language=Python,
-  firstline=96,
-  lastline=126,
-  caption={Isomap: nối các thành phần của đồ thị k-NN nếu cần.},
-  label={lst:isomap-components}
-]{../code/models/isomap.py}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.93\textwidth]{isomap_baseline_embedding.png}
+  \caption{Baseline Isomap ($t=12$, $k=2$) trên bốn tập.}
+  \label{fig:exp-isomap-baseline}
+\end{figure}
+
+\paragraph{Nhận xét.}
+Isomap mạnh trên Swiss roll baseline (Trust.$\approx 1$) và khá trên COIL-20;
+scatter MNIST vẫn lẫn class so với t-SNE/UMAP.
+
+\begin{table}[H]
+  \centering
+  \caption{Baseline Isomap trên bốn tập (\texttt{baseline.ipynb}).}
+  \label{tab:isomap-baseline}
+  \begin{tabular}{lcccc}
+    \toprule
+    Tập dữ liệu & Trust.@12 & KNN acc.@5 & Thời gian fit (s) & Số mẫu \\
+    \midrule
+    Circles    & 0.9102 & 1.0000 & 0.3734 & 1\,000 \\
+    Swiss roll & 0.9996 & 0.0000$^\ast$ & 1.7866 & 1\,500 \\
+    COIL-20    & 0.9482 & 0.8090 & 13.9593 & 1\,440 \\
+    MNIST      & 0.7661 & 0.5027 & 164.4358 & 10\,000 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Nhận xét.}
+Thời gian trên MNIST cao do ma trận khoảng cách toàn cục; phù hợp manifold có
+hình học rõ (Swiss roll), cân nhắc chi phí trên $n$ lớn.
+
+\subsection{LLE: tái tạo tuyến tính cục bộ}
+
+Theo Định lý~\ref{thm:lle_embed}, LLE bảo toàn trọng số tái tạo cục bộ (Bước~1,
+Định lý~\ref{thm:lle_w}; Bước~2 cực tiểu $\|\mathbf{M}\|_{\mathbf{Y}}$).
+Baseline dùng $t=12$, $\varepsilon=10^{-3}$, $k=2$.
 
 \lstinputlisting[
   language=Python,
-  firstline=128,
-  lastline=133,
-  caption={Isomap: phép double centering từ khoảng cách bình phương.},
-  label={lst:isomap-centering}
-]{../code/models/isomap.py}
+  firstline=40,
+  lastline=80,
+  caption={Hai bước LLE: trọng số cục bộ và embedding (\texttt{lle.py}).},
+  label={lst:lle-core}
+]{../code/models/lle.py}
 
-\paragraph{Tái tạo kết quả.}
-Các hình và bảng trong phần này được sinh lại bằng lệnh:
-\begin{lstlisting}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{lle_baseline_embedding.png}
+  \caption{Baseline LLE ($t=12$, $k=2$) trên bốn tập.}
+  \label{fig:exp-lle-embedding}
+\end{figure}
+
+\paragraph{Nhận xét.}
+Trên Circles scatter có thể gần một đoạn thẳng dù KNN $=1.0$: hai vòng vẫn
+đúng thứ tự láng giềng. COIL-20 có outlier kéo trục khi nhìn scatter; nên đọc
+kèm bảng định lượng.
+
+\begin{table}[H]
+  \centering
+  \caption{Baseline LLE trên bốn tập (\texttt{baseline.ipynb}).}
+  \label{tab:lle-baseline}
+  \begin{tabular}{lcccc}
+    \toprule
+    Tập dữ liệu & Trust.@12 & KNN acc.@5 & Thời gian fit (s) & Số mẫu \\
+    \midrule
+    Circles    & 0.8571 & 1.0000 & 0.2014 & 1\,000 \\
+    Swiss roll & 0.9964 & 0.0000$^\ast$ & 0.6300 & 1\,500 \\
+    COIL-20    & 0.9543 & 0.8597 & 13.1555 & 1\,440 \\
+    MNIST      & 0.8286 & 0.7069 & 132.5190 & 10\,000 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Nhận xét.}
+Trustworthiness trên Swiss roll ngang Isomap baseline, phù hợp nguyên lý bảo toàn
+láng giềng cục bộ. KNN COIL-20 vượt Isomap/KPCA nhưng thua Laplacian/t-SNE.
+Thời gian MNIST cao do \texttt{eigh} trên ma trận $m\times m$.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.93\textwidth]{lle_neighbor_sensitivity.png}
+  \caption{Độ nhạy LLE theo $t \in \{5,8,12,20\}$ trên mẫu con Swiss roll ($n=800$).}
+  \label{fig:exp-lle-neighbors}
+\end{figure}
+
+\paragraph{Nhận xét.}
+$t$ quá nhỏ chưa trải phẳng đủ; $t$ quá lớn pha loãng trọng số cục bộ---cùng
+trade-off láng giềng như Isomap nhưng không cần ước lượng geodesic toàn cục.
+
+\subsection{Laplacian Eigenmaps: phổ đồ thị Laplace}
+
+Laplacian Eigenmaps (Định lý~\ref{thm:le_solution}) cực tiểu tổng
+$W_{ij}\|\mathbf{y}_i-\mathbf{y}_j\|^2$ với ràng buộc chuẩn hóa. Cài đặt dùng
+$k=15$, $\sigma=5.0$ trên baseline; sweep $\sigma$ trên Circles.
+
+\lstinputlisting[
+  language=Python,
+  firstline=45,
+  lastline=61,
+  caption={Ma trận trọng số Gaussian và Laplacian $L=D-W$ (\texttt{laplacian\_eigen.py}).},
+  label={lst:le-laplacian}
+]{../code/models/laplacian_eigen.py}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{le_baseline_embedding.png}
+  \caption{Baseline Laplacian Eigenmaps ($k=15$, $\sigma=5.0$) trên bốn tập.}
+  \label{fig:exp-le-embedding}
+\end{figure}
+
+\paragraph{Nhận xét.}
+COIL-20 tách 20 lớp rõ nhất trong các phương pháp from-scratch; MNIST vẫn chồng
+biên class so với t-SNE/UMAP.
+
+\begin{table}[H]
+  \centering
+  \caption{Baseline Laplacian Eigenmaps (\texttt{baseline.ipynb}).}
+  \label{tab:le-baseline}
+  \begin{tabular}{lcccc}
+    \toprule
+    Tập dữ liệu & Trust.@12 & KNN acc.@5 & Thời gian fit (s) & Số mẫu \\
+    \midrule
+    Circles    & 0.8736 & 1.0000 & 0.5845 & 1\,000 \\
+    Swiss roll & 0.8940 & 0.0000$^\ast$ & 0.9274 & 1\,500 \\
+    COIL-20    & 0.9502 & \textbf{0.9660} & 0.7003 & 1\,440 \\
+    MNIST      & 0.8443 & 0.7414 & 107.3471 & 10\,000 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Nhận xét.}
+KNN $0.9660$ trên COIL-20 cao nhất among from-scratch; kernel Gaussian phù hợp
+cấu trúc xoay liên tục. Fit COIL-20 nhanh ($0.7$~s) vì chỉ cần đồ thị thưa.
+Trustworthiness Swiss roll thấp hơn LLE/Isomap do ưu tiên cạnh trọng số cao ở gần.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.75\textwidth]{le_sigma_sensitivity.png}
+  \caption{Độ nhạy $\sigma \in \{1.0, 5.0, 10.0\}$ trên Circles ($k=15$).}
+  \label{fig:exp-le-sigma}
+\end{figure}
+
+\paragraph{Nhận xét.}
+Ba panel có thể trông gần giống; khác biệt $\sigma$ nên đọc kèm KNN/trustworthiness,
+không chỉ scatter. $\sigma$ nhỏ làm embedding gãy; lớn làm mờ ranh giới hai vòng.
+
+\begin{extension}
+\subsection{t-SNE: baseline trực quan hóa phi tuyến}
+
+t-SNE \cite{vandermaaten2008tsne} không có trong sách; lớp \texttt{TSNE} là
+wrapper \texttt{sklearn.manifold.TSNE}. Cấu hình: perplexity $=30$, khởi tạo PCA,
+750 vòng lặp, \texttt{SEED = 42}.
+
+\lstinputlisting[
+  language=Python,
+  firstline=14,
+  lastline=36,
+  caption={Wrapper t-SNE trong \texttt{t\_sne.py}.},
+  label={lst:tsne-wrapper}
+]{../code/models/t_sne.py}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{tsne_baseline_embedding.png}
+  \caption{Baseline t-SNE trên bốn tập.}
+  \label{fig:exp-tsne-baseline}
+\end{figure}
+
+\paragraph{Nhận xét.}
+Cụm nhãn tách rõ trên COIL-20 và MNIST; Circles/Swiss roll đạt trustworthiness
+cao. KNN MNIST $0.9454$ dẫn đầu baseline; không hỗ trợ out-of-sample transform
+tự nhiên.
+
+\begin{table}[H]
+  \centering
+  \caption{Baseline t-SNE (\texttt{baseline.ipynb}).}
+  \label{tab:tsne-baseline}
+  \begin{tabular}{lcccc}
+    \toprule
+    Tập dữ liệu & Trust.@12 & KNN acc.@5 & Thời gian fit (s) & Số mẫu \\
+    \midrule
+    Circles    & 0.9994 & 1.0000 & 0.9719 & 1\,000 \\
+    Swiss roll & 0.9995 & 0.0000$^\ast$ & 1.4251 & 1\,500 \\
+    COIL-20    & 0.9948 & 0.9778 & 2.6459 & 1\,440 \\
+    MNIST      & 0.9842 & 0.9454 & 14.7364 & 10\,000 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Nhận xét.}
+t-SNE tối ưu trực quan cụm cục bộ; khoảng cách giữa cụm không nên diễn giải
+trực tiếp nếu không có thước đo toàn cục bổ sung \cite{wang2021pacmap}.
+
+\subsection{UMAP: baseline trực quan hóa phi tuyến}
+
+UMAP \cite{mcinnes2018umap} qua wrapper \texttt{umap-learn}; $n_{\mathrm{neighbors}}=15$,
+\texttt{min\_dist = 0.1}, metric Euclid.
+
+\lstinputlisting[
+  language=Python,
+  firstline=11,
+  lastline=35,
+  caption={Wrapper UMAP (đầu tệp \texttt{umap.py}).},
+  label={lst:umap-wrapper}
+]{../code/models/umap.py}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{umap_baseline_embedding.png}
+  \caption{Baseline UMAP trên bốn tập.}
+  \label{fig:exp-umap-baseline}
+\end{figure}
+
+\paragraph{Nhận xét.}
+Layout gọn, cụm MNIST/COIL-20 rõ; Swiss roll trải phẳng tốt (Trust.$\approx 0.999$).
+So t-SNE trên cùng MNIST: KNN hơi thấp hơn ($0.9429$ \emph{vs.} $0.9454$) nhưng
+cùng phân hạng tốt.
+
+\begin{table}[H]
+  \centering
+  \caption{Baseline UMAP (\texttt{baseline.ipynb}).}
+  \label{tab:umap-baseline}
+  \begin{tabular}{lcccc}
+    \toprule
+    Tập dữ liệu & Trust.@12 & KNN acc.@5 & Thời gian fit (s) & Số mẫu \\
+    \midrule
+    Circles    & 0.9982 & 1.0000 & 11.0375 & 1\,000 \\
+    Swiss roll & 0.9989 & 0.0000$^\ast$ & 2.8356 & 1\,500 \\
+    COIL-20    & 0.9934 & 0.8618 & 6.9804 & 1\,440 \\
+    MNIST      & 0.9602 & 0.9429 & 24.7753 & 10\,000 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Nhận xét.}
+UMAP cân bằng cục bộ/toàn cục hơn t-SNE theo thiết kế cross-entropy
+\cite{mcinnes2018umap}; tham số \texttt{n\_neighbors} và \texttt{min\_dist} ảnh
+hưởng mạnh layout. Chi tiết MNIST so với t-SNE/LLE xem Bảng~\ref{tab:bonus-tsne-umap}
+ở Chương~4.
+
+\subsection{Neg-t-SNE: phổ $\overline{Z}$ trên MNIST}
+
+Demo thực nghiệm cho Mục~\ref{sec:research-contrastive}: thay $\overline{Z}$ trong
+NEG chuyển tiếp t-SNE-like sang UMAP-like \cite{damrich2023contrastive}.
+$n=5\,000$ MNIST, \texttt{QUICK\_TEST = True}, \texttt{SEED = 0}, $k=15$, 5 mẫu âm.
+
+\lstinputlisting[
+  language=Python,
+  firstline=44,
+  lastline=51,
+  caption={Hai neo phổ $\overline{Z}$: t-SNE-like ($100n$) và UMAP-like ($n^2/m$).},
+  label={lst:neg-tsne-anchors}
+]{../code/models/neg_tsne.py}
+
+\begin{figure}[H]
+  \centering
+  \IfFileExists{./figures/neg_tsne_spectrum_grid.png}{%
+    \includegraphics[width=\textwidth]{neg_tsne_spectrum_grid.png}%
+  }{%
+    \fbox{\parbox{0.95\textwidth}{\centering\vspace{1.5cm}
+      \textit{[Chạy \texttt{contrastive\_learning.ipynb}, lưu
+      \texttt{neg\_tsne\_spectrum\_grid.png}.]}
+      \vspace{1.5cm}}}%
+  }
+  \caption{Phổ Neg-t-SNE: năm giá trị $\overline{Z}$ sau warm-start trên MNIST $n=5\,000$.}
+  \label{fig:exp-neg-tsne-spectrum}
+\end{figure}
+
+\paragraph{Nhận xét.}
+Khi $\overline{Z}$ tăng, cụm chuyển từ dàn trải (t-SNE-like) sang co chặt
+(UMAP-like), khớp Hệ quả~\ref{thm:cor2} về $q^*=\overline{Z}\,p$.
+
+\begin{figure}[H]
+  \centering
+  \IfFileExists{./figures/neg_tsne_comparison.png}{%
+    \includegraphics[width=0.93\textwidth]{neg_tsne_comparison.png}%
+  }{%
+    \fbox{\parbox{0.85\textwidth}{\centering\vspace{1.5cm}
+      \textit{[Chạy \texttt{contrastive\_learning.ipynb}, lưu
+      \texttt{neg\_tsne\_comparison.png}.]}
+      \vspace{1.5cm}}}%
+  }
+  \caption{So sánh t-SNE, UMAP và Neg-t-SNE tại hai neo $\overline{Z}$ trên MNIST.}
+  \label{fig:exp-neg-tsne-comparison}
+\end{figure}
+
+\paragraph{Nhận xét.}
+Neg-t-SNE tại $\overline{Z}\approx 100n$ giống t-SNE; tại $\overline{Z}\approx n^2/m$
+giống UMAP---kiểm chứng tính liên tục của phổ đã phân tích ở Chương~4.
+
+\lstinputlisting[
+  language=Python,
+  firstline=101,
+  lastline=137,
+  caption={Cấu hình \texttt{CNE} với \texttt{loss\_mode='neg'} và tham số $\overline{Z}$.},
+  label={lst:neg-tsne-cne}
+]{../code/models/neg_tsne.py}
+\end{extension}
+
+\subsection{Tái tạo kết quả}
+
+Thí nghiệm kiểm chứng lý thuyết và hình baseline:
+\begin{lstlisting}[language=Python]
 uv run python code/experiments/report_pca_kpca_isomap.py
+uv run python code/experiments/export_baseline_figures.py
 \end{lstlisting}
+Baseline đầy đủ (metrics, heatmap): mở \texttt{code/experiments/baseline.ipynb}
+từ thư mục \texttt{lab-2/}. Neg-t-SNE:
+\texttt{code/experiments/contrastive\_learning.ipynb} (cần \texttt{uv sync --extra contrastive}).
 
-Các kiểm chứng mở rộng ngoài phạm vi ba thực nghiệm trọng tâm được lưu trong
-notebook \texttt{baseline.ipynb} ở thư mục \texttt{code/experiments}.
-Notebook này đánh giá thêm LLE và Laplacian Eigenmaps do nhóm cài đặt, cùng
-các wrapper t-SNE và UMAP, trên bốn tập dữ liệu; Bảng~\ref{tab:tsne-umap-mnist-baseline}
-tóm tắt riêng kết quả MNIST của hai phương pháp này vì chúng liên quan trực tiếp
-đến phần nghiên cứu tiên tiến. Các kết quả chi tiết còn lại được lưu trực tiếp
-trong notebook. Đánh giá thực nghiệm cho Johnson--Lindenstrauss chưa được dùng
-làm căn cứ cho các kết luận trong phần này.
+Trong phần lý thuyết, mỗi mẫu là cột của $\mathbf{X}\in\R^{N\times m}$; trong
+code NumPy mỗi mẫu là một hàng (\texttt{X.shape = (m, N)}). Các phép nhân trong
+listing là chuyển vị tương đương của công thức sách.

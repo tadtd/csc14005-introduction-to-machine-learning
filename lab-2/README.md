@@ -1,147 +1,212 @@
 # Lab 2 - Dimensionality Reduction
 
-This repository contains the materials for CSC14005 - Introduction to Machine Learning, Lab 2. The topic is Chapter 12, *Dimensionality Reduction*, from *Foundations of Machine Learning* by Mohri, Rostamizadeh, and Talwalkar (2nd edition).
+This repository contains Lab 2 for `CSC14005 - Introduction to Machine Learning`.
+It focuses on dimensionality reduction theory, implementation, empirical evaluation, and report writing.
 
-The project covers PCA, KPCA, Isomap, Laplacian Eigenmaps, LLE, and the Johnson--Lindenstrauss lemma. It also includes t-SNE and UMAP baselines, a Neg-t-SNE notebook, and a research discussion of PaCMAP.
+## Team
 
 | Student ID | Name |
 |------------|------|
-| 23120119 | Đỗ Tiến Đạt |
-| 23120163 | Lê Nhật Minh Tâm |
-| 23120137 | Triệu Tuấn Kiệt |
-| 23120134 | Nguyễn Đăng Khoa |
-| 23120105 | Huỳnh Mạnh Tường |
+| 23120119 | Do Tien Dat |
+| 23120163 | Le Nhat Minh Tam |
+| 23120137 | Trieu Tuan Kiet |
+| 23120134 | Nguyen Dang Khoa |
+| 23120105 | Huynh Manh Tuong |
 
-## Task assignments
+## What is implemented
 
-The following table lists the primary responsibilities assigned to each team member for this lab.
+### From-scratch reducers (`code/models/`)
 
-| Student ID | Name | Responsibilities |
-|------------|------|------------------|
-| 23120119 | Đỗ Tiến Đạt | Data loading & preprocessing (MNIST, COIL-20, datasets), data scripts |
-| 23120163 | Lê Nhật Minh Tâm | PCA & KPCA implementations, evaluation metrics, plotting |
-| 23120137 | Triệu Tuấn Kiệt | Isomap, LLE, Laplacian Eigenmaps implementations and testing |
-| 23120134 | Nguyễn Đăng Khoa | t-SNE / UMAP baselines, contrastive experiments (Neg-t-SNE) |
-| 23120105 | Huỳnh Mạnh Tường | Experiments orchestration, figures, and LaTeX report compilation |
+- PCA
+- KPCA
+- Isomap
+- LLE
+- Laplacian Eigenmaps
+
+### Wrapper-based reducers (extended experiments)
+
+- t-SNE (`sklearn.manifold.TSNE`)
+- UMAP (`umap-learn`)
+- Neg-t-SNE (`contrastive-ne`, class `cne.CNE`)
+
+### Experiment and report assets
+
+- Main reproducible script: `code/experiments/report_pca_kpca_isomap.py`
+- Baseline notebook: `code/experiments/baseline.ipynb`
+- Contrastive notebook: `code/experiments/contrastive_learning.ipynb`
+- Notebook helper module (metrics/plots/workflow): `code/experiments/utils.py`
+- Report source: `report/main.tex` with section files in `report/content/`
 
 ## Requirements
 
-Python 3.13 or newer.
+- Python `>= 3.13`
+- `uv` (recommended) or `pip`
+- LaTeX toolchain to build the report:
+  - preferred: `latexmk`
+  - fallback: `pdflatex` + `bibtex`
 
-## How to run
+Build-tool note for contrastive dependencies:
 
-Choose one of the two setup methods below.
+- **Windows:** install Microsoft C++ Build Tools (MSVC)
+- **Linux:** install compiler + Python headers (for example `build-essential`, `python3-dev`)
 
-### Option 1: Using `uv` (recommended)
+## Setup
 
-From the project root:
+Run from the `lab-2/` directory.
+
+### Option 1 (recommended): `uv`
 
 ```powershell
 uv sync
 ```
 
-To install optional extras when needed:
+Optional extras:
 
 ```powershell
 uv sync --extra data
 uv sync --extra contrastive
 ```
 
-The `data` extra installs Scanpy and Pillow for the extended datasets. The `contrastive` extra installs `torch` and `contrastive-ne` for `code/experiments/contrastive_learning.ipynb`.
+- `data`: additional dataset-related dependencies (`scanpy`, `pillow`)
+- `contrastive`: installs `torch` and `contrastive-ne`
 
-### Option 2: Using `pip`
-
-Install all dependencies from `requirements.txt`:
+### Option 2: `pip`
 
 ```powershell
 python -m pip install -r requirements.txt
 ```
 
-This file includes the dependencies needed for the notebooks and the report scripts.
-
 ## Data
 
-- MNIST should be placed at `code/data/raw/mnist.hdf5`, or you can use the automatic loader documented in [`code/data/README.md`](code/data/README.md).
-- To download the supported datasets in advance, run:
+Shared dataset loading is implemented in `code/data/load_data.py`.
+
+Supported loaders:
+
+- Synthetic: `circles`, `swiss_roll`
+- Image datasets: `mnist`, `coil20` (alias support included)
+
+Data/cache location:
+
+- `code/data/raw/`
+
+Prefetch caches before running experiments:
 
 ```powershell
 uv run python code/data/load_data.py
 ```
 
-If you use `pip`, run the same script with your active Python environment instead:
+or:
 
 ```powershell
 python code/data/load_data.py
 ```
 
-## Reproducing the results
+See `code/data/README.md` for details.
 
-Generate the figures and metrics used in the main report:
+## Reproduce the report figures
+
+Run the main script:
 
 ```powershell
 uv run python code/experiments/report_pca_kpca_isomap.py
 ```
 
-If you are using `pip`, run:
+or:
 
 ```powershell
 python code/experiments/report_pca_kpca_isomap.py
 ```
 
-Build the LaTeX report with the provided scripts:
+This script generates the figures used for the PCA/KPCA/Isomap report section
+and saves outputs to `report/figures/`.
+
+## Run notebook experiments
+
+### Baseline notebook
+
+`code/experiments/baseline.ipynb` compares:
+
+- PCA, KPCA, Isomap, LLE, Laplacian Eigenmaps
+- t-SNE and UMAP baselines
+
+### Contrastive notebook
+
+`code/experiments/contrastive_learning.ipynb` explores Neg-t-SNE and related
+comparisons against t-SNE/UMAP.
+
+Notebook tips:
+
+- Open notebooks from repository root (`lab-2/`)
+- Select the Python kernel from `.venv`
+- Ensure `uv sync` has completed before running all cells
+
+## Build the LaTeX report
+
+Compile:
 
 ```powershell
 .\scripts\compile_latex.ps1
 ```
 
-To clean LaTeX artifacts before rebuilding:
+Clean artifacts:
 
 ```powershell
 .\scripts\clean_artifacts.ps1
 ```
 
-To clean and rebuild in one step:
+Clean + compile:
 
 ```powershell
 .\scripts\recompile.ps1
 ```
 
-## Project files
+`compile_latex.ps1` automatically prefers `latexmk`; if unavailable, it falls
+back to `pdflatex`/`bibtex` passes.
 
-| File | Description |
-|------|-------------|
-| [`code/experiments/report_pca_kpca_isomap.py`](code/experiments/report_pca_kpca_isomap.py) | Generates the figures and tables for the main experiment section with `SEED = 42`. |
-| [`code/experiments/baseline.ipynb`](code/experiments/baseline.ipynb) | Baseline PCA, KPCA, Isomap, LLE, Laplacian Eigenmaps, t-SNE, and UMAP experiments on 10,000 MNIST samples with `SEED = 42`. |
-| [`code/experiments/contrastive_learning.ipynb`](code/experiments/contrastive_learning.ipynb) | Neg-t-SNE (`cne.CNE`) extension and t-SNE/UMAP wrappers. |
+Main files:
 
-## Structure
+- Source: `report/main.tex`
+- Output PDF: `report/main.pdf`
 
-```text
-lab-2/
-|-- README.md
-|-- requirements.txt
-|-- pyproject.toml
-|-- report/
-|   |-- main.tex
-|   |-- ref/
-|   |   |-- ref.tex
-|   |   `-- ref.bib
-|   |-- main.aux
-|   |-- main.bbl
-|   |-- main.blg
-|   |-- main.fdb_latexmk
-|   |-- main.fls
-|   |-- main.lof
-|   |-- main.lot
-|   |-- main.toc
-|   |-- content/
-|   `-- figures/
-`-- code/
-    |-- README.md
-    |-- models/
-    |-- experiments/
-    |-- data/
-    `-- utils/
+## Quick workflow (recommended)
+
+```powershell
+uv sync
+uv run python code/data/load_data.py
+uv run python code/experiments/report_pca_kpca_isomap.py
+.\scripts\compile_latex.ps1
 ```
 
-See [`code/README.md`](code/README.md) for details about each source file and the from-scratch/wrapper scope.
+## Repository structure
+
+```
+lab-2/
+├── README.md
+├── pyproject.toml
+├── requirements.txt
+├── code/
+│   ├── models/          # DR algorithms (PCA, KPCA, Isomap, LLE, Laplacian Eigenmaps, t-SNE, UMAP, Neg-t-SNE, …)
+│   ├── experiments/     # report script, notebooks, experiments.utils (plots, metrics)
+│   ├── utils/           # knn_graph.py (symmetric k-NN graph for CNE)
+│   └── data/            # load_data.py, raw/
+├── report/
+│   ├── main.tex         # LaTeX report source
+│   ├── content/         # section .tex files
+│   ├── appendix/
+│   ├── figures/         # generated plots for the report
+│   └── ref/             # ref.bib, ref.tex
+└── scripts/
+    ├── clean_artifacts.ps1
+    ├── compile_latex.ps1
+    └── recompile.ps1
+```
+
+## Troubleshooting
+
+| Error | Fix |
+|------|-----|
+| `Microsoft Visual C++ 14.0 or greater is required` | Install MSVC Build Tools, restart terminal, then run `uv sync` again. |
+| `No module named 'cne'` | Install contrastive dependencies: `uv sync --extra contrastive`. |
+| `mnist.hdf5` not found | Use `code/data/load_data.py` to prefetch data, or place files under `code/data/raw/`. |
+| `No module named 'experiments'` in notebooks | Open notebook from `lab-2` root and use the correct `.venv` kernel. |
+| LaTeX compile fails | Ensure `latexmk` (or `pdflatex` + `bibtex`) is installed and available in PATH. |

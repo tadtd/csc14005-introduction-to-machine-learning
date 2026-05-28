@@ -1,129 +1,212 @@
-# Lab 2 — Dimensionality Reduction
+# Lab 2 - Dimensionality Reduction
 
-Experiments on dimensionality reduction: PCA, KPCA, Isomap, LLE, Laplacian Eigenmaps, t-SNE, UMAP.
+This repository contains Lab 2 for `CSC14005 - Introduction to Machine Learning`.
+It focuses on dimensionality reduction theory, implementation, empirical evaluation, and report writing.
+
+## Team
+
+| Student ID | Name |
+|------------|------|
+| 23120119 | Do Tien Dat |
+| 23120163 | Le Nhat Minh Tam |
+| 23120137 | Trieu Tuan Kiet |
+| 23120134 | Nguyen Dang Khoa |
+| 23120105 | Huynh Manh Tuong |
+
+## What is implemented
+
+### From-scratch reducers (`code/models/`)
+
+- PCA
+- KPCA
+- Isomap
+- LLE
+- Laplacian Eigenmaps
+
+### Wrapper-based reducers (extended experiments)
+
+- t-SNE (`sklearn.manifold.TSNE`)
+- UMAP (`umap-learn`)
+- Neg-t-SNE (`contrastive-ne`, class `cne.CNE`)
+
+### Experiment and report assets
+
+- Main reproducible script: `code/experiments/report_pca_kpca_isomap.py`
+- Baseline notebook: `code/experiments/baseline.ipynb`
+- Contrastive notebook: `code/experiments/contrastive_learning.ipynb`
+- Notebook helper module (metrics/plots/workflow): `code/experiments/utils.py`
+- Report source: `report/main.tex` with section files in `report/content/`
 
 ## Requirements
 
-- **Python** ≥ 3.13
-- **[uv](https://docs.astral.sh/uv/)** for environment and dependency management
-- **Windows:** [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) (MSVC) — required to build `annoy`, a dependency of `contrastive-ne` (see below)
-- **Linux:** `build-essential` and Python headers, e.g. `sudo apt install build-essential python3-dev`
+- Python `>= 3.13`
+- `uv` (recommended) or `pip`
+- LaTeX toolchain to build the report:
+  - preferred: `latexmk`
+  - fallback: `pdflatex` + `bibtex`
 
-## Quick start
+Build-tool note for contrastive dependencies:
 
-From the `lab-2` directory:
+- **Windows:** install Microsoft C++ Build Tools (MSVC)
+- **Linux:** install compiler + Python headers (for example `build-essential`, `python3-dev`)
+
+## Setup
+
+Run from the `lab-2/` directory.
+
+### Option 1 (recommended): `uv`
 
 ```powershell
-cd lab-2
 uv sync
 ```
 
-Activate the virtual environment:
-
-```powershell
-# PowerShell
-.\.venv\Scripts\Activate.ps1
-```
-
-```bash
-# Linux / macOS
-source .venv/bin/activate
-```
-
-Verify `contrastive-ne` (used in code as `from cne import CNE`):
-
-```powershell
-uv run python -c "from cne import CNE; print('cne OK')"
-```
-
-### Optional dependencies
-
-For Scanpy / Pillow (extra datasets):
+Optional extras:
 
 ```powershell
 uv sync --extra data
+uv sync --extra contrastive
 ```
 
-## Windows — MSVC (Build Tools)
+- `data`: additional dataset-related dependencies (`scanpy`, `pillow`)
+- `contrastive`: installs `torch` and `contrastive-ne`
 
-The PyPI package [`contrastive-ne`](https://pypi.org/project/contrastive-ne/) depends on `annoy`, which must be compiled from source on Windows. If `uv sync` fails with *Microsoft Visual C++ 14.0 or greater is required*:
-
-1. Install **Visual Studio Build Tools 2022** with the **Desktop development with C++** workload (or at least **MSVC** + **Windows SDK**).
-2. Quick install via `winget` (PowerShell):
-
-   ```powershell
-   winget install -e --id Microsoft.VisualStudio.2022.BuildTools `
-     --accept-package-agreements --accept-source-agreements `
-     --override "--wait --passive --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
-   ```
-
-   If `winget` is not on your PATH:
-
-   ```powershell
-   & "$env:LocalAppData\Microsoft\WindowsApps\winget.exe" install -e --id Microsoft.VisualStudio.2022.BuildTools `
-     --accept-package-agreements --accept-source-agreements `
-     --override "--wait --passive --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
-   ```
-
-3. **Close and reopen your terminal**, then run:
-
-   ```powershell
-   uv sync
-   ```
-
-4. If `cl` is still not found, open **Developer PowerShell for VS 2022** from the Start menu, `cd` into `lab-2`, and run `uv sync` again.
-
-Check that the compiler is available:
+### Option 2: `pip`
 
 ```powershell
-where cl
+python -m pip install -r requirements.txt
 ```
-
-> **Note:** MSVC is Windows-only. On Linux and macOS, use GCC or Clang (often preinstalled or available via your package manager).
 
 ## Data
 
-- **MNIST** (baseline and contrastive notebooks): place `code/data/raw/mnist.hdf5`, or use the auto-download loader — see [`code/data/README.md`](code/data/README.md).
-- Prefetch MNIST / COIL-20:
+Shared dataset loading is implemented in `code/data/load_data.py`.
 
-  ```powershell
-  uv run python code/data/load_data.py
-  ```
+Supported loaders:
 
-## Running experiments
+- Synthetic: `circles`, `swiss_roll`
+- Image datasets: `mnist`, `coil20` (alias support included)
 
-| Notebook | Description |
-|----------|-------------|
-| [`code/experiments/baseline.ipynb`](code/experiments/baseline.ipynb) | Baselines: PCA, KPCA, Isomap, LLE, Laplacian Eigenmaps, t-SNE, UMAP |
-| [`code/experiments/contrastive_learning.ipynb`](code/experiments/contrastive_learning.ipynb) | Neg-t-SNE spectrum (Damrich et al., ICLR 2023) vs sklearn t-SNE / UMAP |
+Data/cache location:
 
-In Jupyter or VS Code, select the **Python 3.13** kernel from `.venv` in `lab-2`. Notebooks prepend `lab_root/code` to `sys.path` and import helpers from `experiments.utils` (plotting, metrics, baselines). Use `lab-2` as the working directory when opening a terminal or kernel.
+- `code/data/raw/`
 
-## Neg-t-SNE / contrastive-ne
+Prefetch caches before running experiments:
 
-- **Dependency:** [`contrastive-ne`](https://pypi.org/project/contrastive-ne/) from **PyPI** (no local `external/contrastive-ne` checkout).
-- **Lab code:** [`code/models/neg_tsne.py`](code/models/neg_tsne.py) wraps `cne.CNE` with a fixed normalization constant $\bar{Z}$.
-- **Spectrum:** sweep $\bar{Z}$ from **t-SNE-like** ($100 \cdot n$) to **UMAP-like** ($n^2/m$) via `geomspace`, with early exaggeration at $n^2/m$ (Damrich et al., 2023).
+```powershell
+uv run python code/data/load_data.py
+```
 
-## Project layout
+or:
+
+```powershell
+python code/data/load_data.py
+```
+
+See `code/data/README.md` for details.
+
+## Reproduce the report figures
+
+Run the main script:
+
+```powershell
+uv run python code/experiments/report_pca_kpca_isomap.py
+```
+
+or:
+
+```powershell
+python code/experiments/report_pca_kpca_isomap.py
+```
+
+This script generates the figures used for the PCA/KPCA/Isomap report section
+and saves outputs to `report/figures/`.
+
+## Run notebook experiments
+
+### Baseline notebook
+
+`code/experiments/baseline.ipynb` compares:
+
+- PCA, KPCA, Isomap, LLE, Laplacian Eigenmaps
+- t-SNE and UMAP baselines
+
+### Contrastive notebook
+
+`code/experiments/contrastive_learning.ipynb` explores Neg-t-SNE and related
+comparisons against t-SNE/UMAP.
+
+Notebook tips:
+
+- Open notebooks from repository root (`lab-2/`)
+- Select the Python kernel from `.venv`
+- Ensure `uv sync` has completed before running all cells
+
+## Build the LaTeX report
+
+Compile:
+
+```powershell
+.\scripts\compile_latex.ps1
+```
+
+Clean artifacts:
+
+```powershell
+.\scripts\clean_artifacts.ps1
+```
+
+Clean + compile:
+
+```powershell
+.\scripts\recompile.ps1
+```
+
+`compile_latex.ps1` automatically prefers `latexmk`; if unavailable, it falls
+back to `pdflatex`/`bibtex` passes.
+
+Main files:
+
+- Source: `report/main.tex`
+- Output PDF: `report/main.pdf`
+
+## Quick workflow (recommended)
+
+```powershell
+uv sync
+uv run python code/data/load_data.py
+uv run python code/experiments/report_pca_kpca_isomap.py
+.\scripts\compile_latex.ps1
+```
+
+## Repository structure
 
 ```
 lab-2/
+├── README.md
 ├── pyproject.toml
+├── requirements.txt
 ├── code/
-│   ├── models/          # DR algorithms (PCA, t-SNE, UMAP, NegTSNE, …)
-│   ├── experiments/     # Notebooks + experiments.utils (plots, metrics)
-│   ├── utils/           # knn_graph.py (sklearn kNN for CNE)
+│   ├── models/          # DR algorithms (PCA, KPCA, Isomap, LLE, Laplacian Eigenmaps, t-SNE, UMAP, Neg-t-SNE, …)
+│   ├── experiments/     # report script, notebooks, experiments.utils (plots, metrics)
+│   ├── utils/           # knn_graph.py (symmetric k-NN graph for CNE)
 │   └── data/            # load_data.py, raw/
-└── README.md
+├── report/
+│   ├── main.tex         # LaTeX report source
+│   ├── content/         # section .tex files
+│   ├── appendix/
+│   ├── figures/         # generated plots for the report
+│   └── ref/             # ref.bib, ref.tex
+└── scripts/
+    ├── clean_artifacts.ps1
+    ├── compile_latex.ps1
+    └── recompile.ps1
 ```
 
 ## Troubleshooting
 
-| Error | What to do |
-|-------|------------|
-| `Distribution not found at .../external/contrastive-ne` | Remove any old `[tool.uv.sources]` entry; run `uv lock` then `uv sync` (PyPI only). |
-| `Microsoft Visual C++ 14.0 or greater is required` | Install MSVC Build Tools (Windows section above), restart the terminal, `uv sync`. |
-| `No module named 'cne'` | Run `uv sync` in `lab-2` and select the `.venv` kernel. |
-| `mnist.hdf5` not found | Copy the file to `code/data/raw/` or use `load_data` — see [`code/data/README.md`](code/data/README.md). |
-| `No module named 'experiments'` | Run notebooks from `lab-2` and execute the path-setup cell so `code/` is on `sys.path`. |
+| Error | Fix |
+|------|-----|
+| `Microsoft Visual C++ 14.0 or greater is required` | Install MSVC Build Tools, restart terminal, then run `uv sync` again. |
+| `No module named 'cne'` | Install contrastive dependencies: `uv sync --extra contrastive`. |
+| `mnist.hdf5` not found | Use `code/data/load_data.py` to prefetch data, or place files under `code/data/raw/`. |
+| `No module named 'experiments'` in notebooks | Open notebook from `lab-2` root and use the correct `.venv` kernel. |
+| LaTeX compile fails | Ensure `latexmk` (or `pdflatex` + `bibtex`) is installed and available in PATH. |

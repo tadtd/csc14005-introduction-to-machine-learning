@@ -12,6 +12,18 @@ The project covers PCA, KPCA, Isomap, Laplacian Eigenmaps, LLE, and the Johnson-
 | 23120134 | Nguyễn Đăng Khoa |
 | 23120105 | Huỳnh Mạnh Tường |
 
+## Task assignments
+
+The following table lists the primary responsibilities assigned to each team member for this lab.
+
+| Student ID | Name | Responsibilities |
+|------------|------|------------------|
+| 23120119 | Đỗ Tiến Đạt | Data loading & preprocessing (MNIST, COIL-20, datasets), data scripts |
+| 23120163 | Lê Nhật Minh Tâm | PCA & KPCA implementations, evaluation metrics, plotting |
+| 23120137 | Triệu Tuấn Kiệt | Isomap, LLE, Laplacian Eigenmaps implementations and testing |
+| 23120134 | Nguyễn Đăng Khoa | t-SNE / UMAP baselines, contrastive experiments (Neg-t-SNE) |
+| 23120105 | Huỳnh Mạnh Tường | Experiments orchestration, figures, and LaTeX report compilation |
+
 ## Requirements
 
 Python 3.13 or newer.

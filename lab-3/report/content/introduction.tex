@@ -1,1 +1,84 @@
 \section{Giới thiệu}
+
+%%============================================================
+\subsection{Bối cảnh và động lực}
+%%============================================================
+
+Trong thập kỷ vừa qua, học sâu (deep learning) đã đạt được những bước tiến vượt bậc trên nhiều lĩnh vực, từ nhận dạng ảnh, xử lý ngôn ngữ tự nhiên, đến mô hình hóa sinh học phân tử. Tuy nhiên, sự phát triển này đi kèm với chi phí tính toán và bộ nhớ ngày càng leo thang: các mô hình ngôn ngữ lớn thế hệ mới (GPT-5, Gemini) chứa hàng nghìn tỉ tham số, với chi phí huấn luyện vượt quá 100 triệu USD mỗi lần chạy \cite{chrysos2025tutorial}. Hệ quả trực tiếp là các mô hình này không thể triển khai trên thiết bị biên, tiêu thụ năng lượng khổng lồ, và giới hạn nghiên cứu trong phạm vi các tổ chức lớn.
+
+Thách thức cốt lõi, do đó, là \textit{nén biểu diễn mà không mất năng lực}. Phân tích tensor (tensor decomposition) nổi lên như một trong những hướng tiếp cận lý thuyết nhất quán và hiệu quả nhất cho bài toán này. Tensor -- mảng đa chiều tổng quát hóa vector và ma trận -- không phải là khái niệm ngoại lai được áp đặt vào học sâu. Trái lại, chúng \textit{xuất hiện tự nhiên và không thể tránh khỏi} ở khắp nơi trong kiến trúc mạng nơ-ron hiện đại: trọng số tích chập là tensor bậc 4, ma trận attention trong Transformer là tensor bậc 4, và đạo hàm bậc cao của hàm vector-valued tự nhiên sinh ra tensor bậc cao \cite{hillar2013most}.
+
+Lý thuyết phân rã tensor đã có lịch sử phát triển lâu dài, bắt đầu từ công trình của Hitchcock năm 1927 \cite{hitchcock1927expression}, qua các phân rã Tucker \cite{tucker1966some} và CP/PARAFAC \cite{harshman1970foundations, carroll1970analysis}, đến các phân rã hiện đại như Tensor Train \cite{oseledets2011tensor}. Cuộc tổng kết của Kolda và Bader \cite{kolda2009tensor} đã hệ thống hóa nền tảng này và tạo điều kiện cho làn sóng ứng dụng vào học máy. Gần đây, tutorial của Chrysos, Vergari và Acar tại NeurIPS 2025 \cite{chrysos2025tutorial} đã chỉ rõ ba hướng ứng dụng chính:
+
+\begin{itemize}
+    \item \textbf{Nén mô hình và hiệu quả tính toán}: Phân rã tensor cho phép thay thế các lớp mạng dày đặc bằng cấu trúc low-rank, giảm số tham số và chi phí suy diễn (LoRA \cite{hu2022lora}, Multilinear MoE \cite{oldfield2024multilinear}).
+    \item \textbf{Thiết kế kiến trúc}: Các mạng nơ-ron đa thức ($\Pi$-nets \cite{chrysos2020pi}) sử dụng cấu trúc tensor để mô hình hóa tương tác bậc cao giữa đặc trưng đầu vào, đạt hiệu quả vượt trội so với mạng phi tuyến truyền thống.
+    \item \textbf{Phân tích và diễn giải dữ liệu}: Trong khoa học thần kinh (EEG/fMRI), hệ vi sinh (metabolomics, gut microbiome), tensor cho phép trích xuất các thành phần có ý nghĩa vật lý nhờ tính duy nhất đặc trưng của phân rã CP \cite{kruskal1977three}.
+\end{itemize}
+
+Báo cáo này trình bày các nền tảng toán học cần thiết để hiểu và làm việc với các phương pháp trên và xây dựng lý thuyết từ định nghĩa tích tensor, qua các phép toán cơ bản, đến các phân rã CP và Tucker cùng các định lý đảm bảo tính duy nhất và độ phức tạp.
+
+%%============================================================
+\subsection{Quy ước ký hiệu}
+\label{sec:notation}
+%%============================================================
+
+Bảng~\ref{tab:notation} tóm tắt toàn bộ quy ước ký hiệu được sử dụng nhất quán trong báo cáo. Quy ước này theo chuẩn phổ biến trong cộng đồng nghiên cứu tensor, đặc biệt theo Kolda và Bader \cite{kolda2009tensor} và Sidiropoulos et al.\ \cite{sidiropoulos2017tensor}.
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.35}
+\begin{tabular}{clp{7.2cm}}
+\hline
+\textbf{Ký hiệu} & \textbf{Kiểu đối tượng} & \textbf{Mô tả và ví dụ} \\
+\hline
+$a,\, \alpha$ & Vô hướng & Chữ thường in nghiêng: $\lambda \in \mathbb{R}$, $n \in \mathbb{N}$ \\
+$\mathbf{a},\, \mathbf{x}$ & Vector & Chữ thường in đậm: $\mathbf{a} \in \mathbb{R}^I$ \\
+$\mathbf{A},\, \mathbf{X}$ & Ma trận & Chữ hoa in đậm: $\mathbf{A} \in \mathbb{R}^{I \times J}$ \\
+$\mathcal{X},\, \mathcal{G}$ & Tensor bậc $\geq 3$ & Chữ hoa nét thư pháp (calligraphic): $\mathcal{X} \in \mathbb{R}^{I_1 \times \cdots \times I_N}$ \\
+\hline
+$\mathbf{X}_{(n)}$ & Ma trận & Mode-$n$ matricization (unfolding) của tensor $\mathcal{X}$ \\
+$\mathcal{X}_{i_1,\ldots,i_N}$ & Vô hướng & Phần tử tại vị trí $(i_1,\ldots,i_N)$ \\
+$\mathcal{X}_{:,j,k}$ & Vector & Mode-1 fiber (dấu ``:'' là chỉ số tự do) \\
+$\mathcal{X}_{:,:,k}$ & Ma trận & Frontal slice thứ $k$ \\
+\hline
+$\mathbf{a}^{(n)}$ & Vector & Cột / vector gắn với mode $n$ \\
+$\mathbf{A}^{(n)}$ & Ma trận & Factor matrix của mode $n$ trong phân rã tensor \\
+$\mathcal{G}$ & Tensor & Core tensor trong phân rã Tucker \\
+\hline
+$\circ$ & Phép toán & Tích ngoài (outer product): $\mathbf{a} \circ \mathbf{b} \in \mathbb{R}^{I \times J}$ \\
+$\times_n$ & Phép toán & Tích mode-$n$: $\mathcal{X} \times_n \mathbf{U}$ \\
+$\otimes$ & Phép toán & Tích Kronecker: $\mathbf{A} \otimes \mathbf{B} \in \mathbb{R}^{mp \times nq}$ \\
+$\odot$ & Phép toán & Tích Khatri-Rao (columnwise Kronecker): $\mathbf{A} \odot \mathbf{B} \in \mathbb{R}^{IJ \times R}$ \\
+$\ast$ & Phép toán & Tích Hadamard (elementwise): $(\mathbf{A} \ast \mathbf{B})_{ij} = A_{ij} B_{ij}$ \\
+\hline
+$[\![\mathbf{A}^{(1)},\ldots,\mathbf{A}^{(N)}]\!]$ & Tensor & Ký hiệu rút gọn phân rã CP \\
+$[\![\mathcal{G};\,\mathbf{U}^{(1)},\ldots,\mathbf{U}^{(N)}]\!]$ & Tensor & Ký hiệu rút gọn phân rã Tucker \\
+\hline
+$\mathrm{rank}(\mathcal{X})$ & Số nguyên & Hạng CP của tensor $\mathcal{X}$ \\
+$(R_1,\ldots,R_N)$ & Bộ số nguyên & Multilinear rank (Tucker ranks) \\
+$k_{\mathbf{A}}$ & Số nguyên & Kruskal rank của ma trận $\mathbf{A}$ \\
+\hline
+$I_n$ & Số nguyên & Kích thước mode $n$: $\mathcal{X} \in \mathbb{R}^{I_1 \times \cdots \times I_N}$ \\
+$N$ & Số nguyên & Bậc (order) của tensor \\
+$R$ & Số nguyên & Số thành phần trong phân rã CP \\
+\hline
+\end{tabular}
+\caption{Quy ước ký hiệu sử dụng trong toàn bộ báo cáo.}
+\label{tab:notation}
+\end{table}
+
+Ngoài ra, một số quy ước bổ sung được áp dụng nhất quán:
+
+\begin{itemize}
+    \item Chỉ số \textit{in thường} ($i, j, k, r$) dùng cho các phần tử cụ thể; chỉ số \textit{in hoa} ($I, J, K, R$) dùng cho kích thước chiều.
+    \item Ký hiệu dấu hai chấm `$:$' trong biểu thức chỉ số (ví dụ $\mathcal{X}_{:,j,k}$) biểu thị \textit{tất cả các giá trị} của chỉ số tương ứng, theo quy ước MATLAB/NumPy.
+    \item Khi viết tổng hợp nhiều tích mode-$n$ liên tiếp, ta hiểu theo thứ tự từ trái sang phải:
+    \begin{equation}
+        \mathcal{X} \times_1 \mathbf{U}^{(1)} \times_2 \mathbf{U}^{(2)} \cdots \times_N \mathbf{U}^{(N)}
+        \;\triangleq\;
+        \bigl(\cdots\bigl((\mathcal{X} \times_1 \mathbf{U}^{(1)}) \times_2 \mathbf{U}^{(2)}\bigr)\cdots\bigr) \times_N \mathbf{U}^{(N)}.
+    \end{equation}
+    Thứ tự này hợp lệ vì các tích mode khác nhau giao hoán (Mệnh đề~\ref{prop:mode-n}).
+    \item Ký hiệu Einstein (Einstein summation) đôi khi được dùng cho các biểu thức compact: chỉ số lặp lại ngầm hiểu là tổng hóa, ví dụ $y_i = A_{ij} x_j \equiv \sum_j A_{ij} x_j$.
+\end{itemize}

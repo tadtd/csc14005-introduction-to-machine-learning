@@ -1,29 +1,306 @@
-@book{citation-key,
-    author = "Lê Hoài Bắc and Tô Hoài Việt",
-    title = "Cơ sở trí tuệ nhân tạo",
-    publisher = "Nhà xuất bản khoa học và kỹ thuật",
-    year = "2014" 
+%% ============================================================
+%%  references.bib
+%%  Tài liệu tham khảo cho phần Cơ sở lý thuyết
+%%  Tensor Computations for AI
+%% ============================================================
+
+%% --- Tổng quan / Surveys ---
+
+@article{kolda2009tensor,
+  author    = {Kolda, Tamara G. and Bader, Brett W.},
+  title     = {Tensor Decompositions and Applications},
+  journal   = {SIAM Review},
+  volume    = {51},
+  number    = {3},
+  pages     = {455--500},
+  year      = {2009},
+  doi       = {10.1137/07070111X}
 }
 
-@misc{cs188_fall2025,
-  author       = {Emma Pierson and Peyrin Kao},
-  title        = {CS 188: Introduction to Artificial Intelligence ({F}all 2025)},
-  organization = {University of California, Berkeley},
-  year         = {2025},
-  url          = {https://inst.eecs.berkeley.edu/~cs188/fa25/},
-  note         = {Accessed: November 3, 2025}
+@article{sidiropoulos2017tensor,
+  author    = {Sidiropoulos, Nicholas D. and De Lathauwer, Lieven and
+               Fu, Xiao and Huang, Kejun and Papalexakis, Evangelos E.
+               and Faloutsos, Christos},
+  title     = {Tensor Decomposition for Signal Processing and Machine Learning},
+  journal   = {IEEE Transactions on Signal Processing},
+  volume    = {65},
+  number    = {13},
+  pages     = {3551--3582},
+  year      = {2017},
+  doi       = {10.1109/TSP.2017.2690524}
 }
 
-@inproceedings{damrich2023tsne,
-  author    = {Damrich, Sebastian and B{\"o}hm, Jan Niklas and Hamprecht, Fred A. and Kobak, Dmitry},
-  title     = {From {t-SNE} to {UMAP} with Contrastive Learning},
-  booktitle = {International Conference on Learning Representations},
-  year      = {2023}
+@article{cichocki2015tensor,
+  author    = {Cichocki, Andrzej and Mandic, Danilo and De Lathauwer, Lieven and
+               Zhou, Guoxu and Zhao, Qibin and Caiafa, Cesar and
+               Phan, Anh Huy},
+  title     = {Tensor Decompositions for Signal Processing Applications:
+               From Two-Way to Multiway Component Analysis},
+  journal   = {IEEE Signal Processing Magazine},
+  volume    = {32},
+  number    = {2},
+  pages     = {145--163},
+  year      = {2015},
+  doi       = {10.1109/MSP.2013.2297439}
 }
 
-@inproceedings{damrich2023contrastive,
-  author    = {Damrich, Sebastian and B{\"o}hm, Jan Niklas and Hamprecht, Fred A. and Kobak, Dmitry},
-  title     = {From {t-SNE} to {UMAP} with Contrastive Learning},
-  booktitle = {International Conference on Learning Representations},
-  year      = {2023}
+@article{panagakis2021tensor,
+  author    = {Panagakis, Yannis and Kossaifi, Jean and Chrysos, Grigorios G.
+               and Oldfield, James and Nicolaou, Mihalis A. and
+               Anandkumar, Anima and Zafeiriou, Stefanos},
+  title     = {Tensor Methods in Computer Vision and Deep Learning},
+  journal   = {Proceedings of the IEEE},
+  volume    = {109},
+  number    = {5},
+  pages     = {863--905},
+  year      = {2021},
+  doi       = {10.1109/JPROC.2021.3074329}
+}
+
+%% --- Công trình gốc / Foundational Works ---
+
+@article{hitchcock1927expression,
+  author    = {Hitchcock, Frank L.},
+  title     = {The Expression of a Tensor or a Polyadic as a Sum of Products},
+  journal   = {Journal of Mathematics and Physics},
+  volume    = {6},
+  number    = {1},
+  pages     = {164--189},
+  year      = {1927},
+  doi       = {10.1002/sapm192761164}
+}
+
+@article{tucker1966some,
+  author    = {Tucker, Ledyard R.},
+  title     = {Some Mathematical Notes on Three-Mode Factor Analysis},
+  journal   = {Psychometrika},
+  volume    = {31},
+  number    = {3},
+  pages     = {279--311},
+  year      = {1966},
+  doi       = {10.1007/BF02289464}
+}
+
+@techreport{harshman1970foundations,
+  author      = {Harshman, Richard A.},
+  title       = {Foundations of the {PARAFAC} Procedure: Models and Conditions
+                 for an ``Explanatory'' Multi-Modal Factor Analysis},
+  institution = {UCLA Working Papers in Phonetics},
+  volume      = {16},
+  pages       = {1--84},
+  year        = {1970}
+}
+
+@article{carroll1970analysis,
+  author    = {Carroll, J. Douglas and Chang, Jih-Jie},
+  title     = {Analysis of Individual Differences in Multidimensional Scaling via
+               an {N}-Way Generalization of {Eckart-Young} Decomposition},
+  journal   = {Psychometrika},
+  volume    = {35},
+  number    = {3},
+  pages     = {283--319},
+  year      = {1970},
+  doi       = {10.1007/BF02310791}
+}
+
+%% --- Tính duy nhất CP ---
+
+@article{kruskal1977three,
+  author    = {Kruskal, Joseph B.},
+  title     = {Three-Way Arrays: Rank and Uniqueness of Trilinear Decompositions,
+               with Application to Arithmetic Complexity and Statistics},
+  journal   = {Linear Algebra and its Applications},
+  volume    = {18},
+  number    = {2},
+  pages     = {95--138},
+  year      = {1977},
+  doi       = {10.1016/0024-3795(77)90069-6}
+}
+
+%% --- Độ phức tạp / NP-hardness ---
+
+@article{hillar2013most,
+  author    = {Hillar, Christopher J. and Lim, Lek-Heng},
+  title     = {Most Tensor Problems Are {NP}-Hard},
+  journal   = {Journal of the ACM},
+  volume    = {60},
+  number    = {6},
+  pages     = {45:1--45:39},
+  year      = {2013},
+  doi       = {10.1145/2512329}
+}
+
+@inproceedings{hastad1990tensor,
+  author    = {H{\aa}stad, Johan},
+  title     = {Tensor Rank Is {NP}-Complete},
+  booktitle = {Journal of Algorithms},
+  volume    = {11},
+  number    = {4},
+  pages     = {644--654},
+  year      = {1990},
+  doi       = {10.1016/0196-6774(90)90014-6}
+}
+
+%% --- HOSVD / Tucker algorithms ---
+
+@article{delathauwer2000multilinear,
+  author    = {De Lathauwer, Lieven and De Moor, Bart and Vandewalle, Joos},
+  title     = {A Multilinear Singular Value Decomposition},
+  journal   = {SIAM Journal on Matrix Analysis and Applications},
+  volume    = {21},
+  number    = {4},
+  pages     = {1253--1278},
+  year      = {2000},
+  doi       = {10.1137/S0895479896305696}
+}
+
+@article{delathauwer2000best,
+  author    = {De Lathauwer, Lieven and De Moor, Bart and Vandewalle, Joos},
+  title     = {On the Best Rank-1 and Rank-$(R_1, R_2, \ldots, R_N)$
+               Approximation of Higher-Order Tensors},
+  journal   = {SIAM Journal on Matrix Analysis and Applications},
+  volume    = {21},
+  number    = {4},
+  pages     = {1324--1342},
+  year      = {2000},
+  doi       = {10.1137/S0895479898346995}
+}
+
+%% --- Tensor Train / Tensor Ring ---
+
+@article{oseledets2011tensor,
+  author    = {Oseledets, Ivan V.},
+  title     = {Tensor-Train Decomposition},
+  journal   = {SIAM Journal on Scientific Computing},
+  volume    = {33},
+  number    = {5},
+  pages     = {2295--2317},
+  year      = {2011},
+  doi       = {10.1137/090752286}
+}
+
+@article{zhao2016tensor,
+  author    = {Zhao, Qibin and Zhou, Guoxu and Xie, Shengli and
+               Zhang, Liqing and Cichocki, Andrzej},
+  title     = {Tensor Ring Decomposition},
+  journal   = {arXiv preprint arXiv:1606.05535},
+  year      = {2016}
+}
+
+%% --- Tutorial NeurIPS 2025 ---
+
+@misc{chrysos2025tutorial,
+  author    = {Chrysos, Grigorios G. and Vergari, Antonio and Acar, Evrim},
+  title     = {Foundations of Tensor Computations for {AI}},
+  howpublished = {Tutorial at the Conference on Neural Information Processing
+                  Systems (NeurIPS)},
+  year      = {2025},
+  note      = {Available at \url{https://neurips.cc/}}
+}
+
+@article{chrysos2025tensor,
+  author    = {Chrysos, Grigorios G. and others},
+  title     = {Tensor Methods for Deep Learning: A Survey},
+  journal   = {IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  year      = {2025},
+  note      = {To appear}
+}
+
+%% --- Polynomial Networks / Pi-nets ---
+
+@inproceedings{chrysos2020pi,
+  author    = {Chrysos, Grigorios G. and Moschoglou, Stylianos and
+               Bouritsas, Giorgos and Panagakis, Yannis and
+               Deng, Jiankang and Zafeiriou, Stefanos},
+  title     = {{$\Pi$-nets}: Deep Polynomial Neural Networks},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision
+               and Pattern Recognition (CVPR)},
+  pages     = {7325--7335},
+  year      = {2020},
+  doi       = {10.1109/CVPR42600.2020.00735}
+}
+
+@inproceedings{chrysos2022augmenting,
+  author    = {Chrysos, Grigorios G. and Georgopoulos, Markos and
+               Deng, Jiankang and Kossaifi, Jean and
+               Panagakis, Yannis and Anandkumar, Anima},
+  title     = {Augmenting Deep Classifiers with Polynomial Neural Networks},
+  booktitle = {Proceedings of the European Conference on Computer Vision (ECCV)},
+  pages     = {692--709},
+  year      = {2022},
+  doi       = {10.1007/978-3-031-19806-9_40}
+}
+
+%% --- LoRA và LLM adaptation ---
+
+@inproceedings{hu2022lora,
+  author    = {Hu, Edward J. and Shen, Yelong and Wallis, Phillip and
+               Allen-Zhu, Zeyuan and Li, Yuanzhi and Wang, Shean and
+               Wang, Lu and Chen, Weizhu},
+  title     = {{LoRA}: Low-Rank Adaptation of Large Language Models},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2022}
+}
+
+%% --- Mixture of Experts / Tensor view ---
+
+@inproceedings{oldfield2024multilinear,
+  author    = {Oldfield, James and Tzelepis, Christos and Panagakis, Yannis
+               and Nicolaou, Mihalis A. and Patras, Ioannis},
+  title     = {Multilinear Mixture of Experts: Scalable Expert Specialization
+               through Factorization},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2024}
+}
+
+%% --- Self-Attention / Transformers ---
+
+@inproceedings{vaswani2017attention,
+  author    = {Vaswani, Ashish and Shazeer, Noam and Parmar, Niki and
+               Uszkoreit, Jakob and Jones, Llion and Gomez, Aidan N. and
+               Kaiser, {\L}ukasz and Polosukhin, Illia},
+  title     = {Attention Is All You Need},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {30},
+  year      = {2017}
+}
+
+%% --- Software / Toolboxes ---
+
+@article{kossaifi2019tensorly,
+  author    = {Kossaifi, Jean and Panagakis, Yannis and
+               Anandkumar, Anima and Pantic, Maja},
+  title     = {{TensorLy}: Tensor Learning in {Python}},
+  journal   = {Journal of Machine Learning Research},
+  volume    = {20},
+  number    = {26},
+  pages     = {1--6},
+  year      = {2019}
+}
+
+@misc{bader2015matlab,
+  author    = {Bader, Brett W. and Kolda, Tamara G.},
+  title     = {{MATLAB} Tensor Toolbox, Version 2.6},
+  year      = {2015},
+  howpublished = {\url{https://www.tensortoolbox.org}}
+}
+
+%% --- Sách tham khảo ---
+
+@book{cichocki2009nonnegative,
+  author    = {Cichocki, Andrzej and Zdunek, Rafal and
+               Phan, Anh Huy and Amari, Shun-ichi},
+  title     = {Nonnegative Matrix and Tensor Factorizations},
+  publisher = {John Wiley \& Sons},
+  year      = {2009},
+  doi       = {10.1002/9780470747278}
+}
+
+@book{landsberg2012geometry,
+  author    = {Landsberg, Joseph M.},
+  title     = {Tensors: Geometry and Applications},
+  publisher = {American Mathematical Society},
+  year      = {2012},
+  series    = {Graduate Studies in Mathematics},
+  volume    = {128}
 }

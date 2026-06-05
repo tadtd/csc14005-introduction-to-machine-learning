@@ -10,3 +10,4 @@
 *.brf
 *.fls
 *.fdb_latexmk
+*.synctex.gz

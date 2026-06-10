@@ -5,6 +5,7 @@ experiment:
 model:
   name: prajjwal1/bert-tiny
   num_labels: 2
+  use_fast_tokenizer: false
 
 dataset:
   name: glue

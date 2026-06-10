@@ -40,9 +40,10 @@ def build_model_and_tokenizer(config: dict[str, Any]):
     experiment_config = config.get("experiment", {})
     model_name = model_config.get("name", "prajjwal1/bert-tiny")
     num_labels = int(model_config.get("num_labels", 2))
+    use_fast_tokenizer = bool(model_config.get("use_fast_tokenizer", False))
     mode = experiment_config.get("mode", "lora")
 
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=use_fast_tokenizer)
     model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=num_labels)
 
     if tokenizer.pad_token is None:

@@ -1,1 +1,107 @@
 \section{Thực nghiệm và phân tích kết quả}
+
+\subsection{Demo Deep Learning: LoRA Rank Sweep}
+
+Muc tieu cua demo la minh hoa truc tiep thong diep cua tutorial: factorization
+co the lam giam so tham so can huan luyen trong khi van giu duoc hieu nang co
+ich. Demo su dung LoRA cho bai toan text classification va so sanh nhieu che do
+fine-tuning.
+
+\subsubsection{Thiet lap thuc nghiem}
+
+Code duoc dat trong thu muc
+\texttt{lab-3/deep-learning}. Demo duoc thiet ke de chay bang \texttt{uv}, moi
+cau hinh thuc nghiem nam trong thu muc \texttt{configs/}. Cac thanh phan chinh:
+
+\begin{itemize}
+    \item \textbf{Dataset}: GLUE SST-2 sentiment classification. Khi khong tai
+    duoc dataset, code co fallback toy dataset chi de kiem tra pipeline.
+    \item \textbf{Model}: \texttt{prajjwal1/bert-tiny}, mot Transformer nho de
+    phu hop voi moi truong tinh toan han che.
+    \item \textbf{Baselines}: frozen encoder va full fine-tuning.
+    \item \textbf{LoRA configs}: rank $r \in \{2,4,8\}$.
+    \item \textbf{Metrics}: validation accuracy, validation loss, trainable
+    parameters, trainable ratio va thoi gian chay.
+\end{itemize}
+
+Tat ca cac so lieu trong bang ket qua se duoc lay tu file
+\texttt{results/runs/<run\_name>/metrics.json} sau khi chay script. Tai thoi
+diem viet bao cao skeleton, nhom chua dien so lieu gia lap de dam bao trung
+thuc thuc nghiem.
+
+\subsubsection{Cac cau hinh so sanh}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{lll}
+\toprule
+\textbf{Config} & \textbf{Che do} & \textbf{Muc dich} \\
+\midrule
+\texttt{frozen} & Freeze encoder, train classifier & Baseline nhe \\
+\texttt{full\_finetune} & Cap nhat toan bo model & Baseline manh \\
+\texttt{lora\_r2} & LoRA rank 2 & Compression cao \\
+\texttt{lora\_r4} & LoRA rank 4 & Trade-off trung binh \\
+\texttt{lora\_r8} & LoRA rank 8 & Rank cao hon, nhieu tham so hon \\
+\bottomrule
+\end{tabular}
+\caption{Cac cau hinh thuc nghiem cho demo LoRA rank sweep.}
+\label{tab:lora-configs}
+\end{table}
+
+\subsubsection{Bang ket qua can dien sau khi chay}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{lrrrrr}
+\toprule
+\textbf{Config} & \textbf{Rank} & \textbf{Trainable params} &
+\textbf{Trainable ratio} & \textbf{Val. acc.} & \textbf{Val. loss} \\
+\midrule
+Frozen & -- & TBD & TBD & TBD & TBD \\
+Full fine-tune & -- & TBD & TBD & TBD & TBD \\
+LoRA & 2 & TBD & TBD & TBD & TBD \\
+LoRA & 4 & TBD & TBD & TBD & TBD \\
+LoRA & 8 & TBD & TBD & TBD & TBD \\
+\bottomrule
+\end{tabular}
+\caption{Bang ket qua se duoc dien bang so lieu thuc sau khi chay cac config.}
+\label{tab:lora-results}
+\end{table}
+
+\subsubsection{Cac bieu do can tao}
+
+Script \texttt{src.visualize} se tao cac hinh sau tu cac file
+\texttt{metrics.json}:
+
+\begin{itemize}
+    \item \texttt{accuracy\_vs\_params.png}: validation accuracy theo so tham
+    so trainable.
+    \item \texttt{trainable\_params.png}: so tham so trainable cua tung config.
+    \item \texttt{loss\_curves.png}: validation loss theo epoch.
+    \item \texttt{accuracy\_vs\_rank.png}: validation accuracy theo rank LoRA.
+\end{itemize}
+
+Khi da co ket qua, cac hinh nay nen duoc chen vao bao cao de phan tich: LoRA
+rank nao cho trade-off tot nhat, full fine-tuning hon LoRA bao nhieu ve
+accuracy, va LoRA tiet kiem bao nhieu tham so so voi baseline manh.
+
+\subsubsection{Cach phan tich ket qua sau khi chay}
+
+Sau khi co so lieu, phan tich nen tap trung vao ba diem:
+
+\begin{enumerate}
+    \item \textbf{Parameter efficiency}: so sanh trainable ratio cua LoRA voi
+    full fine-tuning. Neu LoRA dat accuracy gan full fine-tuning voi it tham so
+    hon nhieu, demo da minh hoa dung thong diep compression.
+    \item \textbf{Rank trade-off}: so sanh $r=2,4,8$. Neu rank tang lam accuracy
+    tang, day la minh chung cho trade-off giua capacity va compression. Neu
+    accuracy bao hoa som, co the ket luan rank nho da du cho dataset nay.
+    \item \textbf{Tinh tai tao}: moi ket qua phai truy nguoc duoc ve config,
+    seed, checkpoint va file log trong \texttt{results/runs}.
+\end{enumerate}
+
+Han che can neu ro trong bao cao cuoi cung: model duoc chon nho de phu hop tai
+nguyen, dataset co the chi chay tren subset, va ket qua tren SST-2 khong dai
+dien cho tat ca cac tac vu NLP hay cac mo hinh ngon ngu lon.

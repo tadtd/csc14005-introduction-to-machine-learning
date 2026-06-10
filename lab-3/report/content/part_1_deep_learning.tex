@@ -1,1 +1,150 @@
-\subsection{Deep Learning}
+\subsection{Tensor Factorizations in Deep Learning}
+
+Phan nay trinh bay cach cac cau truc tensor xuat hien mot cach tu nhien trong
+hoc sau hien dai va cach phan ra tensor/low-rank factorization duoc dung de
+giam bo nho, giam chi phi tinh toan va thiet ke kien truc moi. Trong tutorial
+\textit{Foundations of Tensor Computations for AI}, phan deep learning duoc dat
+trong boi canh ``AI scaling wall'': mo hinh ngay cang lon, chi phi huan luyen va
+suy dien ngay cang cao, trong khi kha nang trien khai tren thiet bi nho va tai
+nguyen han che ngay cang quan trong \cite{chrysos2025tutorial}.
+
+\subsubsection{Tensor xuat hien tu nhien trong hoc sau}
+
+Trong cac thu vien nhu PyTorch, tensor thuong duoc xem nhu mot kieu du lieu de
+luu tru mang nhieu chieu. Tuy nhien, goc nhin cua tutorial manh hon: hinh dang
+nhieu chieu cua du lieu va tham so phan anh cau truc cua bai toan, va cau truc
+do co the duoc khai thac bang cac phep toan multilinear.
+
+Mot batch anh co dang
+\begin{equation}
+    \mathcal{X} \in \mathbb{R}^{B \times C \times H \times W},
+\end{equation}
+trong do $B$ la batch size, $C$ la so kenh, $H,W$ la chieu cao va chieu rong.
+Trong mang tich chap, trong so cua mot lop convolution la tensor bac 4:
+\begin{equation}
+    \mathcal{W} \in \mathbb{R}^{C_{\mathrm{out}} \times C_{\mathrm{in}} \times K_H \times K_W}.
+\end{equation}
+Moi mode cua tensor nay co y nghia rieng: kenh dau ra, kenh dau vao, va cau truc
+khong gian cua kernel.
+
+Trong Transformer, multi-head attention cung la mot phep tinh tensor. Voi
+$Q,K,V \in \mathbb{R}^{B \times H \times L \times d}$, trong do $H$ la so head,
+$L$ la do dai chuoi va $d$ la head dimension, attention score co dang
+\begin{equation}
+    A_{bhij} = \sum_k Q_{bhik}K_{bhjk},
+    \qquad
+    A \in \mathbb{R}^{B \times H \times L \times L}.
+\end{equation}
+Output cua attention duoc tinh bang
+\begin{equation}
+    O_{bhi\delta} = \sum_j A_{bhij}V_{bhj\delta}.
+\end{equation}
+Hai bieu thuc nay cho thay attention khong chi la nhan ma tran thong thuong:
+do la mot chuoi tensor contractions co cau truc theo batch, head, token va
+feature dimension \cite{vaswani2017attention}.
+
+\subsubsection{Polynomial networks va tuong tac bac cao}
+
+Tutorial tiep tuc tu nhan xet rang neural network can hoc cac tuong tac phuc tap
+giua dac trung dau vao. Mot cach mo hinh hoa truc tiep la viet ham can hoc duoi
+dang khai trien da thuc. Voi ham $G:\mathbb{R}^{d}\rightarrow\mathbb{R}^{o}$,
+mot mo hinh bac $N$ co the viet duoi dang:
+\begin{equation}
+    G(x) =
+    \beta
+    + \mathcal{W}^{[1]} \times_2 x
+    + \mathcal{W}^{[2]} \times_2 x \times_3 x
+    + \cdots
+    + \mathcal{W}^{[N]} \times_2 x \cdots \times_{N+1} x.
+\end{equation}
+Trong do, $\mathcal{W}^{[n]}$ la tensor trong so nam bat tuong tac bac $n$ giua
+cac ban sao cua input. Cach viet nay giai thich vi sao tensor la doi tuong tu
+nhien khi mo hinh can bieu dien high-order interactions.
+
+Van de la so tham so cua $\mathcal{W}^{[n]}$ tang theo luy thua cua $d$. Pi-nets
+giai quyet bang cach tham so hoa cac tensor trong so duoi dang phan ra low-rank,
+dac biet gan voi CP decomposition va tich Hadamard \cite{chrysos2020pi,
+chrysos2022augmenting}. Thay vi luu toan bo tensor day du, mo hinh hoc cac factor
+matrices co kich thuoc nho hon. Day la vi du dau tien cho thong diep chinh cua
+tutorial: neu weight tensor co cau truc, ta co the hoc bieu dien gon hon ma van
+giu duoc kha nang mo hinh hoa.
+
+\subsubsection{Mixture of Experts duoi goc nhin tensor}
+
+Mixture of Experts (MoE) la mot vi du khac ve viec trong so cua mo hinh co the
+duoc nhin nhu tensor. Mot linear layer thong thuong tinh
+\begin{equation}
+    y = W^\top x.
+\end{equation}
+Trong MoE, ta co $N$ expert voi cac ma tran $W_1,\ldots,W_N$ va he so gating
+$a_n(x)$ phu thuoc dau vao:
+\begin{equation}
+    y = \sum_{n=1}^{N} a_n(x) W_n^\top x.
+\end{equation}
+Neu xep cac expert weights lai voi nhau, ta thu duoc tensor
+\begin{equation}
+    \mathcal{W} \in \mathbb{R}^{N \times I \times O}.
+\end{equation}
+Goc nhin nay cho phep ap dung tensor factorization vao MoE de chia se tham so
+giua cac expert, giam kich thuoc mo hinh va van cho phep expert specialization.
+Multilinear Mixture of Experts khai thac truc tiep cau truc nay de mo rong MoE
+theo huong factorized va hieu qua hon \cite{oldfield2024multilinear}.
+
+\subsubsection{LoRA va Low-Rank Tensor Adaptation}
+
+Trong fine-tuning truyen thong, moi ma tran trong so $W_0 \in
+\mathbb{R}^{k \times d}$ co the nhan mot update day du $\Delta W$ cung kich
+thuoc. Cach nay linh hoat nhung rat ton tham so, dac biet voi language models
+lon. LoRA de xuat dong bang $W_0$ va chi hoc mot update low-rank
+\cite{hu2022lora}:
+\begin{equation}
+    h = W_0x + \frac{\alpha}{r}BAx,
+    \qquad
+    A \in \mathbb{R}^{r \times d},\quad
+    B \in \mathbb{R}^{k \times r}.
+\end{equation}
+So tham so trainable giam tu $kd$ xuong
+\begin{equation}
+    r(d+k) \ll kd
+\end{equation}
+khi rank $r$ nho hon nhieu so voi $d,k$. Day la ly do LoRA phu hop voi demo
+cua do an: ta co the do truc tiep trade-off giua validation accuracy va so tham
+so trainable khi thay doi rank $r$.
+
+LoRTA mo rong tu duy nay tu ma tran sang tensor adaptation: cac update cua nhieu
+layer va nhieu attention heads duoc xem nhu mot doi tuong bac cao, sau do factor
+hoa va chia se factor giua cac mode \cite{hounie2024lorta}. Noi cach khac, LoRA
+la truong hop matrix low-rank adaptation, con LoRTA dua y tuong do gan hon voi
+tensor factorization dung nghia.
+
+\subsubsection{TensorGRAD va attention hieu qua}
+
+Tutorial cung dua ra hai huong deep learning khac. TensorGRAD xem gradient trong
+huan luyen neural operators nhu mot tensor bac cao va dung Tucker decomposition
+de giam chi phi bo nho \cite{loeschcke2025tensorgrad}. Thay vi luu va cap nhat
+gradient day du, phuong phap lam viec voi core tensor va sparse factors, phu hop
+voi cac setting ma gradient qua lon.
+
+Voi attention, self-attention chuan co chi phi theo do dai chuoi gan
+$O(L^2)$. Poly-SA thay the mot phan cau truc softmax attention bang cac phep
+tinh dua tren tich Hadamard:
+\begin{equation}
+    f_{\mathrm{Poly\mbox{-}SA}}(X)
+    =
+    \Psi\big((XW_1) * (XW_2)\big) * XW_3,
+\end{equation}
+huong toi chi phi gan tuyen tinh theo so token \cite{babiloni2023polysa}. Gan day,
+Tensor Product Attention tiep tuc khai thac tensor product de thiet ke lai
+attention blocks \cite{zhang2025tensorproductattention}. Cac vi du nay cho thay
+tensor khong chi dung de nen tham so, ma con co the dan toi kien truc moi.
+
+\subsubsection{Lien he voi demo}
+
+Trong phan thuc nghiem, nhom hien thuc demo \textit{LoRA rank sweep} tren bai
+toan phan loai cam xuc. Demo so sanh frozen encoder, full fine-tuning va LoRA
+voi cac rank khac nhau. Cac metric chinh gom validation accuracy, validation
+loss, so tham so trainable va thoi gian huan luyen. Ket qua ky vong khong phai
+la LoRA luon vuot full fine-tuning, ma la LoRA co the dat trade-off tot hon giua
+hieu nang va so tham so can cap nhat. Dieu nay bam sat thong diep cua tutorial:
+khai thac cau truc low-rank/multilinear giup mo hinh hoc sau tro nen gon va de
+trien khai hon.

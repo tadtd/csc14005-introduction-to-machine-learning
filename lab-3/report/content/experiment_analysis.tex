@@ -2,55 +2,55 @@
 
 \subsection{Demo Deep Learning: LoRA Rank Sweep}
 
-Muc tieu cua demo la minh hoa truc tiep thong diep cua tutorial: factorization
-co the lam giam so tham so can huan luyen trong khi van giu duoc hieu nang co
-ich. Demo su dung LoRA cho bai toan text classification va so sanh nhieu che do
+Mục tiêu của demo là minh họa trực tiếp thông điệp của tutorial: factorization
+có thể làm giảm số tham số cần huấn luyện trong khi vẫn giữ được hiệu năng có
+ích. Demo sử dụng LoRA cho bài toán text classification và so sánh nhiều chế độ
 fine-tuning.
 
-\subsubsection{Thiet lap thuc nghiem}
+\subsubsection{Thiết lập thực nghiệm}
 
-Code duoc dat trong thu muc
-\texttt{lab-3/deep-learning}. Demo duoc thiet ke de chay bang \texttt{uv}, moi
-cau hinh thuc nghiem nam trong thu muc \texttt{configs/}. Cac thanh phan chinh:
+Code được đặt trong thư mục
+\texttt{lab-3/deep-learning}. Demo được thiết kế để chạy bằng \texttt{uv}, mỗi
+cấu hình thực nghiệm nằm trong thư mục \texttt{configs/}. Các thành phần chính:
 
 \begin{itemize}
-    \item \textbf{Dataset}: GLUE SST-2 sentiment classification. Khi khong tai
-    duoc dataset, code co fallback toy dataset chi de kiem tra pipeline.
-    \item \textbf{Model}: \texttt{prajjwal1/bert-tiny}, mot Transformer nho de
-    phu hop voi moi truong tinh toan han che.
-    \item \textbf{Baselines}: frozen encoder va full fine-tuning.
+    \item \textbf{Dataset}: GLUE SST-2 sentiment classification. Khi không tải
+    được dataset, code có fallback toy dataset chỉ để kiểm tra pipeline.
+    \item \textbf{Model}: \texttt{prajjwal1/bert-tiny}, một Transformer nhỏ để
+    phù hợp với môi trường tính toán hạn chế.
+    \item \textbf{Baselines}: frozen encoder và full fine-tuning.
     \item \textbf{LoRA configs}: rank $r \in \{2,4,8\}$.
     \item \textbf{Metrics}: validation accuracy, validation loss, trainable
-    parameters, trainable ratio va thoi gian chay.
+    parameters, trainable ratio và thời gian chạy.
 \end{itemize}
 
-Tat ca cac so lieu trong bang ket qua duoc lay truc tiep tu file
-\texttt{results/runs/<run\_name>/metrics.json} va file tong hop
-\texttt{results/plots/metrics.csv}. Thuc nghiem duoc chay tren GPU Tesla T4
-voi seed bang 42, moi cau hinh chay 3 epoch tren subset SST-2 gom 5000 mau
-train va 872 mau validation.
+Tất cả các số liệu trong bảng kết quả được lấy trực tiếp từ file
+\texttt{results/runs/<run\_name>/metrics.json} và file tổng hợp
+\texttt{results/plots/metrics.csv}. Thực nghiệm được chạy trên GPU Tesla T4
+với seed bằng 42, mỗi cấu hình chạy 3 epoch trên subset SST-2 gồm 5000 mẫu
+train và 872 mẫu validation.
 
-\subsubsection{Cac cau hinh so sanh}
+\subsubsection{Các cấu hình so sánh}
 
 \begin{table}[H]
 \centering
 \renewcommand{\arraystretch}{1.2}
 \begin{tabular}{lll}
 \toprule
-\textbf{Config} & \textbf{Che do} & \textbf{Muc dich} \\
+\textbf{Config} & \textbf{Chế độ} & \textbf{Mục đích} \\
 \midrule
-\texttt{frozen} & Freeze encoder, train classifier & Baseline nhe \\
-\texttt{full\_finetune} & Cap nhat toan bo model & Baseline manh \\
+\texttt{frozen} & Freeze encoder, train classifier & Baseline nhẹ \\
+\texttt{full\_finetune} & Cập nhật toàn bộ model & Baseline mạnh \\
 \texttt{lora\_r2} & LoRA rank 2 & Compression cao \\
-\texttt{lora\_r4} & LoRA rank 4 & Trade-off trung binh \\
-\texttt{lora\_r8} & LoRA rank 8 & Rank cao hon, nhieu tham so hon \\
+\texttt{lora\_r4} & LoRA rank 4 & Trade-off trung bình \\
+\texttt{lora\_r8} & LoRA rank 8 & Rank cao hơn, nhiều tham số hơn \\
 \bottomrule
 \end{tabular}
-\caption{Cac cau hinh thuc nghiem cho demo LoRA rank sweep.}
+\caption{Các cấu hình thực nghiệm cho demo LoRA rank sweep.}
 \label{tab:lora-configs}
 \end{table}
 
-\subsubsection{Ket qua thuc nghiem}
+\subsubsection{Kết quả thực nghiệm}
 
 \begin{table}[H]
 \centering
@@ -68,75 +68,75 @@ LoRA & 4 & 4,354 & 0.0992\% & 0.7305 & 0.5466 & 6.72 \\
 LoRA & 8 & 8,450 & 0.1923\% & 0.7328 & 0.5331 & 6.79 \\
 \bottomrule
 \end{tabular}
-\caption{Ket qua LoRA rank sweep tren SST-2 voi \texttt{prajjwal1/bert-tiny}.}
+\caption{Kết quả LoRA rank sweep trên SST-2 với \texttt{prajjwal1/bert-tiny}.}
 \label{tab:lora-results}
 \end{table}
 
-Ket qua cho thay full fine-tuning dat validation accuracy cao nhat, 0.7661,
-nhung phai cap nhat toan bo 4,386,178 tham so. Trong khi do, LoRA rank 2 dat
-0.7385 validation accuracy voi chi 2,306 tham so trainable, tuong duong
-0.0525\% tong so tham so. Nhung con so nay minh hoa truc tiep thong diep
-parameter-efficient adaptation: LoRA mat khoang 2.75 diem accuracy so voi full
-fine-tuning, nhung giam gan nhu toan bo chi phi cap nhat tham so.
+Kết quả cho thấy full fine-tuning đạt validation accuracy cao nhất, 0.7661,
+nhưng phải cập nhật toàn bộ 4,386,178 tham số. Trong khi đó, LoRA rank 2 đạt
+0.7385 validation accuracy với chỉ 2,306 tham số trainable, tương đương
+0.0525\% tổng số tham số. Những con số này minh họa trực tiếp thông điệp
+parameter-efficient adaptation: LoRA mất khoảng 2.75 điểm accuracy so với full
+fine-tuning, nhưng giảm gần như toàn bộ chi phí cập nhật tham số.
 
-Mot diem dang chu y la rank cao hon khong nhat thiet cho ket qua tot hon trong
-thiet lap nay. LoRA rank 2 tot hon rank 4 va rank 8 ve best validation accuracy.
-Dieu nay co the den tu viec mo hinh nen la \texttt{bert-tiny}, dataset duoc chay
-tren subset nho, va moi cau hinh chi huan luyen 3 epoch. Vi vay, ket luan phu
-hop khong phai la rank 2 luon tot nhat, ma la rank nho da du de dat trade-off
-tot trong thuc nghiem minh hoa nay.
+Một điểm đáng chú ý là rank cao hơn không nhất thiết cho kết quả tốt hơn trong
+thiết lập này. LoRA rank 2 tốt hơn rank 4 và rank 8 về best validation accuracy.
+Điều này có thể đến từ việc mô hình nền là \texttt{bert-tiny}, dataset được chạy
+trên subset nhỏ, và mỗi cấu hình chỉ huấn luyện 3 epoch. Vì vậy, kết luận phù
+hợp không phải là rank 2 luôn tốt nhất, mà là rank nhỏ đã đủ để đạt trade-off
+tốt trong thực nghiệm minh họa này.
 
-\subsubsection{Truc quan hoa ket qua}
+\subsubsection{Trực quan hóa kết quả}
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.86\linewidth]{img/deep_learning/accuracy_vs_params.png}
-\caption{Validation accuracy theo so tham so trainable. Truc hoanh dung thang
-log de thay ro khoang cach giua LoRA va full fine-tuning.}
+\caption{Validation accuracy theo số tham số trainable. Trục hoành dùng thang
+log để thấy rõ khoảng cách giữa LoRA và full fine-tuning.}
 \label{fig:lora-accuracy-vs-params}
 \end{figure}
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.82\linewidth]{img/deep_learning/trainable_params.png}
-\caption{So tham so trainable cua tung cau hinh. LoRA chi cap nhat mot phan rat
-nho so voi full fine-tuning.}
+\caption{Số tham số trainable của từng cấu hình. LoRA chỉ cập nhật một phần rất
+nhỏ so với full fine-tuning.}
 \label{fig:lora-trainable-params}
 \end{figure}
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.86\linewidth]{img/deep_learning/loss_curves.png}
-\caption{Validation loss theo epoch. Full fine-tuning giam loss ro nhat, trong
-khi cac cau hinh LoRA hoi tu nhanh va on dinh sau 2--3 epoch.}
+\caption{Validation loss theo epoch. Full fine-tuning giảm loss rõ nhất, trong
+khi các cấu hình LoRA hội tụ nhanh và ổn định sau 2--3 epoch.}
 \label{fig:lora-loss-curves}
 \end{figure}
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.78\linewidth]{img/deep_learning/accuracy_vs_rank.png}
-\caption{Validation accuracy theo rank LoRA. Trong thiet lap nay, rank 2 cho
-trade-off tot nhat trong cac cau hinh LoRA duoc thu nghiem.}
+\caption{Validation accuracy theo rank LoRA. Trong thiết lập này, rank 2 cho
+trade-off tốt nhất trong các cấu hình LoRA được thử nghiệm.}
 \label{fig:lora-accuracy-vs-rank}
 \end{figure}
 
-\subsubsection{Nhan xet va han che}
+\subsubsection{Nhận xét và hạn chế}
 
-Tu Bang~\ref{tab:lora-results} va Hinh~\ref{fig:lora-accuracy-vs-params}, co
-the thay LoRA tao ra diem nam giua frozen baseline va full fine-tuning: chat
-luong gan voi full fine-tuning hon frozen baseline, nhung so tham so trainable
-gan voi frozen baseline hon. LoRA rank 2 chi dung 2,306 tham so trainable, it
-hon full fine-tuning khoang 1902 lan, nhung dat accuracy 0.7385 so voi 0.7661.
+Từ Bảng~\ref{tab:lora-results} và Hình~\ref{fig:lora-accuracy-vs-params}, có
+thể thấy LoRA tạo ra điểm nằm giữa frozen baseline và full fine-tuning: chất
+lượng gần với full fine-tuning hơn frozen baseline, nhưng số tham số trainable
+gần với frozen baseline hơn. LoRA rank 2 chỉ dùng 2,306 tham số trainable, ít
+hơn full fine-tuning khoảng 1902 lần, nhưng đạt accuracy 0.7385 so với 0.7661.
 
-Hinh~\ref{fig:lora-trainable-params} nhan manh loi ich ve compression: khi dung
-LoRA, so tham so can cap nhat tang theo rank nhung van rat nho so voi full
-fine-tuning. Hinh~\ref{fig:lora-loss-curves} cho thay full fine-tuning tiep tuc
-giam validation loss sau 3 epoch, trong khi cac cau hinh LoRA co xu huong bao
-hoa som hon. Day la dau hieu hop ly vi LoRA bi gioi han capacity boi rank thap.
+Hình~\ref{fig:lora-trainable-params} nhấn mạnh lợi ích về compression: khi dùng
+LoRA, số tham số cần cập nhật tăng theo rank nhưng vẫn rất nhỏ so với full
+fine-tuning. Hình~\ref{fig:lora-loss-curves} cho thấy full fine-tuning tiếp tục
+giảm validation loss sau 3 epoch, trong khi các cấu hình LoRA có xu hướng bão
+hòa sớm hơn. Đây là dấu hiệu hợp lý vì LoRA bị giới hạn capacity bởi rank thấp.
 
-Han che cua thuc nghiem la model duoc chon nho de phu hop tai nguyen tinh toan,
-thoi gian huan luyen chi 3 epoch va tap train chi dung subset 5000 mau. Do do,
-ket qua khong nen duoc dien giai nhu mot benchmark day du cho LoRA tren moi tac
-vu NLP. Tuy nhien, demo da dap ung muc tieu cua do an: co baseline, co mo rong
-rank sweep, co metric dinh luong, co visualization, va minh hoa ro rang trade-off
-giua hieu nang va so tham so can cap nhat.
+Hạn chế của thực nghiệm là model được chọn nhỏ để phù hợp tài nguyên tính toán,
+thời gian huấn luyện chỉ 3 epoch và tập train chỉ dùng subset 5000 mẫu. Do đó,
+kết quả không nên được diễn giải như một benchmark đầy đủ cho LoRA trên mọi tác
+vụ NLP. Tuy nhiên, demo đã đáp ứng mục tiêu của đồ án: có baseline, có mở rộng
+rank sweep, có metric định lượng, có visualization, và minh họa rõ ràng
+trade-off giữa hiệu năng và số tham số cần cập nhật.

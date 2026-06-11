@@ -24,10 +24,11 @@ cau hinh thuc nghiem nam trong thu muc \texttt{configs/}. Cac thanh phan chinh:
     parameters, trainable ratio va thoi gian chay.
 \end{itemize}
 
-Tat ca cac so lieu trong bang ket qua se duoc lay tu file
-\texttt{results/runs/<run\_name>/metrics.json} sau khi chay script. Tai thoi
-diem viet bao cao skeleton, nhom chua dien so lieu gia lap de dam bao trung
-thuc thuc nghiem.
+Tat ca cac so lieu trong bang ket qua duoc lay truc tiep tu file
+\texttt{results/runs/<run\_name>/metrics.json} va file tong hop
+\texttt{results/plots/metrics.csv}. Thuc nghiem duoc chay tren GPU Tesla T4
+voi seed bang 42, moi cau hinh chay 3 epoch tren subset SST-2 gom 5000 mau
+train va 872 mau validation.
 
 \subsubsection{Cac cau hinh so sanh}
 
@@ -49,59 +50,93 @@ thuc thuc nghiem.
 \label{tab:lora-configs}
 \end{table}
 
-\subsubsection{Bang ket qua can dien sau khi chay}
+\subsubsection{Ket qua thuc nghiem}
 
 \begin{table}[H]
 \centering
+\small
 \renewcommand{\arraystretch}{1.2}
-\begin{tabular}{lrrrrr}
+\begin{tabular}{lrrrrrr}
 \toprule
 \textbf{Config} & \textbf{Rank} & \textbf{Trainable params} &
-\textbf{Trainable ratio} & \textbf{Val. acc.} & \textbf{Val. loss} \\
+\textbf{Ratio} & \textbf{Best acc.} & \textbf{Final loss} & \textbf{Time (s)} \\
 \midrule
-Frozen & -- & TBD & TBD & TBD & TBD \\
-Full fine-tune & -- & TBD & TBD & TBD & TBD \\
-LoRA & 2 & TBD & TBD & TBD & TBD \\
-LoRA & 4 & TBD & TBD & TBD & TBD \\
-LoRA & 8 & TBD & TBD & TBD & TBD \\
+Frozen & -- & 258 & 0.0059\% & 0.6433 & 0.6418 & 4.03 \\
+Full fine-tune & -- & 4,386,178 & 100.0000\% & 0.7661 & 0.5032 & 7.99 \\
+LoRA & 2 & 2,306 & 0.0525\% & 0.7385 & 0.5354 & 6.78 \\
+LoRA & 4 & 4,354 & 0.0992\% & 0.7305 & 0.5466 & 6.72 \\
+LoRA & 8 & 8,450 & 0.1923\% & 0.7328 & 0.5331 & 6.79 \\
 \bottomrule
 \end{tabular}
-\caption{Bang ket qua se duoc dien bang so lieu thuc sau khi chay cac config.}
+\caption{Ket qua LoRA rank sweep tren SST-2 voi \texttt{prajjwal1/bert-tiny}.}
 \label{tab:lora-results}
 \end{table}
 
-\subsubsection{Cac bieu do can tao}
+Ket qua cho thay full fine-tuning dat validation accuracy cao nhat, 0.7661,
+nhung phai cap nhat toan bo 4,386,178 tham so. Trong khi do, LoRA rank 2 dat
+0.7385 validation accuracy voi chi 2,306 tham so trainable, tuong duong
+0.0525\% tong so tham so. Nhung con so nay minh hoa truc tiep thong diep
+parameter-efficient adaptation: LoRA mat khoang 2.75 diem accuracy so voi full
+fine-tuning, nhung giam gan nhu toan bo chi phi cap nhat tham so.
 
-Script \texttt{src.visualize} se tao cac hinh sau tu cac file
-\texttt{metrics.json}:
+Mot diem dang chu y la rank cao hon khong nhat thiet cho ket qua tot hon trong
+thiet lap nay. LoRA rank 2 tot hon rank 4 va rank 8 ve best validation accuracy.
+Dieu nay co the den tu viec mo hinh nen la \texttt{bert-tiny}, dataset duoc chay
+tren subset nho, va moi cau hinh chi huan luyen 3 epoch. Vi vay, ket luan phu
+hop khong phai la rank 2 luon tot nhat, ma la rank nho da du de dat trade-off
+tot trong thuc nghiem minh hoa nay.
 
-\begin{itemize}
-    \item \texttt{accuracy\_vs\_params.png}: validation accuracy theo so tham
-    so trainable.
-    \item \texttt{trainable\_params.png}: so tham so trainable cua tung config.
-    \item \texttt{loss\_curves.png}: validation loss theo epoch.
-    \item \texttt{accuracy\_vs\_rank.png}: validation accuracy theo rank LoRA.
-\end{itemize}
+\subsubsection{Truc quan hoa ket qua}
 
-Khi da co ket qua, cac hinh nay nen duoc chen vao bao cao de phan tich: LoRA
-rank nao cho trade-off tot nhat, full fine-tuning hon LoRA bao nhieu ve
-accuracy, va LoRA tiet kiem bao nhieu tham so so voi baseline manh.
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.86\linewidth]{img/deep_learning/accuracy_vs_params.png}
+\caption{Validation accuracy theo so tham so trainable. Truc hoanh dung thang
+log de thay ro khoang cach giua LoRA va full fine-tuning.}
+\label{fig:lora-accuracy-vs-params}
+\end{figure}
 
-\subsubsection{Cach phan tich ket qua sau khi chay}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.82\linewidth]{img/deep_learning/trainable_params.png}
+\caption{So tham so trainable cua tung cau hinh. LoRA chi cap nhat mot phan rat
+nho so voi full fine-tuning.}
+\label{fig:lora-trainable-params}
+\end{figure}
 
-Sau khi co so lieu, phan tich nen tap trung vao ba diem:
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.86\linewidth]{img/deep_learning/loss_curves.png}
+\caption{Validation loss theo epoch. Full fine-tuning giam loss ro nhat, trong
+khi cac cau hinh LoRA hoi tu nhanh va on dinh sau 2--3 epoch.}
+\label{fig:lora-loss-curves}
+\end{figure}
 
-\begin{enumerate}
-    \item \textbf{Parameter efficiency}: so sanh trainable ratio cua LoRA voi
-    full fine-tuning. Neu LoRA dat accuracy gan full fine-tuning voi it tham so
-    hon nhieu, demo da minh hoa dung thong diep compression.
-    \item \textbf{Rank trade-off}: so sanh $r=2,4,8$. Neu rank tang lam accuracy
-    tang, day la minh chung cho trade-off giua capacity va compression. Neu
-    accuracy bao hoa som, co the ket luan rank nho da du cho dataset nay.
-    \item \textbf{Tinh tai tao}: moi ket qua phai truy nguoc duoc ve config,
-    seed, checkpoint va file log trong \texttt{results/runs}.
-\end{enumerate}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.78\linewidth]{img/deep_learning/accuracy_vs_rank.png}
+\caption{Validation accuracy theo rank LoRA. Trong thiet lap nay, rank 2 cho
+trade-off tot nhat trong cac cau hinh LoRA duoc thu nghiem.}
+\label{fig:lora-accuracy-vs-rank}
+\end{figure}
 
-Han che can neu ro trong bao cao cuoi cung: model duoc chon nho de phu hop tai
-nguyen, dataset co the chi chay tren subset, va ket qua tren SST-2 khong dai
-dien cho tat ca cac tac vu NLP hay cac mo hinh ngon ngu lon.
+\subsubsection{Nhan xet va han che}
+
+Tu Bang~\ref{tab:lora-results} va Hinh~\ref{fig:lora-accuracy-vs-params}, co
+the thay LoRA tao ra diem nam giua frozen baseline va full fine-tuning: chat
+luong gan voi full fine-tuning hon frozen baseline, nhung so tham so trainable
+gan voi frozen baseline hon. LoRA rank 2 chi dung 2,306 tham so trainable, it
+hon full fine-tuning khoang 1902 lan, nhung dat accuracy 0.7385 so voi 0.7661.
+
+Hinh~\ref{fig:lora-trainable-params} nhan manh loi ich ve compression: khi dung
+LoRA, so tham so can cap nhat tang theo rank nhung van rat nho so voi full
+fine-tuning. Hinh~\ref{fig:lora-loss-curves} cho thay full fine-tuning tiep tuc
+giam validation loss sau 3 epoch, trong khi cac cau hinh LoRA co xu huong bao
+hoa som hon. Day la dau hieu hop ly vi LoRA bi gioi han capacity boi rank thap.
+
+Han che cua thuc nghiem la model duoc chon nho de phu hop tai nguyen tinh toan,
+thoi gian huan luyen chi 3 epoch va tap train chi dung subset 5000 mau. Do do,
+ket qua khong nen duoc dien giai nhu mot benchmark day du cho LoRA tren moi tac
+vu NLP. Tuy nhien, demo da dap ung muc tieu cua do an: co baseline, co mo rong
+rank sweep, co metric dinh luong, co visualization, va minh hoa ro rang trade-off
+giua hieu nang va so tham so can cap nhat.

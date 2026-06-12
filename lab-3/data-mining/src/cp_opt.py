@@ -347,7 +347,7 @@ def objective_and_gradient(x, tensor, shapes, X_norm_sq):
 # =============================================================================
 
 def cp_opt(tensor, rank, method='L-BFGS-B', max_iter=500, tol=1e-8,
-           random_state=None, verbose=False, init_factors=None):
+           random_state=None, init='random', verbose=False, init_factors=None):
     """
     CP Decomposition via gradient-based optimization (L-BFGS-B).
 
@@ -377,6 +377,8 @@ def cp_opt(tensor, rank, method='L-BFGS-B', max_iter=500, tol=1e-8,
         Tolerance for termination (on projected gradient norm for L-BFGS-B).
     random_state : int or None
         Random seed for initialization.
+    init : str, default='random'
+        Initialization method: 'random' or 'svd' (used if init_factors is None).
     verbose : bool, default=False
         Print optimization progress.
     init_factors : list of np.ndarray or None
@@ -403,7 +405,8 @@ def cp_opt(tensor, rank, method='L-BFGS-B', max_iter=500, tol=1e-8,
         raise ValueError(f"Rank must be ≥ 1, got {rank}")
 
     # Normalize input tensor to unit variance for better gradient optimization
-    tensor = tensor / (tensor.std() + 1e-8)
+    std_val = tensor.std() + 1e-8
+    tensor = tensor / std_val
 
     shape = tensor.shape
     rng = np.random.RandomState(random_state)
@@ -430,6 +433,12 @@ def cp_opt(tensor, rank, method='L-BFGS-B', max_iter=500, tol=1e-8,
     # =========================================================================
     if init_factors is not None:
         factors = [A.copy() for A in init_factors]
+    elif init == 'svd':
+        factors = []
+        for mode in range(tensor.ndim):
+            X_unf = unfold(tensor, mode)
+            U, _, _ = np.linalg.svd(X_unf, full_matrices=False)
+            factors.append(U[:, :rank])
     else:
         factors = [rng.randn(s, rank) for s in shape]
 
@@ -479,7 +488,7 @@ def cp_opt(tensor, rank, method='L-BFGS-B', max_iter=500, tol=1e-8,
 
     # Normalize factors
     R = rank
-    weights = np.ones(R)
+    weights = np.ones(R) * std_val
     for n in range(len(factors)):
         norms = np.linalg.norm(factors[n], axis=0)
         norms = np.maximum(norms, 1e-12)

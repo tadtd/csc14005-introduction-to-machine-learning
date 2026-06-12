@@ -265,7 +265,7 @@ def parafac2_als(slices, rank, max_iter=200, tol=1e-8, random_state=None,
     V, weights, projections, H = _initialize_parafac2(slices, rank, random_state)
 
     fit_history = []
-    prev_fit = -np.inf
+    prev_fit = 0.0
 
     if verbose:
         print(f"PARAFAC2: K={K} slices, J={J}, rank={rank}")
@@ -310,7 +310,7 @@ def parafac2_als(slices, rank, max_iter=200, tol=1e-8, random_state=None,
             for k in range(K):
                 numerator += B[r, :, k] * weights[k, r]
                 denominator += weights[k, r] ** 2
-            if denominator > 1e-12:
+            if denominator > 1e-20:
                 V[:, r] = numerator / denominator
             else:
                 V[:, r] = 0.0
@@ -318,7 +318,7 @@ def parafac2_als(slices, rank, max_iter=200, tol=1e-8, random_state=None,
         # Normalize V columns
         for r in range(rank):
             v_norm = np.linalg.norm(V[:, r])
-            if v_norm > 1e-12:
+            if v_norm > 1e-20:
                 V[:, r] /= v_norm
 
         # ---------------------------------------------------------------------

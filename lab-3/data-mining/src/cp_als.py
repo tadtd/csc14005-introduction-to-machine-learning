@@ -400,7 +400,7 @@ def _normalize_factors(factors):
 
 
 def cp_als(tensor, rank, max_iter=200, tol=1e-8, random_state=None,
-           normalize_every=1, verbose=False):
+           normalize_every=1, init='random', verbose=False):
     """
     CP Decomposition via Alternating Least Squares (from scratch).
 
@@ -441,6 +441,8 @@ def cp_als(tensor, rank, max_iter=200, tol=1e-8, random_state=None,
         Random seed for reproducibility.
     normalize_every : int, default=1
         Normalize factors every N iterations (1 = every iteration).
+    init : str, default='random'
+        Initialization method: 'random' or 'svd'.
     verbose : bool, default=False
         If True, print convergence information.
 
@@ -485,10 +487,18 @@ def cp_als(tensor, rank, max_iter=200, tol=1e-8, random_state=None,
         return weights, factors, info
 
     # =========================================================================
-    # Bước 1: Khởi tạo ngẫu nhiên
+    # Bước 1: Khởi tạo
     # =========================================================================
-    # Mỗi factor matrix A^(n) ∈ ℝ^{I_n × R} được khởi tạo từ N(0, 1)
-    factors = [rng.randn(s, rank) for s in shape]
+    if init == 'svd':
+        factors = []
+        for mode in range(N):
+            X_unf = unfold(tensor, mode)
+            # Dùng SVD để tìm rank thành phần chính của X_unf
+            U, _, _ = np.linalg.svd(X_unf, full_matrices=False)
+            factors.append(U[:, :rank])
+    else:
+        # Mỗi factor matrix A^(n) ∈ ℝ^{I_n × R} được khởi tạo từ N(0, 1)
+        factors = [rng.randn(s, rank) for s in shape]
 
     # Chuẩn hóa ban đầu
     weights, factors = _normalize_factors(factors)
@@ -527,8 +537,7 @@ def cp_als(tensor, rank, max_iter=200, tol=1e-8, random_state=None,
             # -----------------------------------------------------------------
             # Bước 2c: Cập nhật A^(n) = M · V^{-1}
             # -----------------------------------------------------------------
-            # Sử dụng np.linalg.solve với ridge regularization để ổn định số học
-            factors[mode] = np.linalg.solve(V + 1e-12 * np.eye(rank), M.T).T
+            factors[mode] = M @ np.linalg.pinv(V)
 
         # =====================================================================
         # Bước 2d: Normalize factors

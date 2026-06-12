@@ -159,7 +159,7 @@ và phần tử $\mathcal{X}_{i_1,\ldots,i_N}$ được ánh xạ tới phần t
 Các mode-$n$ fiber trở thành các cột của $\mathbf{X}_{(n)}$.
 \end{definition}
 
-\begin{figure}[h]
+\begin{figure}[H]
 \centering
 \begin{tikzpicture}[scale=0.82, every node/.style={font=\small}]
   \pgfmathsetmacro{\tfgCy}{-0.75}
@@ -180,31 +180,24 @@ Các mode-$n$ fiber trở thành các cột của $\mathbf{X}_{(n)}$.
       (0.04, \tXTop-3*\tfgCellH-0.28) -- (4*\tfgCellW-0.04, \tXTop-3*\tfgCellH-0.28)
       node[midway, below, text=orange!85!black, font=\footnotesize]
         {mode 2 ($I_2{=}4$)};
-    % mode 3
-    \draw[purple!75!black, line width=0.85pt, ->, >=stealth]
-      (4*\tfgCellW+0.02, \tXTop-0.02) -- (4*\tfgCellW-0.20, \tXTop+0.18)
-      node[midway, right, xshift=2pt, text=purple!75!black, font=\footnotesize]
-        {mode 3 ($I_3{=}2$)};
   \end{scope}
 
   % --- unfold ---
-  \draw[->, line width=1.1pt, gray!60, >=stealth] (2.55, \tfgCy) -- (3.55, \tfgCy)
-    node[midway, above=2pt, font=\footnotesize, text=gray!65] {unfold};
+  \draw[->, line width=1.1pt, gray!65, >=stealth] (2.75, \tfgCy-0.10) -- (4.25, \tfgCy-0.10)
+    node[midway, above=3pt, font=\footnotesize, text=gray!65] {unfold};
 
   % --- Ma trận 3 x 8 ---
-  \begin{scope}[xshift=3.75cm]
+  \begin{scope}[xshift=5.05cm]
     \pgfmathsetmacro{\mXTop}{\tfgCy+1.5*\tfgCellH}
     \drawtfgface{3}{8}{0}{\mXTop}{teal!18}{teal!65!black}{0}
     \node[above=4pt, font=\footnotesize\bfseries, text=teal] at (2.0, \mXTop+0.05)
       {$\mathbf{X}_{(1)}\in\mathbb{R}^{3\times 8}$};
     \draw[teal, line width=0.85pt, <->, >=stealth]
-      (-0.42, \mXTop+0.04) -- (-0.42, \mXTop-3*\tfgCellH-0.04)
-      node[midway, left, text=teal, font=\footnotesize] {$I_1{=}3$};
-    \draw[teal, line width=0.85pt, <->, >=stealth]
       (0.04, \mXTop-3*\tfgCellH-0.28) -- (8*\tfgCellW-0.04, \mXTop-3*\tfgCellH-0.28)
       node[midway, below, text=teal, font=\footnotesize] {$I_2 I_3 {=} 8$};
   \end{scope}
 \end{tikzpicture}
+\vspace{0.4em}
 \caption{Mode-1 matricization của $\mathcal{X}\in\mathbb{R}^{3\times 4\times 2}$ thành $\mathbf{X}_{(1)}\in\mathbb{R}^{3\times 8}$: các mode-1 fiber trở thành cột của ma trận kết quả.}
 \label{fig:matricization}
 \end{figure}
@@ -223,22 +216,10 @@ với phần tử:
 Tensor thu được từ tích ngoài của $N$ vector được gọi là \textit{tensor hạng 1}.
 \end{definition}
 
-\begin{figure}[h]
+\begin{figure}[H]
 \centering
-\begin{tikzpicture}[scale=0.82, every node/.style={font=\small}]
+\begin{tikzpicture}[scale=0.86, every node/.style={font=\small}]
   \pgfmathsetmacro{\opCy}{-1.05}
-  \pgfmathsetmacro{\labelY}{0.55}
-
-  % ===== Hàng nhãn (căn theo tâm đồ họa bên dưới) =====
-  \node[text=teal, font=\footnotesize\bfseries] at (0.25, \labelY)
-    {$\mathbf{a}\in\mathbb{R}^I$};
-  \node[text=orange!85!black, font=\footnotesize\bfseries] at (1.30, \labelY)
-    {$\mathbf{b}\in\mathbb{R}^J$};
-  \node[text=magenta!70!black, font=\footnotesize\bfseries] at (2.30, \labelY)
-    {$\mathbf{c}\in\mathbb{R}^K$};
-  \node[text=violet!80!black, font=\footnotesize\bfseries, align=center] at (3.90, \labelY)
-    {$\mathcal{X}=\mathbf{a}\circ\mathbf{b}\circ\mathbf{c}$\\[1pt]
-     $\in\mathbb{R}^{I\times J\times K}$};
 
   % ===== Hàng đồ họa =====
   \drawtfgveccy{4}{0.00}{\opCy}{teal!28}{teal!55!black}
@@ -254,15 +235,16 @@ Tensor thu được từ tích ngoài của $N$ vector được gọi là \texti
   \begin{scope}[xshift=3.15cm]
     \pgfmathsetmacro{\tTop}{\opCy+2*\tfgCellH}
     \drawtfgtensor{4}{3}{2}{0}{\tTop}{violet!18}{violet!65!black}
-    \node[font=\scriptsize, text=violet!75!black, align=center] at (0.75, \opCy)
-      {$\mathcal{X}_{i,j,k}$\\[0pt]$= a_i b_j c_k$};
+    \node[text=violet!80!black, font=\footnotesize\bfseries] at (0.75, 0.25)
+      {$\mathcal{X}$};
   \end{scope}
 \end{tikzpicture}
+\vspace{0.4em}
 \caption{Tích ngoài $\mathbf{a} \circ \mathbf{b} \circ \mathbf{c}$ tạo ra tensor hạng 1 bậc 3. Mỗi phần tử $\mathcal{X}_{i,j,k} = a_i b_j c_k$.}
 \label{fig:outer-product}
 \end{figure}
 
-\subsubsection{Tích mode-$n$}
+\subsubsection{\texorpdfstring{Tích mode-$n$}{Tích mode-n}}
 
 \begin{definition}[Mode-$n$ Product]
 \textit{Tích mode-$n$} của $\mathcal{X} \in \mathbb{R}^{I_1 \times \cdots \times I_N}$ với ma trận $\mathbf{U} \in \mathbb{R}^{J \times I_n}$ là tensor:
@@ -551,7 +533,7 @@ Với $\mathcal{G}$ superdiagonal và $\lambda_r = 1$:
 chính là phân rã CP với factor matrices $\mathbf{U}^{(n)}$.
 \end{proof}
 
-\subsubsection{HOSVD -- Thuật toán tính phân rã Tucker}
+\subsubsection{HOSVD - Thuật toán tính phân rã Tucker}
 
 Thuật toán \textit{Higher-Order SVD} (HOSVD) \cite{delathauwer2000multilinear} là phương pháp tính phân rã Tucker đầu tiên và trực tiếp nhất:
 

@@ -1,1 +1,148 @@
+%%============================================================
 \subsection{Data Mining}
+%%============================================================
+
+% Giới thiệu ngắn: Tensor decomposition trong data mining —
+% mục tiêu không chỉ nén mà còn trích xuất thành phần có ý nghĩa
+% (interpretable components) từ dữ liệu đa chiều.
+% Liên kết ngược với Chương 2 (cơ sở lý thuyết CP, Tucker).
+
+% TODO: Viết đoạn mở đầu (~3–5 câu)
+
+%%------------------------------------------------------------
+\subsubsection{Tính duy nhất CP và khả năng diễn giải}
+\label{sec:dm-uniqueness}
+%%------------------------------------------------------------
+
+% Nội dung cần viết:
+% - Nhắc lại Định lý Kruskal (Định lý~\ref{thm:kruskal}):
+%   điều kiện k_A + k_B + k_C >= 2R + 2
+% - Hệ quả: CP decomposition cho kết quả duy nhất (essentially unique)
+%   mà KHÔNG cần ràng buộc trực giao — khác biệt cốt lõi so với SVD/PCA
+% - So sánh trực tiếp với SVD (Bảng~\ref{tab:cp-vs-svd}):
+%   SVD cần rotation → mất ý nghĩa vật lý
+%   CP không cần rotation → mỗi component có ý nghĩa trực tiếp
+% - Ý nghĩa thực tiễn: trong data mining, ta cần components
+%   có ý nghĩa vật lý (spatial pattern, temporal pattern, subject grouping)
+%   — không chỉ cần variance explained
+% - Ví dụ minh họa: tensor EEG (Subjects × Channels × Time)
+%   → mỗi CP component cho 3 vectors diễn giải được
+
+% TODO: Viết nội dung (~0.5–0.75 trang)
+
+%%------------------------------------------------------------
+\subsubsection{Thuật toán CP-ALS và CP-OPT}
+\label{sec:dm-algorithms}
+%%------------------------------------------------------------
+
+% === CP-ALS (Alternating Least Squares) ===
+% Nội dung cần viết:
+% - Ý tưởng: cố định N-1 factor matrices, tối ưu factor matrix còn lại
+% - Bước cập nhật (sử dụng ký hiệu từ Chương 2):
+%   A^(n) ← MTTKRP(X, factors, n) · (Hadamard of Gram matrices)^{-1}
+% - MTTKRP: phép toán cốt lõi, tính hiệu quả bằng einsum
+% - Chuẩn hóa cột + hấp thụ norm vào weights λ
+% - Tiêu chí hội tụ: relative fit change < ε
+% - Ưu điểm: đơn giản, mỗi bước có closed-form solution
+% - Nhược điểm: hội tụ chậm (ALS swamp), chỉ tuyến tính
+
+% TODO: Viết phần CP-ALS (~0.5 trang)
+% TODO: (Tùy chọn) Thêm pseudocode Algorithm 1
+
+% === CP-OPT (Gradient-Based, L-BFGS-B) ===
+% Nội dung cần viết:
+% - Ý tưởng: vector hóa toàn bộ factor matrices → 1 vector x ∈ R^p
+% - Hàm mục tiêu: f(x) = ||X - X̂||²_F (tính hiệu quả qua Gram matrices)
+% - Gradient: ∂f/∂A^(n) = -2·MTTKRP + 2·A^(n)·V_n
+% - Sử dụng L-BFGS-B (scipy): quasi-Newton, xấp xỉ Hessian
+% - So sánh với ALS:
+%   + Hội tụ nhanh hơn gần nghiệm (superlinear vs linear)
+%   + Tốn kém hơn mỗi iteration (full gradient)
+%   + Robustness hơn với ALS swamp
+
+% TODO: Viết phần CP-OPT (~0.5 trang)
+
+% === So sánh CP-ALS vs CP-OPT ===
+% TODO: Thêm bảng so sánh (iterations, fit, thời gian, FMS)
+% \begin{table}[H]
+% \centering
+% \begin{tabular}{lccc}
+% \hline
+% \textbf{Thuật toán} & \textbf{Iterations} & \textbf{Fit} & \textbf{FMS} \\
+% \hline
+% CP-ALS & & & \\
+% CP-OPT & & & \\
+% \hline
+% \end{tabular}
+% \caption{So sánh CP-ALS và CP-OPT.}
+% \label{tab:als-vs-opt}
+% \end{table}
+
+%%------------------------------------------------------------
+\subsubsection{PARAFAC2 và CMTF}
+\label{sec:dm-parafac2-cmtf}
+%%------------------------------------------------------------
+
+% === PARAFAC2 ===
+% Nội dung cần viết:
+% - Động lực: dữ liệu thực thường có kích thước không đều
+%   (ví dụ: số trial khác nhau giữa các subject trong EEG)
+% - Mô hình: X_k ≈ P_k · diag(s_k) · V^T
+%   với P_k thay đổi theo slice k, V chung
+% - Ràng buộc cross-product: P_k^T P_k = Φ (hằng số qua k)
+%   → đảm bảo tính duy nhất mà vẫn linh hoạt
+% - Thuật toán PARAFAC2-ALS:
+%   project → stack → ALS update → Procrustes rotation
+% - Ưu điểm so với CP thông thường:
+%   xử lý irregular data mà không cần padding/truncation
+
+% TODO: Viết phần PARAFAC2 (~0.5 trang)
+
+% === CMTF (Coupled Matrix-Tensor Factorization) ===
+% Nội dung cần viết:
+% - Động lực: tận dụng dữ liệu bổ sung (side information)
+%   Ví dụ: tensor EEG (Subjects × Channels × Time) kết hợp
+%   với ma trận metadata (Subjects × Demographics)
+% - Mô hình: phân rã tensor X và ma trận Y đồng thời,
+%   chia sẻ factor matrix trên mode chung (Subjects)
+% - Hàm mục tiêu: min ||X - X̂||² + α||Y - Ŷ||²
+% - Lợi ích: cải thiện chất lượng phân rã nhờ regularization
+%   từ dữ liệu bổ sung; kết nối các nguồn dữ liệu khác nhau
+
+% TODO: Viết phần CMTF (~0.25–0.5 trang)
+
+%%------------------------------------------------------------
+\subsubsection{Ứng dụng}
+\label{sec:dm-applications}
+%%------------------------------------------------------------
+
+% === Ứng dụng 1: Phân tích EEG (Motor Imagery) ===
+% Nội dung cần viết:
+% - Bộ dữ liệu: PhysioNet EEG Motor Movement/Imagery
+%   (109 subjects, 64 channels, 160 Hz)
+% - Tensor: Subjects × Channels × Time (sau tiền xử lý)
+% - Tiền xử lý: bandpass 8–30 Hz, epoch extraction, baseline correction
+% - Kết quả CP decomposition:
+%   + Chọn rank (elbow plot + CORCONDIA)
+%   + Diễn giải 3 modes: subject loadings, channel topography, temporal signature
+%   + So sánh CP vs SVD: CP tách biệt spatial–temporal, SVD trộn lẫn
+% - PARAFAC2 trên EEG: xử lý khi số trial khác nhau giữa subjects
+
+% TODO: Viết phần EEG (~0.5–0.75 trang)
+% TODO: Thêm figures từ notebooks (elbow plot, factor heatmaps, topography maps)
+
+% === Ứng dụng 2: Metabolomics / Gut Microbiome ===
+% Nội dung cần viết:
+% - Bối cảnh: dữ liệu metabolomics thường có dạng
+%   Samples × Metabolites × Time (hoặc Conditions)
+% - Tại sao tensor: tương tác nhiều chiều (sample–metabolite–condition)
+%   không thể phân tích bằng PCA 2D thông thường
+% - CP uniqueness đặc biệt hữu ích: mỗi component tương ứng
+%   với một biological pathway hoặc metabolic profile
+% - Ví dụ: PARAFAC2 cho chromatography data (elution profiles
+%   có chiều dài khác nhau giữa các mẫu)
+% - Liên hệ tutorial NeurIPS 2025: metabolomics là một trong
+%   ba ứng dụng chính được nhấn mạnh
+
+% TODO: Viết phần Metabolomics (~0.25–0.5 trang)
+% Có thể tham khảo: Bro (1997), Acar et al. (2007)

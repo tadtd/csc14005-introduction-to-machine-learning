@@ -1,0 +1,57 @@
+\documentclass[aspectratio=169,xcolor=dvipsnames]{beamer}
+
+\usepackage{theme/beamerthemeSimpleDarkBlue}
+
+\usepackage[utf8]{vietnam}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,calc}
+
+\graphicspath{{img/}{img/deep_learning/}}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\cp}[1]{[\![#1]\!]}
+\newcommand{\had}{\ast}
+
+\title{Foundations of Tensor Computations for AI}
+\subtitle{Tensor factorizations, circuits, và interpretable data mining}
+\author{Đỗ Tiến Đạt -- Lê Nhật Minh Tâm -- Triệu Tuấn Kiệt\\Nguyễn Đăng Khoa -- Huỳnh Mạnh Tường}
+\institute{Nhập môn học máy -- CSC14005\\Trường Đại học Khoa học Tự nhiên, ĐHQG-HCM}
+\date{\today}
+\titlegraphic{\includegraphics[height=1.15cm]{hcmus-logo.png}}
+
+\AtBeginSection[]{
+    \begin{frame}{Mục lục}
+        \tableofcontents[currentsection]
+    \end{frame}
+}
+
+\begin{document}
+
+\begin{frame}
+    \titlepage
+\end{frame}
+
+\begin{frame}{Mục tiêu trình bày}
+\tableofcontents
+\end{frame}
+
+\input{content/slides}
+
+\begin{frame}{Kết luận}
+\large
+\begin{itemize}
+    \item Tensor computations là ngôn ngữ chung cho nén mô hình, thiết kế kiến trúc, circuit tractability và data mining.
+    \item CP/Tucker cung cấp biểu diễn gọn; structural properties của circuits cho phép suy luận hiệu quả.
+    \item Trong thực nghiệm, LoRA rank sweep minh họa trade-off rõ giữa số tham số trainable và accuracy.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+    \centering
+    \Huge Cảm ơn thầy và các bạn
+\end{frame}
+
+\end{document}

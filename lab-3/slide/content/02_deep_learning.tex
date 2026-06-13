@@ -1,0 +1,68 @@
+\section{Tensor trong Học sâu}
+
+\begin{frame}{Tensor xuất hiện tự nhiên trong học sâu}
+\large
+\begin{itemize}
+    \item Batch ảnh: $\mathcal{X}\in\R^{B\times C\times H\times W}$.
+    \item Convolution weights: $\mathcal{W}\in\R^{C_{\text{out}}\times C_{\text{in}}\times K_H\times K_W}$.
+    \item Attention scores: $A\in\R^{B\times H\times L\times L}$.
+\end{itemize}
+\[
+    A_{bhij}=\sum_k Q_{bhik}K_{bhjk}.
+\]
+\end{frame}
+
+\begin{frame}{Polynomial networks / Pi-nets}
+\large
+\[
+    G(x)=\beta+\mathcal{W}^{[1]}\times_2 x
+    +\mathcal{W}^{[2]}\times_2 x\times_3 x+\cdots
+\]
+\begin{itemize}
+    \item Tensor trọng số biểu diễn high-order interactions.
+    \item Số tham số đầy đủ tăng rất nhanh theo bậc đa thức.
+    \item CP decomposition giúp giảm tham số nhưng vẫn giữ tương tác bậc cao.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Mixture of Experts dưới góc nhìn tensor}
+\large
+\[
+    y=\sum_{n=1}^{N}a_n(x)W_n^\top x,
+    \qquad
+    \mathcal{W}\in\R^{N\times I\times O}.
+\]
+\begin{itemize}
+    \item Mode đầu tiên đánh chỉ số expert.
+    \item Factorization cho phép chia sẻ tham số giữa expert.
+    \item Trade-off: parameter sharing và expert specialization.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{LoRA và low-rank adaptation}
+\large
+\[
+    h=W_0x+\frac{\alpha}{r}BAx,
+    \qquad
+    A\in\R^{r\times d},\quad B\in\R^{k\times r}.
+\]
+\begin{itemize}
+    \item Full update: $kd$ tham số trainable.
+    \item LoRA update: $r(d+k)$ tham số trainable.
+    \item Rank $r$ điều khiển trực tiếp trade-off giữa capacity và compression.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{LoRTA, TensorGRAD và attention hiệu quả}
+\large
+\begin{itemize}
+    \item \textbf{LoRTA}: gom update theo layer/head/output/input rồi factorize như tensor.
+    \item \textbf{TensorGRAD}: nén gradient bậc cao bằng Tucker decomposition.
+    \item \textbf{Poly-SA}: thay một phần attention bằng phép tính dựa trên Hadamard product:
+\end{itemize}
+\[
+    f_{\mathrm{Poly\mbox{-}SA}}(X)
+    =
+    \Psi\big((XW_1)\had(XW_2)\big)\had XW_3.
+\]
+\end{frame}

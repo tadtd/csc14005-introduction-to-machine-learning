@@ -1,0 +1,37 @@
+\section{Bối cảnh}
+
+\begin{frame}{Vì sao tensor computations quan trọng?}
+\large
+\begin{itemize}
+    \item Mô hình học sâu ngày càng lớn: chi phí huấn luyện, suy diễn và triển khai tăng nhanh.
+    \item Dữ liệu hiện đại thường có nhiều mode: batch, channel, head, token, subject, time, feature.
+    \item Tensor decomposition khai thác cấu trúc nhiều mode để giảm số tham số, tăng tốc và hỗ trợ diễn giải.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Ba hướng chính trong tutorial}
+\large
+\begin{enumerate}
+    \item \textbf{Deep learning}: tensor hóa trọng số, gradient, attention và adaptation.
+    \item \textbf{Probabilistic circuits}: liên hệ tensor factorizations với circuits và tractable inference.
+    \item \textbf{Data mining}: CP, PARAFAC2 và CMTF cho pattern discovery có khả năng diễn giải.
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{Quy ước ký hiệu dùng trong báo cáo}
+\centering
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{ll}
+\toprule
+\textbf{Ký hiệu} & \textbf{Ý nghĩa} \\
+\midrule
+$\mathcal{X}\in\R^{I_1\times\cdots\times I_N}$ & Tensor bậc $N$ \\
+$\mathbf{X}_{(n)}$ & Mode-$n$ matricization \\
+$\mathbf{A}^{(n)}\in\R^{I_n\times R}$ & Factor matrix mode $n$ \\
+$\circ$ & Outer product \\
+$\odot$ & Khatri-Rao product \\
+$\had$ & Hadamard product \\
+$\cp{\mathbf{A}^{(1)},\ldots,\mathbf{A}^{(N)}}$ & CP shorthand \\
+\bottomrule
+\end{tabular}
+\end{frame}

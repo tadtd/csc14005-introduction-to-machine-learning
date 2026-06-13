@@ -1,0 +1,74 @@
+\section{Probabilistic Circuits}
+
+\begin{frame}{Tensor xác suất và circuit}
+\large
+\begin{itemize}
+    \item Phân phối đồng thời trên $N$ biến rời rạc tương ứng với một tensor xác suất.
+    \item Kích thước tensor tăng theo $\prod_{n=1}^{N}|\mathcal{D}_n|$.
+    \item Tensor factorizations biểu diễn gọn; circuits tổ chức phép tính để suy luận hiệu quả.
+\end{itemize}
+\[
+    \text{tensor factorizations}
+    \Longleftrightarrow
+    \text{circuits}
+    \Longrightarrow
+    \text{tractable inference}.
+\]
+\end{frame}
+
+\begin{frame}{Circuit layer theo tutorial}
+\large
+\begin{enumerate}
+    \item Tập các tractable functions là một layer.
+    \item Linear projection:
+    \[
+        \mathbf{c}(\mathbf{x})=\mathbf{W}\boldsymbol{\ell}(\mathbf{x}).
+    \]
+    \item Tích layer:
+    \[
+        \mathbf{c}(\mathbf{x})=\boldsymbol{\ell}(\mathbf{x})\had\mathbf{r}(\mathbf{x})
+        \quad\text{hoặc}\quad
+        \mathrm{vec}(\boldsymbol{\ell}\mathbf{r}^{\top}).
+    \]
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{CP như một circuit}
+\large
+\[
+    \mathcal{X}_{x_1,\ldots,x_N}
+    \approx
+    \sum_{r=1}^{R}\prod_{n=1}^{N}V^{(n)}_{x_n,r}.
+\]
+\begin{itemize}
+    \item Input layers trả về hàng $x_n$ của factor matrix $\mathbf{V}^{(n)}$.
+    \item Product units nhân theo rank $r$.
+    \item Sum unit cuối cộng trên $r=1,\ldots,R$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Structural properties}
+\large
+\begin{itemize}
+    \item \textbf{Scope}: tập biến mà một unit phụ thuộc vào.
+    \item \textbf{Smoothness}: sum unit chỉ cộng các input cùng scope.
+    \item \textbf{Decomposability}: product unit chỉ nhân các input có scope rời nhau.
+    \item \textbf{Compatibility}: hai circuits phân rã scope theo cùng cấu trúc.
+    \item \textbf{Determinism}: các input của sum unit có support rời nhau.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Tractable inference}
+\large
+\centering
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{lp{0.55\textwidth}}
+\toprule
+\textbf{Properties} & \textbf{Query tractable} \\
+\midrule
+Smoothness + decomposability & Marginals, integrals, partition function \\
+Smoothness + compatibility & Expectations $\mathbb{E}_{p}[f(\mathbf{x})]$ \\
+Determinism + decomposability & MAP inference \\
+\bottomrule
+\end{tabular}
+\end{frame}

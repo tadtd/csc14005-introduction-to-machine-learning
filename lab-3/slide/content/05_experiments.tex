@@ -1,0 +1,64 @@
+\section{Thực nghiệm}
+
+\begin{frame}{Demo: LoRA rank sweep}
+\large
+\begin{itemize}
+    \item Task: GLUE SST-2 sentiment classification.
+    \item Model: \texttt{prajjwal1/bert-tiny}.
+    \item Baselines: frozen encoder, full fine-tuning.
+    \item LoRA ranks: $r\in\{2,4,8\}$.
+    \item Metrics: accuracy, loss, trainable parameters, runtime.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Kết quả chính}
+\centering
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{Config} & \textbf{Rank} & \textbf{Trainable params} & \textbf{Best acc.} & \textbf{Time (s)} \\
+\midrule
+Frozen & -- & 258 & 0.6525 & 16.68 \\
+Full fine-tune & -- & 4,386,178 & 0.7569 & 56.85 \\
+LoRA & 2 & 2,306 & 0.7248 & 29.82 \\
+LoRA & 4 & 4,354 & 0.7351 & 29.78 \\
+LoRA & 8 & 8,450 & 0.7511 & 30.90 \\
+\bottomrule
+\end{tabular}
+\end{frame}
+
+\begin{frame}{Accuracy theo số tham số trainable}
+\centering
+\includegraphics[width=0.78\linewidth]{accuracy_vs_params.png}
+\begin{block}{Nhận xét}
+LoRA rank 8 gần full fine-tuning về accuracy nhưng chỉ cập nhật khoảng 0.1923\% tổng số tham số.
+\end{block}
+\end{frame}
+
+\begin{frame}{Validation loss theo epoch}
+\centering
+\includegraphics[width=0.78\linewidth]{loss_curves.png}
+\begin{itemize}
+    \item Full fine-tuning tiếp tục giảm loss rõ nhất.
+    \item LoRA hội tụ nhanh hơn nhưng bị giới hạn bởi rank.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Accuracy theo rank LoRA}
+\centering
+\includegraphics[width=0.72\linewidth]{accuracy_vs_rank.png}
+\begin{itemize}
+    \item Trong lần chạy này, rank 8 tốt nhất trong các cấu hình LoRA.
+    \item Rank là tham số điều khiển capacity của low-rank update.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Thông điệp từ thực nghiệm}
+\large
+\begin{itemize}
+    \item LoRA rank 8 đạt $0.7511$ accuracy so với $0.7569$ của full fine-tuning.
+    \item Số tham số trainable giảm từ $4{,}386{,}178$ xuống $8{,}450$.
+    \item Đây là minh họa trực tiếp cho lợi ích của low-rank/tensor factorization trong học sâu.
+\end{itemize}
+\end{frame}

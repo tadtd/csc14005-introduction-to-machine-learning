@@ -1,0 +1,66 @@
+\section{Cơ sở Tensor}
+
+\begin{frame}{Tensor và cấu trúc đa chiều}
+\large
+\begin{itemize}
+    \item Tensor tổng quát hóa scalar, vector và ma trận.
+    \item Mỗi chiều là một \textit{mode}; các fiber/slice giữ ý nghĩa riêng của dữ liệu.
+    \item Matricization giúp chuyển bài toán tensor về các phép toán ma trận nhưng vẫn theo từng mode.
+\end{itemize}
+\[
+    \mathcal{X}\in\R^{I_1\times I_2\times\cdots\times I_N},
+    \qquad
+    \mathbf{X}_{(n)}\in\R^{I_n\times \prod_{k\ne n}I_k}.
+\]
+\end{frame}
+
+\begin{frame}{CP decomposition}
+\large
+\[
+    \mathcal{X}
+    \approx
+    \sum_{r=1}^{R}
+    \mathbf{a}^{(1)}_r\circ\mathbf{a}^{(2)}_r\circ\cdots\circ\mathbf{a}^{(N)}_r
+    =
+    \cp{\mathbf{A}^{(1)},\ldots,\mathbf{A}^{(N)}}.
+\]
+\begin{itemize}
+    \item Mỗi component $r$ là một pattern đồng thời trên tất cả mode.
+    \item CP compact khi $R$ nhỏ so với kích thước tensor đầy đủ.
+    \item CP thường có lợi thế interpretability nhờ uniqueness properties.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Tucker decomposition}
+\large
+\[
+    \mathcal{X}
+    \approx
+    \mathcal{G}
+    \times_1 \mathbf{U}^{(1)}
+    \times_2 \mathbf{U}^{(2)}
+    \cdots
+    \times_N \mathbf{U}^{(N)}.
+\]
+\begin{itemize}
+    \item $\mathcal{G}$ là core tensor mô tả tương tác giữa latent dimensions.
+    \item Tucker tổng quát hóa SVD ma trận.
+    \item CP là trường hợp đặc biệt khi core tensor là superdiagonal.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Kruskal uniqueness}
+\large
+Với tensor bậc 3:
+\[
+    \mathcal{X}=\sum_{r=1}^{R}\mathbf{a}_r\circ\mathbf{b}_r\circ\mathbf{c}_r.
+\]
+Nếu
+\[
+    k_{\mathbf{A}}+k_{\mathbf{B}}+k_{\mathbf{C}}\ge 2R+2,
+\]
+thì CP decomposition là duy nhất về cơ bản: chỉ sai khác hoán vị và co giãn component.
+\begin{block}{Ý nghĩa}
+Không cần ràng buộc trực giao như SVD nhưng vẫn có cơ sở để diễn giải các component.
+\end{block}
+\end{frame}

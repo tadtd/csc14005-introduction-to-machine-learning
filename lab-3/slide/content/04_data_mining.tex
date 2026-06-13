@@ -1,0 +1,86 @@
+\section{Interpretable Data Mining}
+
+\begin{frame}{Vì sao CP hữu ích cho data mining?}
+\large
+\begin{itemize}
+    \item Dữ liệu khoa học thường có các mode như subject, time, metabolite, electrode/voxel.
+    \item CP giữ các mode riêng thay vì trải phẳng thành ma trận.
+    \item Mỗi component có thể được đọc như một pattern đồng thời trên nhiều trục.
+\end{itemize}
+\[
+    \mathcal{X}\approx\cp{\mathbf{A}^{(1)},\ldots,\mathbf{A}^{(N)}}.
+\]
+\end{frame}
+
+\begin{frame}{CP-ALS}
+\large
+\[
+    \mathbf{Z}^{(n)}
+    =
+    \mathbf{A}^{(N)}\odot\cdots\odot\mathbf{A}^{(n+1)}
+    \odot\mathbf{A}^{(n-1)}\odot\cdots\odot\mathbf{A}^{(1)}.
+\]
+\[
+    \mathbf{A}^{(n)}
+    \leftarrow
+    \underbrace{\mathbf{X}_{(n)}\mathbf{Z}^{(n)}}_{\text{MTTKRP}}
+    \left((\mathbf{Z}^{(n)})^\top\mathbf{Z}^{(n)}\right)^\dagger.
+\]
+\begin{itemize}
+    \item Lặp qua từng mode, cố định các factor còn lại.
+    \item Bottleneck tính toán là MTTKRP.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{CP-OPT, missing data và loss khác}
+\large
+\begin{itemize}
+    \item CP-OPT tối ưu tất cả factor matrices cùng lúc bằng gradient-based optimizer.
+    \item CP-WOPT dùng weight tensor để chỉ fit trên entries quan sát:
+    \[
+        \min\left\|
+        \mathcal{W}\had(\mathcal{X}-\cp{\mathbf{A}^{(1)},\ldots,\mathbf{A}^{(N)}})
+        \right\|_F^2.
+    \]
+    \item GCP-OPT thay Frobenius loss bằng loss phù hợp với count/binary data.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{PARAFAC2}
+\large
+\[
+    \mathbf{X}_k\approx \mathbf{U}_k\mathbf{S}_k\mathbf{V}^{\top},
+    \qquad
+    \mathbf{U}_k^\top\mathbf{U}_k=\boldsymbol{\Phi}.
+\]
+\begin{itemize}
+    \item Nới lỏng strict multilinearity của CP.
+    \item Cho phép một factor thay đổi theo slice.
+    \item Phù hợp dữ liệu time-evolving hoặc các chuỗi có độ dài/căn pha khác nhau.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{CMTF và data fusion}
+\large
+\[
+    \min_{\mathbf{A},\mathbf{B},\mathbf{C},\mathbf{D}}
+    \|\mathcal{X}-\cp{\mathbf{A},\mathbf{B},\mathbf{C}}\|_F^2
+    +
+    \|\mathbf{Y}-\mathbf{A}\mathbf{D}^{\top}\|_F^2.
+\]
+\begin{itemize}
+    \item Joint analysis cho nhiều matrix/tensor có mode chung.
+    \item Factor $\mathbf{A}$ liên kết hai nguồn dữ liệu theo subject.
+    \item Coupling có thể cải thiện uniqueness và chất lượng pattern discovery.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Ứng dụng trong tutorial}
+\large
+\begin{itemize}
+    \item \textbf{Metabolomics}: tìm marker và pattern phản ứng chuyển hóa.
+    \item \textbf{Neuroscience}: phân tích EEG/fMRI theo không gian, thời gian, subject.
+    \item \textbf{Gut microbiome}: rút trích pattern cộng đồng vi sinh theo thời gian.
+    \item \textbf{Data fusion}: kết hợp dữ liệu động và tĩnh trên cùng nhóm subject.
+\end{itemize}
+\end{frame}

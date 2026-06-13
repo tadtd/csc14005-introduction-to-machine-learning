@@ -1,210 +1,346 @@
 %%============================================================
 \subsection{Data Mining}
 %%============================================================
-%%------------------------------------------------------------
-\subsubsection{Bối cảnh và Động lực nghiên cứu}
+
+\subsubsection{Mở đầu}
 \label{sec:dm-context}
-%%------------------------------------------------------------
 
-Trong kỷ nguyên trí tuệ nhân tạo và dữ liệu lớn hiện nay, giới nghiên cứu đang phải đối mặt với hai thách thức khổng lồ mang tính thời sự:
-\begin{itemize}
-    \item \textbf{Sự cản trở của "Bức tường quy mô AI" (The AI Scaling Wall):} Các mô hình ngôn ngữ lớn (LLMs) đang phát triển với kích thước không tưởng lên tới hàng nghìn tỷ tham số. Hệ quả là mức tiêu thụ năng lượng khổng lồ và chi phí tính toán đắt đỏ khiến chúng không thể triển khai trên thiết bị biên. Hơn nữa, sự phình to này biến các mô hình thành những "hộp đen" (black box) thiếu tính diễn giải.
-    \item \textbf{Sự phức tạp của "Đám mây dữ liệu cá nhân" (Personal data clouds):} Trong lĩnh vực y tế, tín hiệu sinh học, hệ chuyển hóa hay hệ vi sinh, cấu trúc thông tin thu thập được không còn là các bảng 2D đơn giản mà là các bộ dữ liệu đa phương thức, không đồng nhất. Các phương pháp ma trận truyền thống buộc phải "trải phẳng" (matricization) dữ liệu, làm phá vỡ đi cấu trúc đa chiều tự nhiên và đánh mất các mối quan hệ tương tác phức tạp.
-\end{itemize}
+Part III của tutorial tập trung vào \emph{Tensor Factorizations for Interpretable Data Mining}: dùng các phân rã tensor để rút trích pattern có thể diễn giải từ dữ liệu đa chiều, đa nguồn và thường không hoàn chỉnh \cite{chrysos2025foundationsTutorial}. Khác với phần Cơ sở lý thuyết, phần này không nhắc lại chi tiết định nghĩa tensor, matricization, CP hay Tucker; các khái niệm đó đã được trình bày ở Mục Cơ sở lý thuyết. Ở đây ta chỉ dùng lại chúng để giải thích vì sao tensor factorizations hữu ích trong khai phá dữ liệu.
 
-Từ những thách thức trên, phân rã Tensor (Tensor Factorization) nổi lên như một công cụ toán học cách mạng, được kỳ vọng sẽ giải quyết trọn vẹn ba bài toán cốt lõi: \textbf{Bộ nhớ (Memory)} – \textbf{Tốc độ (Speed)} – \textbf{Sự thấu hiểu (Understanding)}. 
+Động lực chính là nhiều dữ liệu khoa học không tự nhiên ở dạng bảng hai chiều. Ví dụ trong tutorial, dữ liệu có thể có các mode như subject, thời gian, metabolite, electrode/voxel, microbe hoặc activity \cite{chrysos2025foundationsTutorial}. Nếu ép các mode này vào một ma trận bằng cách trải phẳng, ta vẫn có thể dùng SVD hoặc matrix factorization, nhưng thường đánh mất diễn giải riêng theo từng mode. Tensor factorization giữ lại cấu trúc đa chiều đó, nên mỗi component có thể được đọc như một pattern đồng thời trên nhiều trục của dữ liệu.
 
-Thay vì coi tensor chỉ là những thùng chứa thụ động, hướng nghiên cứu này biến chúng thành những công cụ tính toán mạnh mẽ. Tensor mang lại khả năng nén mô hình mà không làm giảm năng lực (compression without losing capability), kết hợp đa nguồn dữ liệu (data fusion) linh hoạt, và đặc biệt là thỏa mãn đòi hỏi khắt khe về tính diễn giải trực tiếp (interpretability). Dựa trên nền tảng toán học của phân rã CP và Tucker, phần này sẽ tập trung minh họa cách Tensor đang trở thành "trái tim" của khai phá dữ liệu hiện đại, mang lại những đột phá từ y học chính xác (Precision Health) đến thần kinh học (Neuroscience).
+Mục tiêu của phần này là trình bày bốn ý chính theo tutorial:
+\begin{enumerate}[label=(\arabic*)]
+    \item CP decomposition như mô hình nền tảng cho pattern discovery;
+    \item cách tính CP bằng CP-ALS, CP-OPT và các biến thể cho dữ liệu khuyết thiếu hoặc loss function khác;
+    \item PARAFAC2 như một mở rộng linh hoạt khi một mode thay đổi qua các slice;
+    \item CMTF như khung data fusion cho nhiều ma trận/tensor có mode chung.
+\end{enumerate}
 
-%%------------------------------------------------------------
-\subsubsection{Cơ sở Toán học và Cấu trúc Tensor}
-\label{sec:dm-math-background}
-%%------------------------------------------------------------
-
-Để có thể khai phá dữ liệu bằng tensor, trước tiên ta cần nắm vững cấu trúc và các phép toán đại số đặc thù của không gian đa chiều này.
-
-\paragraph{Khái niệm cơ sở và cấu trúc.}
-Tensor là một mảng đa chiều (multidimensional array) đóng vai trò tổng quát hóa tự nhiên của các cấu trúc dữ liệu cơ bản: bậc 1 là vector, bậc 2 là ma trận, và từ bậc 3 trở lên được gọi là tensor bậc cao (ví dụ: khối dữ liệu $\mathcal{X} \in \mathbb{R}^{I \times J \times K}$). Các thuật ngữ cấu trúc cốt lõi bao gồm:
-\begin{itemize}
-    \item \textbf{Chiều/Bậc (Mode/Way):} Số lượng chiều của tensor.
-    \item \textbf{Sợi (Fibers):} Là các vector tự nhiên nằm ẩn bên trong tensor, được tạo ra bằng cách cố định tất cả các chiều ngoại trừ một chiều. Sợi chính là sự tổng quát hóa khái niệm hàng và cột của ma trận.
-    \item \textbf{Lát cắt (Slices):} Là các ma trận 2D thu được bằng cách cố định tất cả các chỉ số ngoại trừ hai chỉ số. Với tensor bậc 3, ta có các lát cắt ngang (horizontal), dọc (lateral) và mặt trước (frontal).
-\end{itemize}
-
-\paragraph{Các phép toán đại số cơ bản.}
-Để máy tính có thể xử lý và tối ưu hóa tensor, các khối dữ liệu đa chiều này thường được biến đổi thông qua các phép toán:
-\begin{itemize}
-    \item \textbf{Trải phẳng (Matricization / Unfolding - $\mathbf{X}_{(n)}$):} Là phép biến đổi cấu trúc của một tensor thành một ma trận 2D dọc theo một chiều $n$ cụ thể. Trong thao tác này, các "sợi" dọc theo chiều $n$ của tensor gốc sẽ được xếp thành các cột của ma trận kết quả.
-    \item \textbf{Tích ngoài (Outer Product - $\circ$):} Tích ngoài của các vector $\mathbf{a}^{(1)}, \mathbf{a}^{(2)}, \dots, \mathbf{a}^{(N)}$ tạo ra một tensor có số bậc tương ứng $N$.
-    \item \textbf{Tích theo chiều (Mode-$n$ Product - $\times_n$):} Phép nhân một tensor với một ma trận dọc theo chiều $n$, giúp biến đổi kích thước của tensor dọc theo chiều tương ứng.
-\end{itemize}
-
-\paragraph{Mô hình Phân rã Tensor CP (Canonical Polyadic).}
-Khái niệm trung tâm của ứng dụng tensor trong khai phá dữ liệu chính là Phân rã CP (CANDECOMP/PARAFAC). Mục tiêu của CP là xấp xỉ một tensor dữ liệu bằng tổng của các tensor hạng 1 (rank-1 tensors). Đối với một tensor dữ liệu 3 chiều $\mathcal{X} \in \mathbb{R}^{I \times J \times K}$, mô hình CP xấp xỉ nó với hạng (rank) $R$ qua công thức:
-\begin{equation}
-    \mathcal{X} \approx \sum_{r=1}^R \mathbf{a}_r \circ \mathbf{b}_r \circ \mathbf{c}_r = \llbracket \mathbf{A}, \mathbf{B}, \mathbf{C} \rrbracket,
-\end{equation}
-trong đó $\mathbf{A} \in \mathbb{R}^{I \times R}$, $\mathbf{B} \in \mathbb{R}^{J \times R}$ và $\mathbf{C} \in \mathbb{R}^{K \times R}$ là các ma trận nhân tố (factor matrices).
-
-Để tìm ra các ma trận nhân tố đại diện cho dữ liệu, thuật toán phải giải quyết bài toán tối ưu hóa nhằm cực tiểu hóa chuẩn Frobenius của sai số tái tạo:
-\begin{equation}
-    \min_{\mathbf{A}, \mathbf{B}, \mathbf{C}} \|\mathcal{X} - \llbracket \mathbf{A}, \mathbf{B}, \mathbf{C} \rrbracket\|_F^2.
-\end{equation}
-Quá trình này (ví dụ trong thuật toán CP-ALS) yêu cầu tính toán một phép toán cốt lõi và tốn kém nhất gọi là MTTKRP (Matricized Tensor Times Khatri-Rao Product).
-%%------------------------------------------------------------
-\subsubsection{Tính duy nhất CP và khả năng diễn giải}
+\subsubsection{CP decomposition và khả năng diễn giải}
 \label{sec:dm-uniqueness}
-%%------------------------------------------------------------
 
-Sức mạnh cốt lõi khiến phân rã CP trở thành một công cụ khai phá dữ liệu vượt trội nằm ở tính duy nhất (uniqueness) của nó. Như đã trình bày ở Định lý Kruskal (Định lý~\ref{thm:kruskal}), đối với một tensor bậc 3, nếu các ma trận nhân tử $\mathbf{A}, \mathbf{B}, \mathbf{C}$ thỏa mãn điều kiện k-rank:
+Với dữ liệu bậc $N$, CP decomposition xấp xỉ tensor quan sát bởi tổng của $R$ tensor hạng 1:
 \begin{equation}
-    k_A + k_B + k_C \ge 2R + 2,
+    \mathcal{X}
+    \approx
+    [\![\mathbf{A}^{(1)}, \mathbf{A}^{(2)}, \ldots, \mathbf{A}^{(N)}]\!]
+    =
+    \sum_{r=1}^{R}
+    \mathbf{a}^{(1)}_{r} \circ \mathbf{a}^{(2)}_{r} \circ \cdots \circ \mathbf{a}^{(N)}_{r}.
+    \label{eq:dm-cp}
 \end{equation}
-thì phân rã CP có hạng $R$ là duy nhất cơ bản (essentially unique), nghĩa là kết quả phân rã chỉ có thể thay đổi tối đa ở phép hoán vị (permutation) và phép chuẩn hóa tỷ lệ (scaling) của các cột. 
+Ở đây mỗi cột $r$ của các factor matrices mô tả cùng một component trên các mode khác nhau. Chẳng hạn, với tensor EEG/fMRI có các mode subject, electrode/voxel và time, một component có thể được diễn giải đồng thời qua mức độ đóng góp của subject, pattern không gian và pattern thời gian.
 
-Hệ quả vô cùng quan trọng của định lý này là mô hình CP không đòi hỏi bất kỳ ràng buộc bổ sung nào (như tính trực giao hay tính độc lập) để hội tụ về một tập nghiệm duy nhất. Đây là sự khác biệt mang tính cách mạng (revolutionary) đối với khả năng diễn giải so với các phương pháp phân rã ma trận hai chiều như PCA hay SVD. Đối với ma trận, việc phân rã thường gặp "sự mơ hồ về phép xoay" (rotation ambiguity) hoặc tối ưu cắt cụt (optimal truncation). Các thành phần SVD thường bị trộn lẫn thông tin để thỏa mãn ràng buộc trực giao và tối đa hóa phương sai. Để các thành phần ma trận này có ý nghĩa vật lý, người phân tích bắt buộc phải thực hiện thêm một bước xoay trục (post-hoc rotation như Varimax), một thao tác mang tính chủ quan và có nguy cơ bóp méo cấu trúc tự nhiên của dữ liệu.
+Điểm quan trọng của CP trong data mining là tính duy nhất tương đối của nghiệm. Như đã nêu ở Định lý~\ref{thm:kruskal}, dưới điều kiện Kruskal rank, CP là duy nhất sai khác hoán vị và co giãn component. Vì vậy, khác với nhiều phân rã ma trận cần ràng buộc trực giao hoặc bước xoay hậu xử lý, CP thường cho các factor có ý nghĩa trực tiếp hơn đối với bài toán ứng dụng \cite{kruskal1977three,sidiropoulos2017tensor,chrysos2025foundationsTutorial}. Tutorial nhấn mạnh chính tính chất này là lý do CP được dùng rộng rãi cho pattern discovery có khả năng tái lập và diễn giải.
 
-Ngược lại, CP hoàn toàn không cần đến phép xoay. Việc thuật toán tự động hội tụ về một nghiệm duy nhất (essentially unique) biến mỗi thành phần (component) trích xuất được thành một mẫu hình mang ý nghĩa vật lý trực tiếp. Trong khai phá dữ liệu đa chiều, giá trị cốt lõi không chỉ là nén thông tin, mà là khả năng diễn giải chính xác nguyên nhân và nguồn gốc của sự biến thiên dữ liệu.
+Tuy vậy, tính diễn giải không đến miễn phí. Người phân tích vẫn phải chọn số component $R$, xử lý nhiễu, missing data, scale giữa các mode, và kiểm tra xem component thu được có ổn định qua nhiều khởi tạo hay không. Đây là lý do các thuật toán và mở rộng bên dưới đóng vai trò thực tế quan trọng.
 
-Lấy ví dụ trên bộ dữ liệu điện não đồ (EEG) được mô hình hóa dưới dạng tensor bậc 3 với cấu trúc: $\text{Subjects} \times \text{Channels} \times \text{Time}$. Thay vì trộn lẫn không gian và thời gian như SVD, khi áp dụng phân rã CP, mỗi component $r$ sẽ cung cấp chính xác 3 vector tách biệt có thể diễn giải được ngay lập tức:
-\begin{itemize}
-    \item \textbf{Subject mode}: Phản ánh mức độ đóng góp hay phân nhóm của từng cá nhân đối với mẫu hình này.
-    \item \textbf{Channel mode}: Mô tả phân bố không gian (spatial pattern), chỉ ra chính xác cụm điện cực hoặc vùng não nào đang được kích hoạt.
-    \item \textbf{Time mode}: Biểu diễn dạng sóng thời gian (temporal pattern), cho thấy sự biến thiên điện sinh lý của hoạt động não theo từng mili-giây.
-\end{itemize}
-Sự tách biệt rõ ràng (disentanglement) này là minh chứng rõ rệt nhất cho thấy tính duy nhất của CP chính là chìa khóa để đạt được khả năng diễn giải (interpretability) trực tiếp trên dữ liệu đa chiều.
-
-%%------------------------------------------------------------
-\subsubsection{Thuật toán CP-ALS và CP-OPT}
+\subsubsection{Tính CP: CP-ALS, CP-OPT và dữ liệu khuyết thiếu}
 \label{sec:dm-algorithms}
-%%------------------------------------------------------------
 
-\paragraph{CP-ALS (Alternating Least Squares).}
-Phương pháp phổ biến nhất để giải bài toán phân rã CP là Alternating Least Squares (ALS). Ý tưởng cốt lõi của thuật toán này là tối ưu hóa luân phiên: tại mỗi bước, ta cố định $N-1$ ma trận nhân tử và chỉ tối ưu hóa ma trận nhân tử của mode còn lại. Bằng cách này, bài toán tối ưu phi tuyến ban đầu được chia nhỏ thành một chuỗi các bài toán bình phương tối thiểu tuyến tính (linear least squares) có nghiệm đóng (closed-form solution).
-
-Sử dụng các ký hiệu từ Chương 2, bước cập nhật cho ma trận nhân tử $\mathbf{A}^{(n)}$ dọc theo mode $n$ được tính như sau:
+Bài toán tính CP thường được viết dưới dạng tối thiểu hóa sai số tái tạo:
 \begin{equation}
-    \mathbf{A}^{(n)} \leftarrow \underbrace{\mathbf{X}_{(n)} \left(\bigodot_{k \neq n} \mathbf{A}^{(k)}\right)}_{\text{MTTKRP}} \cdot \underbrace{\left(\mathop{\circledast}_{k \neq n} (\mathbf{A}^{(k)\top} \mathbf{A}^{(k)})\right)^{-1}}_{\text{Nghịch đảo tích Hadamard của Gram matrices}},
+    \min_{\mathbf{A}^{(1)},\ldots,\mathbf{A}^{(N)}}
+    \left\|
+    \mathcal{X}
+    -
+    [\![\mathbf{A}^{(1)}, \ldots, \mathbf{A}^{(N)}]\!]
+    \right\|_F^2.
+    \label{eq:dm-cp-objective}
 \end{equation}
-trong đó $\bigodot$ là tích Khatri-Rao và $\circledast$ là tích Hadamard. Phép toán tốn kém và quan trọng nhất ở đây là MTTKRP (Matricized Tensor Times Khatri-Rao Product), có thể được lập trình tối ưu hóa bộ nhớ và tốc độ thông qua hàm \texttt{numpy.einsum}. 
-
-Sau mỗi bước cập nhật, các cột của $\mathbf{A}^{(n)}$ được chuẩn hóa về độ dài $1$, và phần độ dài này được hấp thụ vào vector trọng số $\boldsymbol{\lambda}$. Quá trình lặp dừng lại khi sự thay đổi tương đối của sai số tái tạo (relative fit change) nhỏ hơn ngưỡng $\varepsilon$. Ưu điểm lớn nhất của ALS là sự đơn giản và khả năng tận dụng cấu trúc thưa. Tuy nhiên, ALS thường chỉ đạt tốc độ hội tụ tuyến tính (linear convergence) và có thể rơi vào trạng thái hội tụ cực kỳ chậm gọi là "ALS swamp" khi các nhân tử bị cộng tuyến.
-
-\paragraph{CP-OPT (Tối ưu hóa Gradient-Based).}
-Một hướng tiếp cận khác là giải bài toán tối ưu CP một cách toàn cục (all-at-once) bằng phương pháp gradient, gọi chung là CP-OPT. Trong phương pháp này, tất cả các ma trận nhân tử được vector hóa và ghép lại thành một vector tham số duy nhất $\mathbf{x} \in \mathbb{R}^p$ với $p = \sum_{n=1}^N I_n R$.
-
-Hàm mục tiêu là bình phương sai số tái tạo $f(\mathbf{x}) = \|\mathcal{X} - \hat{\mathcal{X}}\|_F^2$, có thể được tính toán hiệu quả thông qua các ma trận Gram $\mathbf{V}_n = \mathop{\circledast}_{k \neq n} \mathbf{A}^{(k)\top} \mathbf{A}^{(k)}$. Gradient riêng phần theo từng mode $n$ được xác định bởi:
+Tutorial bắt đầu từ CP-ALS vì đây là thuật toán chuẩn và dễ triển khai nhất cho CP \cite{chrysos2025foundationsTutorial}. Để thống nhất với quy ước ký hiệu ở Mục~\ref{sec:notation}, đặt
 \begin{equation}
-    \frac{\partial f}{\partial \mathbf{A}^{(n)}} = -2 \cdot \text{MTTKRP}(\mathcal{X}, \{\mathbf{A}^{(k)}\}, n) + 2 \cdot \mathbf{A}^{(n)} \cdot \mathbf{V}_n.
+    \mathbf{Z}^{(n)}
+    =
+    \mathbf{A}^{(N)} \odot \cdots \odot \mathbf{A}^{(n+1)}
+    \odot \mathbf{A}^{(n-1)} \odot \cdots \odot \mathbf{A}^{(1)}
+    \in \mathbb{R}^{I_{-n}\times R},
+    \qquad
+    I_{-n} = \prod_{k\neq n} I_k.
+    \label{eq:dm-khatri-rao-chain}
 \end{equation}
-Thay vì cập nhật từng khối độc lập, CP-OPT truyền toàn cục vector gradient này vào một bộ tối ưu hóa quasi-Newton như L-BFGS-B (thông qua \texttt{scipy.optimize.minimize}). L-BFGS-B sử dụng lịch sử gradient để xấp xỉ ma trận Hessian, giúp thuật toán có khả năng hội tụ siêu tuyến tính (superlinear convergence) khi ở gần điểm tối ưu. Chi phí tính toán cho mỗi vòng lặp của CP-OPT cao hơn ALS (vì phải tính toàn bộ gradient cho tất cả các mode), nhưng bù lại thường cần ít vòng lặp hơn để đạt sai số rất nhỏ.
-
-\paragraph{So sánh hiệu năng CP-ALS và CP-OPT.}
-Mặc dù CP-OPT có nền tảng lý thuyết hội tụ mạnh mẽ, thực nghiệm của chúng tôi trên dữ liệu tổng hợp (Thí nghiệm 1) lại cho thấy một bức tranh khác. Khi tối ưu hàm mục tiêu phi tuyến đa biến phức tạp của tensor, bộ tối ưu L-BFGS-B tỏ ra rất nhạy cảm với khởi tạo ngẫu nhiên và thường xuyên bị mắc kẹt ở các cực tiểu địa phương (local minima). Ngược lại, bản chất luân phiên thay đổi không gian con (subspace) của ALS lại giúp thuật toán này có khả năng "đào tẩu" khỏi các cực tiểu địa phương cực kỳ hiệu quả. 
-
-Như được tóm tắt trong Bảng~\ref{tab:als-vs-opt}, ALS chứng minh được sự ổn định vượt trội trong việc khôi phục chính xác các nhân tử gốc (chỉ số FMS cao) bất chấp nhiễu. Do đó, chúng tôi chọn CP-ALS làm thuật toán workhorse cốt lõi cho các phân tích dữ liệu điện não đồ (EEG) thực tế ở các phần sau.
-
-\begin{table}[H]
-\centering
-\begin{tabular}{lccc}
-\hline
-\textbf{Thuật toán} & \textbf{Iterations (Trung bình)} & \textbf{Reconstruction Error} & \textbf{Factor Match Score (FMS)} \\
-\hline
-CP-ALS & TODO & TODO & \textbf{TODO ($\sim 1.0$)} \\
-CP-OPT (L-BFGS-B) & TODO & TODO & TODO ($< 1.0$) \\
-\hline
-\end{tabular}
-\caption{So sánh độ ổn định và hiệu năng giữa CP-ALS và CP-OPT trên dữ liệu tổng hợp.}
-\label{tab:als-vs-opt}
-\end{table}
-
-\paragraph{Mở rộng: Xử lý Dữ liệu khuyết thiếu và Phân phối phi chuẩn.}
-Trong kỷ nguyên Data Mining, dữ liệu thực tế hiếm khi hoàn hảo. Chẳng hạn, tín hiệu có thể bị "thủng" (missing data) do lỗi cảm biến, hoặc không tuân theo phân phối chuẩn (non-Gaussian). Mặc dù CP-ALS tỏ ra vô cùng hiệu quả với dữ liệu đầy đủ, họ thuật toán CP-OPT lại mang đến tiềm năng mở rộng vô hạn nhờ khả năng tinh chỉnh hàm mục tiêu:
-\begin{itemize}
-    \item \textbf{CP-WOPT (Weighted Optimization):} Để xử lý dữ liệu khuyết thiếu, thuật toán đưa thêm một tensor trọng số nhị phân (weight tensor $\mathcal{W}$ với giá trị 0 tại các điểm khuyết) vào hàm mục tiêu gốc. Thay vì cố gắng nội suy hay điền (impute) dữ liệu trước khi phân rã, CP-WOPT sử dụng tích Hadamard với $\mathcal{W}$ để ép mô hình chỉ tính toán gradient và tối ưu hóa trên những điểm dữ liệu thực sự tồn tại.
-    \item \textbf{GCP-OPT (Generalized CP):} Bài toán CP tiêu chuẩn (sử dụng chuẩn Frobenius) được ngầm định là tối ưu cho nhiễu Gaussian. Tuy nhiên, khi phân tích dữ liệu đếm (Count data - ví dụ: số lần truy cập tuân theo phân phối Poisson) hoặc dữ liệu nhị phân (Binary data - ví dụ: tương tác Có/Không tuân theo phân phối Bernoulli), việc dùng chuẩn Frobenius sẽ làm giảm chất lượng mô hình. GCP-OPT giải quyết vấn đề này bằng cách thay thế hàm mất mát bình phương bằng các hàm log-likelihood (hàm hợp lý tối đa) tương ứng với từng loại phân phối, giúp rút trích ra các đặc trưng sắc bén và chính xác hơn hẳn.
-\end{itemize}
-
-%%------------------------------------------------------------
-\subsubsection{PARAFAC2 và CMTF}
-\label{sec:dm-parafac2-cmtf}
-%%------------------------------------------------------------
-
-Mô hình CP tiêu chuẩn cực kỳ mạnh mẽ nhờ tính duy nhất, nhưng nó đi kèm với một giả định vô cùng khắt khe: tính đa tuyến tính nghiêm ngặt (strict multilinearity). Điều này buộc các mẫu đặc trưng (như mô hình không gian của não) phải giống hệt nhau trên mọi lát cắt dữ liệu. Tuy nhiên, trong thực tế y sinh, dữ liệu hiếm khi hoàn hảo. Lấy ví dụ trong tín hiệu EEG hoặc fMRI, các đối tượng có thể có thời gian phản ứng khác nhau, tín hiệu bị lệch pha, hoặc độ dài thử nghiệm không bằng nhau (irregular-length trials). Việc ép buộc dữ liệu thành một tensor hoàn chỉnh bằng cách cắt bớt (truncation) hoặc bù số không (zero-padding) sẽ làm biến dạng cấu trúc tự nhiên của chúng.
-
-Mô hình PARAFAC2 được đề xuất như một bước đột phá bằng cách nới lỏng giả định đa tuyến tính, cho phép các nhân tố ở một chiều được quyền thay đổi linh hoạt qua các lát cắt (slices). Sự linh hoạt này giúp PARAFAC2 khám phá ra các quy luật động lực học không gian biến đổi theo thời gian (time-evolving spatial dynamics) — chẳng hạn như việc phân tách thành công đặc trưng không gian để phân biệt bệnh nhân tâm thần phân liệt (schizophrenia) với người khỏe mạnh. Đối với tập dữ liệu gồm $K$ ma trận (slices) $\mathbf{X}_k$ dọc theo mode không đồng đều, PARAFAC2 phân rã mỗi slice theo dạng:
+Khi đó biểu diễn matricization của CP là
 \begin{equation}
-    \mathbf{X}_k \approx \mathbf{P}_k \text{diag}(\mathbf{s}_k) \mathbf{V}^T,
+    \mathbf{X}_{(n)}
+    \approx
+    \mathbf{A}^{(n)}(\mathbf{Z}^{(n)})^\top.
+    \label{eq:dm-cp-matricized}
 \end{equation}
-trong đó ma trận trọng số $\mathbf{s}_k$ (tương ứng với Subject) và ma trận nhân tử không gian $\mathbf{V}$ (tương ứng với Channel) được dùng chung, nhưng ma trận nhân tử thời gian $\mathbf{P}_k$ được phép biến đổi số hàng linh hoạt tùy theo từng slice $k$. 
+Ở bước cập nhật mode $n$, CP-ALS cố định các factor matrices còn lại và giải bài toán least squares:
+\begin{equation}
+    \min_{\mathbf{A}^{(n)}}
+    \left\|
+    \mathbf{X}_{(n)}
+    -
+    \mathbf{A}^{(n)}(\mathbf{Z}^{(n)})^\top
+    \right\|_F^2.
+    \label{eq:dm-als-subproblem}
+\end{equation}
+Nghiệm normal-equation của bài toán con này có dạng
+\begin{equation}
+    \mathbf{A}^{(n)}
+    \leftarrow
+    \underbrace{\mathbf{X}_{(n)}\mathbf{Z}^{(n)}}_{\mathbf{M}^{(n)}\ \text{(MTTKRP)}}
+    \left(
+    \underbrace{(\mathbf{Z}^{(n)})^\top\mathbf{Z}^{(n)}}_{\boldsymbol{\Gamma}^{(n)}}
+    \right)^{\dagger},
+    \label{eq:dm-als-update}
+\end{equation}
+trong đó $\dagger$ là giả nghịch đảo. Ma trận Gram $\boldsymbol{\Gamma}^{(n)}$ không cần tạo trực tiếp từ $\mathbf{Z}^{(n)}$; nhờ tính chất của Khatri-Rao product, ta có
+\begin{equation}
+    \boldsymbol{\Gamma}^{(n)}
+    =
+    \underset{k\neq n}{\ast}
+    \left((\mathbf{A}^{(k)})^\top\mathbf{A}^{(k)}\right),
+    \label{eq:dm-als-gram}
+\end{equation}
+với $\ast$ là Hadamard product theo quy ước ở Bảng~\ref{tab:notation}. Phần tốn kém nhất là $\mathbf{M}^{(n)}=\mathbf{X}_{(n)}\mathbf{Z}^{(n)}$, thường được gọi là MTTKRP. Vì vậy, hiệu năng thực tế của CP-ALS phụ thuộc nhiều vào cách tính MTTKRP và cách lưu trữ tensor, đặc biệt với dữ liệu lớn hoặc thưa.
 
-Để duy trì tính duy nhất (uniqueness) giống như đặc tính vốn có của CP, PARAFAC2 áp đặt một ràng buộc chéo (cross-product constraint) thông minh: tích vô hướng $\mathbf{P}_k^T \mathbf{P}_k = \boldsymbol{\Phi}$ phải là một ma trận hằng số giống nhau với mọi $k$. Nhờ vậy, thuật toán PARAFAC2-ALS có thể chiếu (project) dữ liệu xuống một không gian chung, xếp chồng (stack) lại, thực hiện cập nhật ALS tiêu chuẩn, và sau đó dùng phép xoay Procrustes (Procrustes rotation) để khôi phục $\mathbf{P}_k$. Ưu điểm lớn nhất của PARAFAC2 là khả năng khai phá trọn vẹn dữ liệu gốc đa dạng kích thước mà không làm mất đi tính duy nhất và khả năng diễn giải, như đã được chúng tôi kiểm chứng trên thực nghiệm (Hình \ref{fig:parafac2-components}).
+\begin{algorithm}[H]
+\caption{CP-ALS cho bài toán~\eqref{eq:dm-cp-objective}}
+\label{alg:dm-cp-als}
+\begin{algorithmic}[1]
+    \Require Tensor $\mathcal{X}\in\mathbb{R}^{I_1\times\cdots\times I_N}$, rank $R$, ngưỡng dừng $\varepsilon$, số vòng lặp tối đa $T$.
+    \State Khởi tạo $\mathbf{A}^{(n)}\in\mathbb{R}^{I_n\times R}$ với $n=1,\ldots,N$.
+    \For{$t=1,\ldots,T$}
+        \For{$n=1,\ldots,N$}
+            \State Tính $\mathbf{Z}^{(n)}$ theo~\eqref{eq:dm-khatri-rao-chain}.
+            \State Tính MTTKRP $\mathbf{M}^{(n)}=\mathbf{X}_{(n)}\mathbf{Z}^{(n)}$.
+            \State Tính $\boldsymbol{\Gamma}^{(n)}$ theo~\eqref{eq:dm-als-gram}.
+            \State Cập nhật $\mathbf{A}^{(n)}\leftarrow \mathbf{M}^{(n)}(\boldsymbol{\Gamma}^{(n)})^\dagger$.
+            \State Chuẩn hóa các cột của $\mathbf{A}^{(n)}$ nếu cần để tránh scale ambiguity.
+        \EndFor
+        \State Tính fit hoặc sai số tái tạo của $[\![\mathbf{A}^{(1)},\ldots,\mathbf{A}^{(N)}]\!]$.
+        \If{sự thay đổi tương đối của sai số nhỏ hơn $\varepsilon$}
+            \State \Return $\mathbf{A}^{(1)},\ldots,\mathbf{A}^{(N)}$.
+        \EndIf
+    \EndFor
+    \State \Return $\mathbf{A}^{(1)},\ldots,\mathbf{A}^{(N)}$.
+\end{algorithmic}
+\end{algorithm}
 
-\paragraph{CMTF: Khai phá dữ liệu thông qua Phân tích kết hợp (Data Fusion).}
-Trong kỷ nguyên dữ liệu phân tán, thông tin thường được thu thập từ nhiều nền tảng đo lường khác nhau. Tuy khác biệt về cấu trúc, các tập dữ liệu này thường chia sẻ chung một cấu trúc nhân tố ở một vài khía cạnh. Lấy ví dụ, ta có một Tensor phân tích chuyển hóa động (Bệnh nhân $\times$ Chất chuyển hóa $\times$ Thời gian) và một Ma trận gen di truyền tĩnh (Bệnh nhân $\times$ Gen). Việc phân rã rời rạc từng khối sẽ làm đứt gãy các quy luật tương tác chéo.
+CP-ALS có ưu điểm là đơn giản, trực tiếp và phù hợp với nhiều ràng buộc trên factor. Tuy nhiên, đây vẫn là một bài toán tối ưu không lồi; thuật toán có thể phụ thuộc vào khởi tạo và đôi khi hội tụ chậm. Tutorial cũng nêu các hướng thay thế như CP-OPT, trong đó toàn bộ factor matrices được tối ưu đồng thời bằng phương pháp gradient-based hoặc quasi-Newton \cite{chrysos2025foundationsTutorial}.
 
-Mô hình Phân tích Kết hợp (CMTF - Coupled Matrix and Tensor Factorization) giải quyết bài toán này bằng cách gom các tập dữ liệu vào một hàm mục tiêu duy nhất. Các mô hình có thể "mượn" thông tin qua lại lẫn nhau để cải thiện tính duy nhất. Tùy thuộc vào bản chất dữ liệu, CMTF hỗ trợ nhiều mức độ liên kết:
-\begin{itemize}
-    \item \textbf{Liên kết cứng (Hard Coupling):} Bắt buộc các tập dữ liệu dùng chung chính xác một ma trận nhân tố. Ví dụ, chia sẻ chung hệ số Bệnh nhân $\mathbf{A}$ giữa tensor $\mathcal{X}$ và ma trận $\mathbf{Y}$:
+Với hàm mục tiêu
+\begin{equation}
+    f(\mathbf{A}^{(1)},\ldots,\mathbf{A}^{(N)})
+    =
+    \frac{1}{2}
+    \left\|
+    \mathcal{X}
+    -
+    [\![\mathbf{A}^{(1)},\ldots,\mathbf{A}^{(N)}]\!]
+    \right\|_F^2,
+    \label{eq:dm-cpopt-objective}
+\end{equation}
+gradient theo factor matrix mode $n$ là
+\begin{equation}
+    \nabla_{\mathbf{A}^{(n)}} f
+    =
+    \mathbf{A}^{(n)}\boldsymbol{\Gamma}^{(n)}
+    -
+    \mathbf{M}^{(n)},
+    \label{eq:dm-cpopt-gradient}
+\end{equation}
+với $\mathbf{M}^{(n)}$ và $\boldsymbol{\Gamma}^{(n)}$ được định nghĩa như trong CP-ALS. CP-OPT ghép tất cả factor matrices thành một vector tham số, tính $f$ và gradient~\eqref{eq:dm-cpopt-gradient}, rồi đưa vào một bộ tối ưu như nonlinear conjugate gradient hoặc L-BFGS. Cách này linh hoạt hơn khi thay đổi loss function, nhưng không loại bỏ bản chất không lồi của bài toán.
+
+\begin{algorithm}[H]
+\caption{CP-OPT dạng all-at-once}
+\label{alg:dm-cp-opt}
+\begin{algorithmic}[1]
+    \Require Tensor $\mathcal{X}$, rank $R$, khởi tạo $\mathbf{A}^{(1)},\ldots,\mathbf{A}^{(N)}$.
+    \State Vector hóa tất cả factor matrices thành tham số $\boldsymbol{\theta}$.
+    \Repeat
+        \State Từ $\boldsymbol{\theta}$, khôi phục các ma trận $\mathbf{A}^{(1)},\ldots,\mathbf{A}^{(N)}$.
+        \State Tính $f$ theo~\eqref{eq:dm-cpopt-objective}.
+        \For{$n=1,\ldots,N$}
+            \State Tính $\mathbf{M}^{(n)}$, $\boldsymbol{\Gamma}^{(n)}$, và $\nabla_{\mathbf{A}^{(n)}}f$ theo~\eqref{eq:dm-cpopt-gradient}.
+        \EndFor
+        \State Ghép các gradient thành $\nabla_{\boldsymbol{\theta}}f$.
+        \State Cập nhật $\boldsymbol{\theta}$ bằng optimizer gradient-based.
+    \Until{đạt tiêu chuẩn dừng}
+    \State \Return $\mathbf{A}^{(1)},\ldots,\mathbf{A}^{(N)}$.
+\end{algorithmic}
+\end{algorithm}
+
+Một điểm thực tế quan trọng trong data mining là dữ liệu thường không đầy đủ. Tutorial nhắc đến ba hướng xử lý \cite{chrysos2025foundationsTutorial}:
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{CP-WOPT}: đưa weight tensor $\mathcal{W}$ vào hàm mục tiêu để chỉ fit trên các entries quan sát được:
     \begin{equation}
-        \min_{\mathbf{A}, \mathbf{B}, \mathbf{C}, \mathbf{D}} \|\mathcal{X} - \llbracket \mathbf{A}, \mathbf{B}, \mathbf{C} \rrbracket \|_F^2 + \|\mathbf{Y} - \mathbf{A}\mathbf{D}^T\|_F^2.
+        \min
+        \left\|
+        \mathcal{W} \ast
+        \left(
+        \mathcal{X}
+        -
+        [\![\mathbf{A}^{(1)}, \ldots, \mathbf{A}^{(N)}]\!]
+        \right)
+        \right\|_F^2,
+        \label{eq:dm-cpwopt}
     \end{equation}
-    \item \textbf{Liên kết tuyến tính (ACMTF):} Phân tách rõ ràng giữa các nhân tố được chia sẻ (shared factors) và các nhân tố độc lập (unshared factors) của từng tập dữ liệu.
-    \item \textbf{Liên kết mềm (Soft Coupling):} Sử dụng các hàm phạt (penalizing) để các nhân tố chỉ cần có sự tương quan nhất định. Sự linh hoạt này thậm chí cho phép dùng thuật toán AO-ADMM để kết hợp các hàm mất mát khác nhau (ví dụ: chuẩn Frobenius cho tập này và Poisson cho tập khác).
+    trong đó $\mathcal{W}_{i_1,\ldots,i_N}=1$ nếu entry được quan sát và bằng $0$ nếu entry bị khuyết.
+    \item \textbf{GCP-OPT}: thay Frobenius loss bằng tổng loss theo từng phần tử,
+    \begin{equation}
+        \min
+        \sum_{i_1,\ldots,i_N}
+        \ell\!\left(
+        \mathcal{X}_{i_1,\ldots,i_N},
+        \hat{\mathcal{X}}_{i_1,\ldots,i_N}
+        \right),
+        \qquad
+        \hat{\mathcal{X}}=[\![\mathbf{A}^{(1)},\ldots,\mathbf{A}^{(N)}]\!],
+        \label{eq:dm-gcp}
+    \end{equation}
+    trong đó $\ell$ được chọn theo kiểu dữ liệu, chẳng hạn count data hoặc binary data.
+    \item \textbf{Expectation-Maximization for CP}: tại bước E, thay các entries khuyết bằng giá trị dự đoán của mô hình hiện tại; tại bước M, fit CP trên tensor đã được điền:
+    \begin{equation}
+        \widetilde{\mathcal{X}}
+        =
+        \mathcal{W}\ast\mathcal{X}
+        +
+        (\mathbf{1}-\mathcal{W})\ast\hat{\mathcal{X}}.
+        \label{eq:dm-em-impute}
+    \end{equation}
 \end{itemize}
-Lợi ích của CMTF không chỉ dừng ở mặt toán học. Nhờ quá trình \textit{data fusion}, nó tạo ra các đột phá lớn như hợp nhất tín hiệu fMRI (không gian cực nét) với EEG (thời gian cực nét), hay phát hiện các quy luật chuyển hóa có độ tương quan cực mạnh với chỉ số cơ thể (BMI) mà các phương pháp đơn lẻ như PCA hay CP không thể nào làm được.
+Các biến thể này giữ nguyên tinh thần CP nhưng điều chỉnh bài toán tối ưu cho dữ liệu thực tế hơn, thay vì giả định mọi entry đều quan sát được và nhiễu luôn có dạng Gaussian.
 
-%%------------------------------------------------------------
-\subsubsection{Ứng dụng}
+\subsubsection{PARAFAC2: nới lỏng strict multilinearity}
+\label{sec:dm-parafac2}
+
+CP giả định cấu trúc đa tuyến tính nghiêm ngặt: mỗi component có cùng factor theo từng mode trên toàn bộ tensor. Giả định này không luôn phù hợp. Trong các dữ liệu dạng chuỗi thời gian hoặc dữ liệu theo subject, một mode có thể thay đổi qua từng slice, chẳng hạn tín hiệu bị lệch thời gian, độ dài trial khác nhau, hoặc spatial dynamics thay đổi theo time window.
+
+PARAFAC2 được tutorial giới thiệu như một mô hình linh hoạt hơn CP, cho phép factor của một mode thay đổi qua các slice nhưng vẫn giữ đủ cấu trúc để có tính duy nhất tương tự CP \cite{chrysos2025foundationsTutorial}. Với một tập ma trận $\{\mathbf{X}_k\}_{k=1}^{K}$, mô hình có dạng:
+\begin{equation}
+    \mathbf{X}_k
+    \approx
+    \mathbf{U}_k \mathbf{S}_k \mathbf{V}^{\top},
+    \qquad k = 1,\ldots,K,
+    \label{eq:dm-parafac2}
+\end{equation}
+trong đó $\mathbf{U}_k$ được phép thay đổi theo slice $k$, $\mathbf{S}_k$ thường là ma trận đường chéo chứa trọng số component của slice, còn $\mathbf{V}$ là factor dùng chung. Để giữ mô hình nhận dạng được, PARAFAC2 áp đặt ràng buộc cross-product:
+\begin{equation}
+    \mathbf{U}_k^\top \mathbf{U}_k = \boldsymbol{\Phi},
+    \qquad \forall k.
+    \label{eq:dm-parafac2-constraint}
+\end{equation}
+Ràng buộc này cho phép $\mathbf{U}_k$ thay đổi, nhưng giữ quan hệ nội tại giữa các component ổn định qua các slice.
+
+Về mặt thuật toán, PARAFAC2-ALS thường viết $\mathbf{U}_k=\mathbf{Q}_k\mathbf{H}$ với $\mathbf{Q}_k^\top\mathbf{Q}_k=\mathbf{I}$. Khi đó
+\begin{equation}
+    \mathbf{U}_k^\top\mathbf{U}_k
+    =
+    \mathbf{H}^\top\mathbf{Q}_k^\top\mathbf{Q}_k\mathbf{H}
+    =
+    \mathbf{H}^\top\mathbf{H},
+    \label{eq:dm-parafac2-param}
+\end{equation}
+nên ràng buộc cross-product được thỏa mãn tự động. Thuật toán luân phiên giữa bước căn chỉnh từng slice bằng Procrustes và bước fit một CP model trên tensor đã được chiếu vào không gian chung.
+
+\begin{algorithm}[H]
+\caption{PARAFAC2-ALS ở mức khái niệm}
+\label{alg:dm-parafac2-als}
+\begin{algorithmic}[1]
+    \Require Các slice $\mathbf{X}_1,\ldots,\mathbf{X}_K$, rank $R$.
+    \State Khởi tạo $\mathbf{H}$, $\mathbf{V}$ và các ma trận đường chéo $\mathbf{S}_k$.
+    \Repeat
+        \For{$k=1,\ldots,K$}
+            \State Tìm $\mathbf{Q}_k$ trực chuẩn bằng bài toán Procrustes để căn chỉnh $\mathbf{X}_k$ với mô hình hiện tại.
+            \State Tạo slice đã chiếu $\mathbf{Q}_k^\top\mathbf{X}_k$.
+        \EndFor
+        \State Xếp các slice đã chiếu thành một tensor đều đặn.
+        \State Cập nhật $\mathbf{H}$, $\mathbf{V}$ và các trọng số trong $\mathbf{S}_k$ bằng một bước ALS kiểu CP.
+        \State Đặt $\mathbf{U}_k=\mathbf{Q}_k\mathbf{H}$ cho từng slice.
+    \Until{đạt tiêu chuẩn dừng}
+    \State \Return $\{\mathbf{U}_k\}_{k=1}^K$, $\{\mathbf{S}_k\}_{k=1}^K$, $\mathbf{V}$.
+\end{algorithmic}
+\end{algorithm}
+
+Trong tutorial, PARAFAC2 được dùng để minh họa các tình huống như time-evolving fMRI, chemometrics, longitudinal microbiome và các dữ liệu có individual temporal profiles \cite{chrysos2025foundationsTutorial}. Điểm chung của các ví dụ này là dữ liệu vẫn có nhiều mode liên quan nhau, nhưng không nên bị ép thành một tensor hoàn toàn đều đặn trước khi phân tích.
+
+\subsubsection{CMTF và data fusion}
+\label{sec:dm-parafac2-cmtf}
+
+Một hướng khác của Part III là joint analysis cho nhiều nguồn dữ liệu. Trong nhiều bài toán, ta không chỉ có một tensor duy nhất mà có nhiều ma trận/tensor đo trên cùng một nhóm đối tượng hoặc cùng một tập feature. Coupled Matrix and Tensor Factorization (CMTF) mô hình hóa tình huống này bằng cách cho các phân rã chia sẻ một hoặc nhiều factor matrices \cite{chrysos2025foundationsTutorial}.
+
+Ví dụ, giả sử $\mathcal{X}$ là tensor động theo subject, feature và time, còn $\mathbf{Y}$ là ma trận tĩnh theo subject và một nhóm feature khác. Một dạng CMTF đơn giản với hard coupling trên subject factor là:
+\begin{equation}
+    \min_{\mathbf{A},\mathbf{B},\mathbf{C},\mathbf{D}}
+    \left\|
+    \mathcal{X}
+    -
+    [\![\mathbf{A},\mathbf{B},\mathbf{C}]\!]
+    \right\|_F^2
+    +
+    \left\|
+    \mathbf{Y}
+    -
+    \mathbf{A}\mathbf{D}^{\top}
+    \right\|_F^2.
+    \label{eq:dm-cmtf}
+\end{equation}
+Factor $\mathbf{A}$ đóng vai trò liên kết hai nguồn dữ liệu vì cùng mô tả subject. Nhờ coupling, mô hình có thể dùng thông tin từ một nguồn để hỗ trợ nguồn còn lại; tutorial cũng nhấn mạnh coupling có thể cải thiện uniqueness properties trong một số trường hợp \cite{chrysos2025foundationsTutorial}.
+
+CMTF không chỉ có hard coupling. Tutorial trình bày một phổ các quan hệ coupling, từ hard coupling, linear coupling, shared/unshared factors, đến soft coupling \cite{chrysos2025foundationsTutorial}. Cách chọn coupling phụ thuộc vào giả định miền ứng dụng: hai dữ liệu có thật sự chia sẻ cùng factor hay chỉ liên quan tuyến tính/yếu với nhau. Đây là điểm khác biệt quan trọng so với việc phân tích từng dataset riêng lẻ rồi so sánh kết quả sau.
+
+Với hard coupling như~\eqref{eq:dm-cmtf}, thuật toán ALS có thể cập nhật từng factor matrix trong khi giữ các factor còn lại cố định. Điểm khác CP-ALS là factor được chia sẻ, ví dụ $\mathbf{A}$, nhận gradient hoặc normal equation từ cả tensor $\mathcal{X}$ và ma trận $\mathbf{Y}$. Nếu đặt
+\begin{equation}
+    \mathbf{Z}^{(1)}=\mathbf{C}\odot\mathbf{B},
+    \label{eq:dm-cmtf-z}
+\end{equation}
+thì bài toán con cho $\mathbf{A}$ có dạng
+\begin{equation}
+    \min_{\mathbf{A}}
+    \left\|
+    \mathbf{X}_{(1)}-\mathbf{A}(\mathbf{Z}^{(1)})^\top
+    \right\|_F^2
+    +
+    \left\|
+    \mathbf{Y}-\mathbf{A}\mathbf{D}^{\top}
+    \right\|_F^2.
+    \label{eq:dm-cmtf-a-subproblem}
+\end{equation}
+Normal equation tương ứng là
+\begin{equation}
+    \mathbf{A}
+    \left(
+    (\mathbf{Z}^{(1)})^\top\mathbf{Z}^{(1)}
+    +
+    \mathbf{D}^{\top}\mathbf{D}
+    \right)
+    =
+    \mathbf{X}_{(1)}\mathbf{Z}^{(1)}
+    +
+    \mathbf{Y}\mathbf{D}.
+    \label{eq:dm-cmtf-a-update}
+\end{equation}
+Các factor không chia sẻ, như $\mathbf{B}$, $\mathbf{C}$ hoặc $\mathbf{D}$, được cập nhật giống least squares thông thường trên dataset mà chúng thuộc về. Với linear coupling hoặc soft coupling, bước cập nhật thường không còn đóng gọn như~\eqref{eq:dm-cmtf-a-update}; tutorial liệt kê các hướng all-at-once optimization, Gauss-Newton và alternating methods như những lựa chọn thực tế \cite{chrysos2025foundationsTutorial}.
+
+\begin{algorithm}[H]
+\caption{ALS cho CMTF với hard coupling trên $\mathbf{A}$}
+\label{alg:dm-cmtf-als}
+\begin{algorithmic}[1]
+    \Require Tensor $\mathcal{X}$, ma trận $\mathbf{Y}$, rank $R$.
+    \State Khởi tạo $\mathbf{A}$, $\mathbf{B}$, $\mathbf{C}$, $\mathbf{D}$.
+    \Repeat
+        \State Cập nhật $\mathbf{A}$ bằng normal equation~\eqref{eq:dm-cmtf-a-update}.
+        \State Cập nhật $\mathbf{B}$ và $\mathbf{C}$ bằng các bước CP-ALS trên tensor $\mathcal{X}$ với $\mathbf{A}$ cố định.
+        \State Cập nhật $\mathbf{D}$ bằng least squares cho $\mathbf{Y}\approx\mathbf{A}\mathbf{D}^{\top}$.
+        \State Tính tổng sai số trong~\eqref{eq:dm-cmtf}.
+    \Until{đạt tiêu chuẩn dừng}
+    \State \Return $\mathbf{A}$, $\mathbf{B}$, $\mathbf{C}$, $\mathbf{D}$.
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection{Các ứng dụng trong tutorial}
 \label{sec:dm-applications}
-%%------------------------------------------------------------
 
-\paragraph{Ứng dụng 1: Phân tích điện não đồ (EEG - Motor Imagery).}
-Trong phần này, chúng tôi trình bày việc ứng dụng các thuật toán phân rã tensor trên bộ dữ liệu điện não đồ PhysioNet EEG Motor Movement/Imagery. Bộ dữ liệu này chứa các bản ghi điện não từ 109 đối tượng (subjects) khi thực hiện các tác vụ tưởng tượng vận động, thu thập qua 64 kênh điện cực (channels) với tần số lấy mẫu 160 Hz. 
-
-Để chuyển đổi dữ liệu thô thành một cấu trúc phù hợp cho phân rã tensor, chúng tôi thực hiện một chuỗi tiền xử lý (preprocessing) tiêu chuẩn: lọc thông dải (bandpass filter) từ 8–30 Hz để cô lập các dải sóng $\mu$ và $\beta$ liên quan mật thiết đến vận động; trích xuất các phân đoạn tín hiệu (epoch extraction) theo từng tác vụ; và hiệu chỉnh đường cơ sở (baseline correction). Sau bước này, dữ liệu được mô hình hóa thành một tensor bậc 3 hoàn chỉnh có kích thước $\text{Subjects} \times \text{Channels} \times \text{Time}$.
-
-Quá trình phân tích bắt đầu bằng việc xác định hạng (rank) tối ưu thông qua phương pháp Elbow và chỉ số CORCONDIA (Hình \ref{fig:eeg-elbow}). Khi đã có số hạng phù hợp, phân rã CP bóc tách tensor gốc thành 3 mode riêng biệt. Điểm mạnh lớn nhất của CP là khả năng diễn giải sinh lý học trực tiếp:
-\begin{itemize}
-    \item \textbf{Subject loadings}: Cung cấp mức độ kích hoạt của từng cá nhân, cho phép phân nhóm hoặc nhận diện các bệnh nhân có cùng đặc trưng sóng não.
-    \item \textbf{Channel topography}: Vẽ ra bản đồ không gian cực kỳ sắc nét về khu vực vỏ não đang bị kích thích. Điển hình như trong nghiên cứu động kinh (epileptic seizures), mode không gian này có khả năng định vị chính xác điểm khởi phát cơn động kinh.
-    \item \textbf{Temporal signature}: Khôi phục dạng sóng biến thiên theo thời gian thực của tín hiệu (chẳng hạn dạng sóng bất thường khi phát cơn động kinh).
+Tutorial dùng nhiều ví dụ để nhấn mạnh vai trò của tensor factorizations trong khai phá pattern có thể diễn giải \cite{chrysos2025foundationsTutorial}. Các ví dụ này không nhằm thay thế thực nghiệm riêng của báo cáo, mà dùng để định vị ý nghĩa của các mô hình đã nêu:
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{Metabolomics}: CP và CMTF được dùng để phân tích dữ liệu chuyển hóa theo subject, metabolite và time, qua đó tìm pattern phản ứng chuyển hóa và marker liên quan đến phenotype.
+    \item \textbf{Neuroscience}: CP/PARAFAC2 hỗ trợ phân tích EEG hoặc fMRI theo các mode không gian, thời gian và subject, đặc biệt khi quan tâm đến spatial dynamics hoặc localization.
+    \item \textbf{Gut microbiome}: dữ liệu longitudinal có thể được tổ chức theo participant, microbial taxon và time; tensor factorization giúp rút trích pattern cộng đồng vi sinh theo tiến trình thời gian.
+    \item \textbf{Data fusion}: CMTF cho phép phân tích chung các nguồn dữ liệu không đồng nhất, chẳng hạn dữ liệu động và dữ liệu tĩnh trên cùng một nhóm subject.
 \end{itemize}
 
-Sự vượt trội của CP lộ rõ nhất khi đặt lên bàn cân với SVD (Hình \ref{fig:cp-vs-svd}). SVD (tương đương PCA 2 chiều) bắt buộc phải gộp chung không gian và thời gian để tối đa hóa phương sai, dẫn đến việc các bản đồ địa hình (topography) bị trộn lẫn, nhòe và mất đi ý nghĩa cục bộ. Ngược lại, CP tháo gỡ hoàn toàn (disentangle) chúng thành các mẫu hình không gian - thời gian độc lập. Ngoài ra, khi gặp phải các tình huống thực tế như số lượng trial của từng subject khác nhau, mô hình PARAFAC2 (Hình \ref{fig:parafac2-eeg}) đã thể hiện sự ưu việt tuyệt đối bằng cách tự động căn chỉnh (align) các pha tín hiệu mà không cần đến kỹ thuật cắt gọt hay zero-padding làm hỏng dữ liệu.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.7\textwidth]{img/DM_02_0.png}
-    \caption{Xác định hạng $R$ (Rank selection) trên dữ liệu EEG bằng phương pháp Elbow.}
-    \label{fig:eeg-elbow}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=1.0\textwidth]{img/DM_02_2.png}
-    \caption{So sánh bản đồ địa hình (Topography) giữa CP và SVD. CP bóc tách được các cụm không gian rõ rệt, trong khi SVD làm trộn lẫn tín hiệu.}
-    \label{fig:cp-vs-svd}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{img/DM_03_1.png}
-    \caption{So sánh cấu trúc không gian (Spatial Components) giữa CP và PARAFAC2 khi dữ liệu có số lượng trial không đồng đều.}
-    \label{fig:parafac2-eeg}
-\end{figure}
-
-\paragraph{Ứng dụng 2: Đột phá trong Sinh học Hệ thống và Y học Chính xác.}
-Bên cạnh kết quả thực nghiệm trên các tập dữ liệu nhỏ lẻ, các nghiên cứu mới nhất tại các hội nghị học máy hàng đầu (tiêu biểu như tutorial tại NeurIPS) đã báo cáo hàng loạt thành công vang dội khi áp dụng Tensor (CP, PARAFAC2, CMTF) vào các cơ sở dữ liệu khổng lồ, đa phương thức. Bốn lĩnh vực tiêu biểu chứng minh sức mạnh "diễn giải trực tiếp" của Tensor bao gồm:
-
-\begin{itemize}
-    \item \textbf{Hệ chuyển hóa (Metabolomics):} Khám phá dấu ấn sinh học từ dữ liệu quang phổ NMR huyết tương của đoàn hệ COPSAC2000. Mô hình CMTF dựa trên PARAFAC2 đã được sử dụng để hợp nhất hai tập dữ liệu: trạng thái đói (Fasting - ma trận tĩnh) và trạng thái phản ứng sau bữa ăn (Dynamic - tensor 3 chiều). Mô hình đã trích xuất thành công các điểm số cá nhân (subject scores) có độ tương quan mạnh mẽ với biến số BMI, cho phép phân biệt rạch ròi nhóm bệnh nhân có chỉ số BMI cao và thấp.
-    
-    \item \textbf{Khoa học Thần kinh (Neuroscience - Động kinh):} Thay vì phân tích tín hiệu thô phức tạp, phân rã CP cho phép bóc tách trực tiếp tín hiệu EEG thành 3 nhân tố: Không gian, Thời gian và Tần số. Điển hình, mode Không gian đã chứng minh khả năng tự động định vị cực kỳ chính xác khu vực vỏ não phát khởi cơn động kinh. Đặc biệt, khi kết hợp EEG với ảnh chức năng fMRI qua mô hình CMTF, các nhà khoa học đã tái tạo được các mẫu hình não bộ với độ phân giải siêu nét cả về không gian lẫn thời gian.
-    
-    \item \textbf{Hệ vi sinh vật đường ruột (Gut Microbiome):} Khi phân tích dữ liệu theo dõi dọc (longitudinal data) của trẻ sơ sinh từ 1 tuần tuổi đến 6 năm tuổi, khối dữ liệu được mô hình hóa thành Tensor 3 chiều: (Người tham gia $\times$ Đơn vị phân loại vi sinh $\times$ Thời gian). Phân rã CP đã giúp kiểm soát sự chênh lệch về tốc độ phát triển cá nhân theo thời gian, từ đó khám phá ra các cấu trúc cộng đồng vi sinh hoàn toàn khác biệt trong quá trình trưởng thành của trẻ sinh thường (vaginal birth) so với trẻ sinh mổ (cesarean section).
-    
-    \item \textbf{Khoa học Thần kinh (Neuroscience - Động lực học Học tập):} Các nhà khoa học đã thu thập ảnh tín hiệu Calcium hai photon (two-photon calcium imaging) trên hàng ngàn tế bào vỏ não thính giác của chuột và tổ chức thành một Tensor bậc 4 khổng lồ: (Tế bào nơ-ron $\times$ Thời gian trong thử nghiệm $\times$ Lượt thử nghiệm $\times$ Kết quả học tập). Việc phân rã CP 4 thành phần cho phép thực hiện khám phá tri thức không giám sát (unsupervised discovery), bóc tách thành công các động lực học gắn liền với quá trình học tập nhanh (rapid learning), phân định rõ rệt với các phản xạ âm thanh thụ động.
-\end{itemize}
-
-Sự bùng nổ của Tensor Decomposition trong thập kỷ qua không chỉ dừng lại ở các phương trình đại số tuyến tính tối ưu khô khan. Bằng cách tôn trọng và duy trì trọn vẹn cấu trúc tự nhiên của dữ liệu đa chiều, Tensor thực sự đang trở thành "chìa khóa" cốt lõi giúp các nhà khoa học dữ liệu giải mã những hệ thống y sinh phức tạp nhất của con người.
+Từ các ví dụ này, thông điệp chính của Part III là: tensor factorizations hữu ích trong data mining không chỉ vì chúng nén dữ liệu, mà vì chúng bảo toàn các mode có ý nghĩa và tạo ra component có thể diễn giải. CP cung cấp mô hình nền tảng với uniqueness properties; PARAFAC2 nới lỏng giả định đa tuyến tính khi dữ liệu thay đổi qua slice; CMTF mở rộng sang phân tích đa nguồn. Các thách thức còn lại trong tutorial gồm chọn số component, đưa prior knowledge vào mô hình, xử lý dữ liệu thiếu hoặc lệch thời gian, và cân bằng giữa interpretability/uniqueness với độ phi tuyến của mô hình \cite{chrysos2025foundationsTutorial}.

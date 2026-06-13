@@ -1,1 +1,150 @@
-\subsection{Deep Learning}
+\subsection{Phân rã tensor trong học sâu}
+
+Phần này trình bày cách các cấu trúc tensor xuất hiện một cách tự nhiên trong
+học sâu hiện đại và cách phân rã tensor, hay low-rank factorization, được dùng
+để giảm bộ nhớ, giảm chi phí tính toán và thiết kế kiến trúc mới. Trong tutorial
+\textit{Foundations of Tensor Computations for AI}, phần deep learning được đặt
+trong bối cảnh ``AI scaling wall'': mô hình ngày càng lớn, chi phí huấn luyện và
+suy diễn ngày càng cao, trong khi khả năng triển khai trên thiết bị nhỏ và tài
+nguyên hạn chế ngày càng quan trọng \cite{chrysos2025tutorial}.
+
+\subsubsection{Tensor xuất hiện tự nhiên trong học sâu}
+
+Trong các thư viện như PyTorch, tensor thường được xem như một kiểu dữ liệu để
+lưu trữ mảng nhiều chiều. Tuy nhiên, góc nhìn của tutorial mạnh hơn: hình dạng
+nhiều chiều của dữ liệu và tham số phản ánh cấu trúc của bài toán, và cấu trúc
+đó có thể được khai thác bằng các phép toán multilinear.
+
+Một batch ảnh có dạng
+\begin{equation}
+    \mathcal{X} \in \mathbb{R}^{B \times C \times H \times W},
+\end{equation}
+trong đó $B$ là batch size, $C$ là số kênh, $H,W$ là chiều cao và chiều rộng.
+Trong mạng tích chập, trọng số của một lớp convolution là tensor bậc 4:
+\begin{equation}
+    \mathcal{W} \in \mathbb{R}^{C_{\mathrm{out}} \times C_{\mathrm{in}} \times K_H \times K_W}.
+\end{equation}
+Mỗi mode của tensor này có ý nghĩa riêng: kênh đầu ra, kênh đầu vào, và cấu trúc
+không gian của kernel.
+
+Trong Transformer, multi-head attention cũng là một phép tính tensor. Với
+$Q,K,V \in \mathbb{R}^{B \times H \times L \times d}$, trong đó $H$ là số head,
+$L$ là độ dài chuỗi và $d$ là head dimension, attention score có dạng
+\begin{equation}
+    A_{bhij} = \sum_k Q_{bhik}K_{bhjk},
+    \qquad
+    A \in \mathbb{R}^{B \times H \times L \times L}.
+\end{equation}
+Output của attention được tính bằng
+\begin{equation}
+    O_{bhi\delta} = \sum_j A_{bhij}V_{bhj\delta}.
+\end{equation}
+Hai biểu thức này cho thấy attention không chỉ là nhân ma trận thông thường:
+đó là một chuỗi tensor contractions có cấu trúc theo batch, head, token và
+feature dimension \cite{vaswani2017attention}.
+
+\subsubsection{Polynomial networks và tương tác bậc cao}
+
+Tutorial tiếp tục từ nhận xét rằng neural network cần học các tương tác phức tạp
+giữa đặc trưng đầu vào. Một cách mô hình hóa trực tiếp là viết hàm cần học dưới
+dạng khai triển đa thức. Với hàm $G:\mathbb{R}^{d}\rightarrow\mathbb{R}^{o}$,
+một mô hình bậc $N$ có thể viết dưới dạng:
+\begin{equation}
+    G(x) =
+    \beta
+    + \mathcal{W}^{[1]} \times_2 x
+    + \mathcal{W}^{[2]} \times_2 x \times_3 x
+    + \cdots
+    + \mathcal{W}^{[N]} \times_2 x \cdots \times_{N+1} x.
+\end{equation}
+Trong đó, $\mathcal{W}^{[n]}$ là tensor trọng số nắm bắt tương tác bậc $n$ giữa
+các bản sao của input. Cách viết này giải thích vì sao tensor là đối tượng tự
+nhiên khi mô hình cần biểu diễn high-order interactions.
+
+Vấn đề là số tham số của $\mathcal{W}^{[n]}$ tăng theo lũy thừa của $d$.
+Pi-nets giải quyết bằng cách tham số hóa các tensor trọng số dưới dạng phân rã
+low-rank, đặc biệt gắn với CP decomposition và tích Hadamard
+\cite{chrysos2020pi,chrysos2022augmenting}. Thay vì lưu toàn bộ tensor đầy đủ,
+mô hình học các factor matrices có kích thước nhỏ hơn. Đây là ví dụ đầu tiên cho
+thông điệp chính của tutorial: nếu weight tensor có cấu trúc, ta có thể học biểu
+diễn gọn hơn mà vẫn giữ được khả năng mô hình hóa.
+
+\subsubsection{Mixture of Experts dưới góc nhìn tensor}
+
+Mixture of Experts (MoE) là một ví dụ khác về việc trọng số của mô hình có thể
+được nhìn như tensor. Một linear layer thông thường tính
+\begin{equation}
+    y = W^\top x.
+\end{equation}
+Trong MoE, ta có $N$ expert với các ma trận $W_1,\ldots,W_N$ và hệ số gating
+$a_n(x)$ phụ thuộc đầu vào:
+\begin{equation}
+    y = \sum_{n=1}^{N} a_n(x) W_n^\top x.
+\end{equation}
+Nếu xếp các expert weights lại với nhau, ta thu được tensor
+\begin{equation}
+    \mathcal{W} \in \mathbb{R}^{N \times I \times O}.
+\end{equation}
+Góc nhìn này cho phép áp dụng tensor factorization vào MoE để chia sẻ tham số
+giữa các expert, giảm kích thước mô hình và vẫn cho phép expert specialization.
+Multilinear Mixture of Experts khai thác trực tiếp cấu trúc này để mở rộng MoE
+theo hướng factorized và hiệu quả hơn \cite{oldfield2024multilinear}.
+
+\subsubsection{LoRA và Low-Rank Tensor Adaptation}
+
+Trong fine-tuning truyền thống, mỗi ma trận trọng số $W_0 \in
+\mathbb{R}^{k \times d}$ có thể nhận một update đầy đủ $\Delta W$ cùng kích
+thước. Cách này linh hoạt nhưng rất tốn tham số, đặc biệt với language models
+lớn. LoRA đề xuất đóng băng $W_0$ và chỉ học một update low-rank
+\cite{hu2022lora}:
+\begin{equation}
+    h = W_0x + \frac{\alpha}{r}BAx,
+    \qquad
+    A \in \mathbb{R}^{r \times d},\quad
+    B \in \mathbb{R}^{k \times r}.
+\end{equation}
+Số tham số trainable giảm từ $kd$ xuống
+\begin{equation}
+    r(d+k) \ll kd
+\end{equation}
+khi rank $r$ nhỏ hơn nhiều so với $d,k$. Đây là lý do LoRA phù hợp với demo của
+đồ án: ta có thể đo trực tiếp trade-off giữa validation accuracy và số tham số
+trainable khi thay đổi rank $r$.
+
+LoRTA mở rộng tư duy này từ ma trận sang tensor adaptation: các update của nhiều
+layer và nhiều attention heads được xem như một đối tượng bậc cao, sau đó
+factor hóa và chia sẻ factor giữa các mode \cite{hounie2024lorta}. Nói cách
+khác, LoRA là trường hợp matrix low-rank adaptation, còn LoRTA đưa ý tưởng đó
+gần hơn với tensor factorization đúng nghĩa.
+
+\subsubsection{TensorGRAD và attention hiệu quả}
+
+Tutorial cũng đưa ra hai hướng deep learning khác. TensorGRAD xem gradient trong
+huấn luyện neural operators như một tensor bậc cao và dùng Tucker decomposition
+để giảm chi phí bộ nhớ \cite{loeschcke2025tensorgrad}. Thay vì lưu và cập nhật
+gradient đầy đủ, phương pháp làm việc với core tensor và sparse factors, phù hợp
+với các setting mà gradient quá lớn.
+
+Với attention, self-attention chuẩn có chi phí theo độ dài chuỗi gần $O(L^2)$.
+Poly-SA thay thế một phần cấu trúc softmax attention bằng các phép tính dựa trên
+tích Hadamard:
+\begin{equation}
+    f_{\mathrm{Poly\mbox{-}SA}}(X)
+    =
+    \Psi\big((XW_1) * (XW_2)\big) * XW_3,
+\end{equation}
+hướng tới chi phí gần tuyến tính theo số token \cite{babiloni2023polysa}. Gần
+đây, Tensor Product Attention tiếp tục khai thác tensor product để thiết kế lại
+attention blocks \cite{zhang2025tensorproductattention}. Các ví dụ này cho thấy
+tensor không chỉ dùng để nén tham số, mà còn có thể dẫn tới kiến trúc mới.
+
+\subsubsection{Liên hệ với demo}
+
+Trong phần thực nghiệm, nhóm hiện thực demo \textit{LoRA rank sweep} trên bài
+toán phân loại cảm xúc. Demo so sánh frozen encoder, full fine-tuning và LoRA
+với các rank khác nhau. Các metric chính gồm validation accuracy, validation
+loss, số tham số trainable và thời gian huấn luyện. Kết quả kỳ vọng không phải
+là LoRA luôn vượt full fine-tuning, mà là LoRA có thể đạt trade-off tốt hơn giữa
+hiệu năng và số tham số cần cập nhật. Điều này bám sát thông điệp của tutorial:
+khai thác cấu trúc low-rank/multilinear giúp mô hình học sâu trở nên gọn và dễ
+triển khai hơn.

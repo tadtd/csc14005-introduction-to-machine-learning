@@ -7,7 +7,15 @@
 \usepackage[colorlinks=true,linkcolor=blue, citecolor=red]{hyperref}
 \usepackage{url}
 \usepackage[a4paper, portrait, top=.75in, left=.75in, right=.75in, bottom=1in]{geometry}
-\usepackage[utf8]{vietnam}
+\usepackage{iftex}
+\ifXeTeX
+    \usepackage{fontspec}
+    \setmainfont{Times New Roman}
+    \setsansfont{Arial}
+    \setmonofont{Consolas}
+\else
+    \usepackage[utf8]{vietnam}
+\fi
 
 % For algorithm
 \usepackage{algorithm}

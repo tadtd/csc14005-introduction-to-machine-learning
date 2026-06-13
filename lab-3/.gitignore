@@ -14,3 +14,13 @@
 
 notes/
 *.synctex(busy)
+deep-learning/.venv/
+deep-learning/test/tmp/
+deep-learning/results/*
+!deep-learning/results/.gitkeep
+!deep-learning/results/runs/
+deep-learning/results/runs/*
+!deep-learning/results/runs/.gitkeep
+!deep-learning/results/plots/
+deep-learning/results/plots/*
+!deep-learning/results/plots/.gitkeep

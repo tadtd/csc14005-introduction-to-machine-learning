@@ -1,1 +1,142 @@
 \section{Thực nghiệm và phân tích kết quả}
+
+\subsection{Demo Deep Learning: LoRA Rank Sweep}
+
+Mục tiêu của demo là minh họa trực tiếp thông điệp của tutorial: factorization
+có thể làm giảm số tham số cần huấn luyện trong khi vẫn giữ được hiệu năng có
+ích. Demo sử dụng LoRA cho bài toán text classification và so sánh nhiều chế độ
+fine-tuning.
+
+\subsubsection{Thiết lập thực nghiệm}
+
+Code được đặt trong thư mục
+\texttt{lab-3/deep-learning}. Demo được thiết kế để chạy bằng \texttt{uv}, mỗi
+cấu hình thực nghiệm nằm trong thư mục \texttt{configs/}. Các thành phần chính:
+
+\begin{itemize}
+    \item \textbf{Dataset}: GLUE SST-2 sentiment classification. Khi không tải
+    được dataset, code có fallback toy dataset chỉ để kiểm tra pipeline.
+    \item \textbf{Model}: \texttt{prajjwal1/bert-tiny}, một Transformer nhỏ để
+    phù hợp với môi trường tính toán hạn chế.
+    \item \textbf{Baselines}: frozen encoder và full fine-tuning.
+    \item \textbf{LoRA configs}: rank $r \in \{2,4,8\}$.
+    \item \textbf{Metrics}: validation accuracy, validation loss, trainable
+    parameters, trainable ratio và thời gian chạy.
+\end{itemize}
+
+Tất cả các số liệu trong bảng kết quả được lấy trực tiếp từ file
+\texttt{results/runs/<run\_name>/metrics.json} và file tổng hợp
+\texttt{results/plots/metrics.csv}. Thực nghiệm hiện tại được chạy trên CPU
+với seed bằng 42, mỗi cấu hình chạy 3 epoch trên subset SST-2 gồm 5000 mẫu
+train và 872 mẫu validation.
+
+\subsubsection{Các cấu hình so sánh}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{lll}
+\toprule
+\textbf{Config} & \textbf{Chế độ} & \textbf{Mục đích} \\
+\midrule
+\texttt{frozen} & Freeze encoder, train classifier & Baseline nhẹ \\
+\texttt{full\_finetune} & Cập nhật toàn bộ model & Baseline mạnh \\
+\texttt{lora\_r2} & LoRA rank 2 & Compression cao \\
+\texttt{lora\_r4} & LoRA rank 4 & Trade-off trung bình \\
+\texttt{lora\_r8} & LoRA rank 8 & Rank cao hơn, nhiều tham số hơn \\
+\bottomrule
+\end{tabular}
+\caption{Các cấu hình thực nghiệm cho demo LoRA rank sweep.}
+\label{tab:lora-configs}
+\end{table}
+
+\subsubsection{Kết quả thực nghiệm}
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{lrrrrrr}
+\toprule
+\textbf{Config} & \textbf{Rank} & \textbf{Trainable params} &
+\textbf{Ratio} & \textbf{Best acc.} & \textbf{Final loss} & \textbf{Time (s)} \\
+\midrule
+Frozen & -- & 258 & 0.0059\% & 0.6525 & 0.6436 & 16.68 \\
+Full fine-tune & -- & 4,386,178 & 100.0000\% & 0.7569 & 0.4990 & 56.85 \\
+LoRA & 2 & 2,306 & 0.0525\% & 0.7248 & 0.5339 & 29.82 \\
+LoRA & 4 & 4,354 & 0.0992\% & 0.7351 & 0.5252 & 29.78 \\
+LoRA & 8 & 8,450 & 0.1923\% & 0.7511 & 0.5289 & 30.90 \\
+\bottomrule
+\end{tabular}
+\caption{Kết quả LoRA rank sweep trên SST-2 với \texttt{prajjwal1/bert-tiny}.}
+\label{tab:lora-results}
+\end{table}
+
+Kết quả cho thấy full fine-tuning đạt validation accuracy cao nhất, 0.7569,
+nhưng phải cập nhật toàn bộ 4,386,178 tham số. Trong khi đó, LoRA rank 8 đạt
+0.7511 validation accuracy với chỉ 8,450 tham số trainable, tương đương
+0.1923\% tổng số tham số. Những con số này minh họa trực tiếp thông điệp
+parameter-efficient adaptation: LoRA rank 8 chỉ thấp hơn full fine-tuning khoảng
+0.57 điểm accuracy, nhưng giảm chi phí cập nhật tham số khoảng 519 lần.
+
+Trong lần chạy này, best validation accuracy tăng khi rank LoRA tăng từ 2 lên 8.
+Tuy nhiên, kết quả này không nên được diễn giải như một quy luật đơn điệu tổng
+quát, vì mô hình nền là \texttt{bert-tiny}, dataset được chạy trên subset nhỏ,
+và mỗi cấu hình chỉ huấn luyện 3 epoch. Đáng chú ý, LoRA rank 8 đạt kết quả tốt
+nhất ở epoch 2 rồi giảm ở epoch 3, cho thấy việc chọn checkpoint tốt nhất hoặc
+early stopping vẫn quan trọng trong các thí nghiệm nhỏ.
+
+\subsubsection{Trực quan hóa kết quả}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.86\linewidth]{img/deep_learning/accuracy_vs_params.png}
+\caption{Validation accuracy theo số tham số trainable. Trục hoành dùng thang
+log để thấy rõ khoảng cách giữa LoRA và full fine-tuning.}
+\label{fig:lora-accuracy-vs-params}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.82\linewidth]{img/deep_learning/trainable_params.png}
+\caption{Số tham số trainable của từng cấu hình. LoRA chỉ cập nhật một phần rất
+nhỏ so với full fine-tuning.}
+\label{fig:lora-trainable-params}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.86\linewidth]{img/deep_learning/loss_curves.png}
+\caption{Validation loss theo epoch. Full fine-tuning giảm loss rõ nhất, trong
+khi các cấu hình LoRA hội tụ nhanh và ổn định sau 2--3 epoch.}
+\label{fig:lora-loss-curves}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.78\linewidth]{img/deep_learning/accuracy_vs_rank.png}
+\caption{Validation accuracy theo rank LoRA. Trong lần chạy này, rank 8 đạt
+best validation accuracy cao nhất trong các cấu hình LoRA được thử nghiệm.}
+\label{fig:lora-accuracy-vs-rank}
+\end{figure}
+
+\subsubsection{Nhận xét và hạn chế}
+
+Từ Bảng~\ref{tab:lora-results} và Hình~\ref{fig:lora-accuracy-vs-params}, có
+thể thấy LoRA tạo ra điểm nằm giữa frozen baseline và full fine-tuning: chất
+lượng gần với full fine-tuning hơn frozen baseline, nhưng số tham số trainable
+gần với frozen baseline hơn. LoRA rank 8 chỉ dùng 8,450 tham số trainable, ít
+hơn full fine-tuning khoảng 519 lần, nhưng đạt accuracy 0.7511 so với 0.7569.
+
+Hình~\ref{fig:lora-trainable-params} nhấn mạnh lợi ích về compression: khi dùng
+LoRA, số tham số cần cập nhật tăng theo rank nhưng vẫn rất nhỏ so với full
+fine-tuning. Hình~\ref{fig:lora-loss-curves} cho thấy full fine-tuning tiếp tục
+giảm validation loss sau 3 epoch, trong khi các cấu hình LoRA có xu hướng bão
+hòa sớm hơn. Đây là dấu hiệu hợp lý vì LoRA bị giới hạn capacity bởi rank thấp.
+
+Hạn chế của thực nghiệm là model được chọn nhỏ để phù hợp tài nguyên tính toán,
+thời gian huấn luyện chỉ 3 epoch và tập train chỉ dùng subset 5000 mẫu. Do đó,
+kết quả không nên được diễn giải như một benchmark đầy đủ cho LoRA trên mọi tác
+vụ NLP. Tuy nhiên, demo đã đáp ứng mục tiêu của đồ án: có baseline, có mở rộng
+rank sweep, có metric định lượng, có visualization, và minh họa rõ ràng
+trade-off giữa hiệu năng và số tham số cần cập nhật.

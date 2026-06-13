@@ -26,7 +26,7 @@ cấu hình thực nghiệm nằm trong thư mục \texttt{configs/}. Các thàn
 
 Tất cả các số liệu trong bảng kết quả được lấy trực tiếp từ file
 \texttt{results/runs/<run\_name>/metrics.json} và file tổng hợp
-\texttt{results/plots/metrics.csv}. Thực nghiệm được chạy trên GPU Tesla T4
+\texttt{results/plots/metrics.csv}. Thực nghiệm hiện tại được chạy trên CPU
 với seed bằng 42, mỗi cấu hình chạy 3 epoch trên subset SST-2 gồm 5000 mẫu
 train và 872 mẫu validation.
 
@@ -61,30 +61,30 @@ train và 872 mẫu validation.
 \textbf{Config} & \textbf{Rank} & \textbf{Trainable params} &
 \textbf{Ratio} & \textbf{Best acc.} & \textbf{Final loss} & \textbf{Time (s)} \\
 \midrule
-Frozen & -- & 258 & 0.0059\% & 0.6433 & 0.6418 & 4.03 \\
-Full fine-tune & -- & 4,386,178 & 100.0000\% & 0.7661 & 0.5032 & 7.99 \\
-LoRA & 2 & 2,306 & 0.0525\% & 0.7385 & 0.5354 & 6.78 \\
-LoRA & 4 & 4,354 & 0.0992\% & 0.7305 & 0.5466 & 6.72 \\
-LoRA & 8 & 8,450 & 0.1923\% & 0.7328 & 0.5331 & 6.79 \\
+Frozen & -- & 258 & 0.0059\% & 0.6525 & 0.6436 & 16.68 \\
+Full fine-tune & -- & 4,386,178 & 100.0000\% & 0.7569 & 0.4990 & 56.85 \\
+LoRA & 2 & 2,306 & 0.0525\% & 0.7248 & 0.5339 & 29.82 \\
+LoRA & 4 & 4,354 & 0.0992\% & 0.7351 & 0.5252 & 29.78 \\
+LoRA & 8 & 8,450 & 0.1923\% & 0.7511 & 0.5289 & 30.90 \\
 \bottomrule
 \end{tabular}
 \caption{Kết quả LoRA rank sweep trên SST-2 với \texttt{prajjwal1/bert-tiny}.}
 \label{tab:lora-results}
 \end{table}
 
-Kết quả cho thấy full fine-tuning đạt validation accuracy cao nhất, 0.7661,
-nhưng phải cập nhật toàn bộ 4,386,178 tham số. Trong khi đó, LoRA rank 2 đạt
-0.7385 validation accuracy với chỉ 2,306 tham số trainable, tương đương
-0.0525\% tổng số tham số. Những con số này minh họa trực tiếp thông điệp
-parameter-efficient adaptation: LoRA mất khoảng 2.75 điểm accuracy so với full
-fine-tuning, nhưng giảm gần như toàn bộ chi phí cập nhật tham số.
+Kết quả cho thấy full fine-tuning đạt validation accuracy cao nhất, 0.7569,
+nhưng phải cập nhật toàn bộ 4,386,178 tham số. Trong khi đó, LoRA rank 8 đạt
+0.7511 validation accuracy với chỉ 8,450 tham số trainable, tương đương
+0.1923\% tổng số tham số. Những con số này minh họa trực tiếp thông điệp
+parameter-efficient adaptation: LoRA rank 8 chỉ thấp hơn full fine-tuning khoảng
+0.57 điểm accuracy, nhưng giảm chi phí cập nhật tham số khoảng 519 lần.
 
-Một điểm đáng chú ý là rank cao hơn không nhất thiết cho kết quả tốt hơn trong
-thiết lập này. LoRA rank 2 tốt hơn rank 4 và rank 8 về best validation accuracy.
-Điều này có thể đến từ việc mô hình nền là \texttt{bert-tiny}, dataset được chạy
-trên subset nhỏ, và mỗi cấu hình chỉ huấn luyện 3 epoch. Vì vậy, kết luận phù
-hợp không phải là rank 2 luôn tốt nhất, mà là rank nhỏ đã đủ để đạt trade-off
-tốt trong thực nghiệm minh họa này.
+Trong lần chạy này, best validation accuracy tăng khi rank LoRA tăng từ 2 lên 8.
+Tuy nhiên, kết quả này không nên được diễn giải như một quy luật đơn điệu tổng
+quát, vì mô hình nền là \texttt{bert-tiny}, dataset được chạy trên subset nhỏ,
+và mỗi cấu hình chỉ huấn luyện 3 epoch. Đáng chú ý, LoRA rank 8 đạt kết quả tốt
+nhất ở epoch 2 rồi giảm ở epoch 3, cho thấy việc chọn checkpoint tốt nhất hoặc
+early stopping vẫn quan trọng trong các thí nghiệm nhỏ.
 
 \subsubsection{Trực quan hóa kết quả}
 
@@ -115,8 +115,8 @@ khi các cấu hình LoRA hội tụ nhanh và ổn định sau 2--3 epoch.}
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.78\linewidth]{img/deep_learning/accuracy_vs_rank.png}
-\caption{Validation accuracy theo rank LoRA. Trong thiết lập này, rank 2 cho
-trade-off tốt nhất trong các cấu hình LoRA được thử nghiệm.}
+\caption{Validation accuracy theo rank LoRA. Trong lần chạy này, rank 8 đạt
+best validation accuracy cao nhất trong các cấu hình LoRA được thử nghiệm.}
 \label{fig:lora-accuracy-vs-rank}
 \end{figure}
 
@@ -125,8 +125,8 @@ trade-off tốt nhất trong các cấu hình LoRA được thử nghiệm.}
 Từ Bảng~\ref{tab:lora-results} và Hình~\ref{fig:lora-accuracy-vs-params}, có
 thể thấy LoRA tạo ra điểm nằm giữa frozen baseline và full fine-tuning: chất
 lượng gần với full fine-tuning hơn frozen baseline, nhưng số tham số trainable
-gần với frozen baseline hơn. LoRA rank 2 chỉ dùng 2,306 tham số trainable, ít
-hơn full fine-tuning khoảng 1902 lần, nhưng đạt accuracy 0.7385 so với 0.7661.
+gần với frozen baseline hơn. LoRA rank 8 chỉ dùng 8,450 tham số trainable, ít
+hơn full fine-tuning khoảng 519 lần, nhưng đạt accuracy 0.7511 so với 0.7569.
 
 Hình~\ref{fig:lora-trainable-params} nhấn mạnh lợi ích về compression: khi dùng
 LoRA, số tham số cần cập nhật tăng theo rank nhưng vẫn rất nhỏ so với full

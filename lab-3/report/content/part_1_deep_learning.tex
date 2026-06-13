@@ -1,32 +1,98 @@
 \subsection{Phân rã tensor trong học sâu}
+\makeatletter
+\@ifundefined{example}{\newtheorem{example}{Ví dụ}[subsection]}{}
+\makeatother
 
-Phần này trình bày cách các cấu trúc tensor xuất hiện một cách tự nhiên trong
-học sâu hiện đại và cách phân rã tensor, hay low-rank factorization, được dùng
-để giảm bộ nhớ, giảm chi phí tính toán và thiết kế kiến trúc mới. Trong tutorial
-\textit{Foundations of Tensor Computations for AI}, phần deep learning được đặt
-trong bối cảnh ``AI scaling wall'': mô hình ngày càng lớn, chi phí huấn luyện và
-suy diễn ngày càng cao, trong khi khả năng triển khai trên thiết bị nhỏ và tài
-nguyên hạn chế ngày càng quan trọng \cite{chrysos2025tutorial}.
+\subsubsection{Mở đầu}
+
+Phần này trình bày cách các cấu trúc tensor xuất hiện tự nhiên trong học sâu hiện đại
+và cách phân rã tensor, hay low-rank factorization, được dùng để giảm bộ nhớ, giảm
+chi phí tính toán và thiết kế kiến trúc mới. Trong tutorial \textit{Foundations of
+Tensor Computations for AI}, phần học sâu được đặt trong bối cảnh ``AI scaling wall'':
+mô hình ngày càng lớn, chi phí huấn luyện và suy diễn ngày càng cao, trong khi khả
+năng triển khai trên thiết bị nhỏ và tài nguyên hạn chế ngày càng quan trọng
+\cite{chrysos2025tutorial}.
+
+Điểm quan trọng của tutorial không phải là ``tensor'' chỉ là một kiểu dữ liệu trong
+PyTorch. Thông điệp chính là: khi dữ liệu, trọng số, gradient hoặc tập các expert có
+cấu trúc nhiều mode, ta có thể khai thác cấu trúc đó bằng các phép toán multilinear.
+Do đó tensor decomposition trở thành một công cụ thống nhất cho ba mục tiêu: nén mô
+hình, tăng tốc tính toán và hiểu rõ hơn các thành phần bên trong mô hình.
+
+Trong phạm vi học sâu, tutorial nhấn mạnh một số hướng tiêu biểu: tensor hóa
+convolution và attention, polynomial networks, Mixture of Experts, LoRA/LoRTA,
+TensorGRAD và các biến thể attention hiệu quả. Bảng~\ref{tab:dl-tensor-directions}
+tóm tắt vai trò của từng hướng.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Các hướng học sâu trong tutorial dưới góc nhìn tensor.}
+\label{tab:dl-tensor-directions}
+\begin{tabular}{@{}p{0.23\textwidth}p{0.34\textwidth}p{0.34\textwidth}@{}}
+\toprule
+\textbf{Hướng} & \textbf{Đối tượng tensor} & \textbf{Ý nghĩa chính} \\
+\midrule
+Convolution và attention &
+Tensor dữ liệu, tensor trọng số, tensor attention scores &
+Cho thấy các mô hình học sâu phổ biến vốn đã là chuỗi tensor contractions có cấu trúc. \\
+\addlinespace
+Polynomial networks / Pi-nets &
+Tensor trọng số cho tương tác bậc cao giữa các đặc trưng &
+Biểu diễn high-order interactions nhưng tránh bùng nổ tham số bằng CP decomposition. \\
+\addlinespace
+Mixture of Experts &
+Tensor ghép các ma trận trọng số của nhiều expert &
+Chia sẻ tham số giữa expert và kiểm soát trade-off giữa chuyên biệt hóa và kích thước mô hình. \\
+\addlinespace
+LoRA / LoRTA &
+Matrix hoặc tensor update khi fine-tuning mô hình lớn &
+Giảm số tham số trainable bằng low-rank adaptation; LoRTA mở rộng từ ma trận sang tensor nhiều mode. \\
+\addlinespace
+TensorGRAD và attention hiệu quả &
+Tensor gradient hoặc tensor tương tác token-head-feature &
+Giảm chi phí bộ nhớ/tính toán và gợi ý các khối kiến trúc mới dựa trên tensor product. \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \subsubsection{Tensor xuất hiện tự nhiên trong học sâu}
 
-Trong các thư viện như PyTorch, tensor thường được xem như một kiểu dữ liệu để
-lưu trữ mảng nhiều chiều. Tuy nhiên, góc nhìn của tutorial mạnh hơn: hình dạng
-nhiều chiều của dữ liệu và tham số phản ánh cấu trúc của bài toán, và cấu trúc
-đó có thể được khai thác bằng các phép toán multilinear.
+Trong các thư viện như PyTorch, tensor thường được xem như một kiểu dữ liệu để lưu trữ
+mảng nhiều chiều. Tuy nhiên, góc nhìn của tutorial mạnh hơn: hình dạng nhiều chiều của
+dữ liệu và tham số phản ánh cấu trúc của bài toán, và cấu trúc đó có thể được khai thác
+bằng các phép toán multilinear.
 
+\paragraph{Batch ảnh và convolution.}
 Một batch ảnh có dạng
 \begin{equation}
     \mathcal{X} \in \mathbb{R}^{B \times C \times H \times W},
 \end{equation}
-trong đó $B$ là batch size, $C$ là số kênh, $H,W$ là chiều cao và chiều rộng.
-Trong mạng tích chập, trọng số của một lớp convolution là tensor bậc 4:
+trong đó $B$ là batch size, $C$ là số kênh, $H,W$ là chiều cao và chiều rộng. Trong mạng
+tích chập, trọng số của một lớp convolution là tensor bậc 4:
 \begin{equation}
-    \mathcal{W} \in \mathbb{R}^{C_{\mathrm{out}} \times C_{\mathrm{in}} \times K_H \times K_W}.
+    \mathcal{W} \in
+    \mathbb{R}^{C_{\mathrm{out}} \times C_{\mathrm{in}} \times K_H \times K_W}.
 \end{equation}
-Mỗi mode của tensor này có ý nghĩa riêng: kênh đầu ra, kênh đầu vào, và cấu trúc
-không gian của kernel.
+Mỗi mode của tensor này có ý nghĩa riêng: kênh đầu ra, kênh đầu vào, chiều cao kernel
+và chiều rộng kernel. Bỏ qua padding/stride để đơn giản, phép convolution có thể viết
+như một tensor contraction:
+\begin{equation}
+    Y_{b,o,h,w}
+    =
+    \sum_{c=1}^{C_{\mathrm{in}}}
+    \sum_{u=1}^{K_H}
+    \sum_{v=1}^{K_W}
+    \mathcal{W}_{o,c,u,v}\,
+    \mathcal{X}_{b,c,h+u,w+v}.
+    \label{eq:conv-tensor-contraction}
+\end{equation}
+Cách viết này cho thấy convolution không chỉ là một ``filter trượt'' về mặt trực giác:
+nó là phép co tensor theo các mode kênh và không gian. Nếu tensor trọng số có cấu trúc
+low-rank theo các mode này, ta có thể thay một convolution lớn bằng nhiều phép tính nhỏ
+hơn.
 
+\paragraph{Attention như tensor contraction.}
 Trong Transformer, multi-head attention cũng là một phép tính tensor. Với
 $Q,K,V \in \mathbb{R}^{B \times H \times L \times d}$, trong đó $H$ là số head,
 $L$ là độ dài chuỗi và $d$ là head dimension, attention score có dạng
@@ -34,21 +100,34 @@ $L$ là độ dài chuỗi và $d$ là head dimension, attention score có dạn
     A_{bhij} = \sum_k Q_{bhik}K_{bhjk},
     \qquad
     A \in \mathbb{R}^{B \times H \times L \times L}.
+    \label{eq:attention-score-tensor}
 \end{equation}
 Output của attention được tính bằng
 \begin{equation}
     O_{bhi\delta} = \sum_j A_{bhij}V_{bhj\delta}.
+    \label{eq:attention-output-tensor}
 \end{equation}
-Hai biểu thức này cho thấy attention không chỉ là nhân ma trận thông thường:
-đó là một chuỗi tensor contractions có cấu trúc theo batch, head, token và
-feature dimension \cite{vaswani2017attention}.
+Hai biểu thức này cho thấy attention không chỉ là nhân ma trận thông thường: đó là một
+chuỗi tensor contractions có cấu trúc theo batch, head, token và feature dimension
+\cite{vaswani2017attention}. Chi phí lớn nhất nằm ở tensor
+$A \in \mathbb{R}^{B \times H \times L \times L}$, tức tăng bậc hai theo độ dài chuỗi.
+Vì vậy, nhiều phương pháp attention hiệu quả cố gắng thay đổi cách biểu diễn hoặc xấp
+xỉ tensor tương tác token-token này.
+
+\begin{example}[Attention score như một lát cắt tensor]
+Với một batch cố định $b$ và một head cố định $h$, ma trận
+$A_{bh::} \in \mathbb{R}^{L \times L}$ mô tả mức độ mỗi token truy vấn chú ý đến từng
+token khóa. Khi xét đồng thời tất cả batch và tất cả head, tập các ma trận này tạo thành
+một tensor bậc 4. Do đó low-rank structure có thể xuất hiện không chỉ trong từng ma
+trận attention riêng lẻ, mà còn dọc theo mode head hoặc batch.
+\end{example}
 
 \subsubsection{Polynomial networks và tương tác bậc cao}
 
-Tutorial tiếp tục từ nhận xét rằng neural network cần học các tương tác phức tạp
-giữa đặc trưng đầu vào. Một cách mô hình hóa trực tiếp là viết hàm cần học dưới
-dạng khai triển đa thức. Với hàm $G:\mathbb{R}^{d}\rightarrow\mathbb{R}^{o}$,
-một mô hình bậc $N$ có thể viết dưới dạng:
+Tutorial tiếp tục từ nhận xét rằng neural network cần học các tương tác phức tạp giữa
+đặc trưng đầu vào. Một cách mô hình hóa trực tiếp là viết hàm cần học dưới dạng khai
+triển đa thức. Với hàm $G:\mathbb{R}^{d}\rightarrow\mathbb{R}^{o}$, một mô hình bậc
+$N$ có thể viết dưới dạng:
 \begin{equation}
     G(x) =
     \beta
@@ -56,23 +135,50 @@ một mô hình bậc $N$ có thể viết dưới dạng:
     + \mathcal{W}^{[2]} \times_2 x \times_3 x
     + \cdots
     + \mathcal{W}^{[N]} \times_2 x \cdots \times_{N+1} x.
+    \label{eq:polynomial-network}
 \end{equation}
-Trong đó, $\mathcal{W}^{[n]}$ là tensor trọng số nắm bắt tương tác bậc $n$ giữa
-các bản sao của input. Cách viết này giải thích vì sao tensor là đối tượng tự
-nhiên khi mô hình cần biểu diễn high-order interactions.
+Trong đó, $\mathcal{W}^{[n]}$ là tensor trọng số nắm bắt tương tác bậc $n$ giữa các bản
+sao của input. Ví dụ, bậc 2 mô hình hóa tương tác cặp đặc trưng, còn bậc 3 mô hình hóa
+tương tác bộ ba đặc trưng.
 
-Vấn đề là số tham số của $\mathcal{W}^{[n]}$ tăng theo lũy thừa của $d$.
-Pi-nets giải quyết bằng cách tham số hóa các tensor trọng số dưới dạng phân rã
-low-rank, đặc biệt gắn với CP decomposition và tích Hadamard
-\cite{chrysos2020pi,chrysos2022augmenting}. Thay vì lưu toàn bộ tensor đầy đủ,
-mô hình học các factor matrices có kích thước nhỏ hơn. Đây là ví dụ đầu tiên cho
-thông điệp chính của tutorial: nếu weight tensor có cấu trúc, ta có thể học biểu
-diễn gọn hơn mà vẫn giữ được khả năng mô hình hóa.
+\begin{definition}[Tensor trọng số cho tương tác bậc cao]
+Với đầu vào $x \in \mathbb{R}^{d}$ và đầu ra $G(x)\in\mathbb{R}^{o}$, tensor
+$\mathcal{W}^{[n]} \in \mathbb{R}^{o \times d \times \cdots \times d}$ mã hóa toàn bộ
+hệ số của các đơn thức bậc $n$. Một phần tử
+$\mathcal{W}^{[n]}_{j,i_1,\ldots,i_n}$ cho biết mức đóng góp của tích
+$x_{i_1}\cdots x_{i_n}$ vào output thứ $j$.
+\end{definition}
+
+Vấn đề là số tham số của $\mathcal{W}^{[n]}$ tăng theo $O(od^n)$, rất nhanh khi $d$ và
+$n$ tăng. Pi-nets giải quyết bằng cách tham số hóa các tensor trọng số dưới dạng phân
+rã low-rank, đặc biệt gắn với CP decomposition và tích Hadamard
+\cite{chrysos2020pi,chrysos2022augmenting}. Một xấp xỉ CP cho tensor bậc $n$ có dạng
+\begin{equation}
+    \mathcal{W}^{[n]}
+    \approx
+    \sum_{r=1}^{R}
+    a^{(0)}_r \circ a^{(1)}_r \circ \cdots \circ a^{(n)}_r,
+    \label{eq:cp-polynomial-weight}
+\end{equation}
+trong đó $a^{(0)}_r \in \mathbb{R}^{o}$ và
+$a^{(m)}_r \in \mathbb{R}^{d}$ với $m=1,\ldots,n$. Khi thay
+\eqref{eq:cp-polynomial-weight} vào \eqref{eq:polynomial-network}, thành phần bậc
+$n$ có thể tính gần như
+\begin{equation}
+    \sum_{r=1}^{R}
+    a^{(0)}_r
+    \prod_{m=1}^{n}
+    \langle a^{(m)}_r, x\rangle.
+    \label{eq:cp-polynomial-forward}
+\end{equation}
+Nhờ vậy, số tham số giảm từ $O(od^n)$ xuống khoảng $O(R(o+nd))$. Đây là ví dụ rõ ràng
+cho thông điệp chính của tutorial: nếu weight tensor có cấu trúc, ta có thể học biểu
+diễn gọn hơn mà vẫn giữ khả năng mô hình hóa tương tác bậc cao.
 
 \subsubsection{Mixture of Experts dưới góc nhìn tensor}
 
-Mixture of Experts (MoE) là một ví dụ khác về việc trọng số của mô hình có thể
-được nhìn như tensor. Một linear layer thông thường tính
+Mixture of Experts (MoE) là một ví dụ khác về việc trọng số của mô hình có thể được
+nhìn như tensor. Một linear layer thông thường tính
 \begin{equation}
     y = W^\top x.
 \end{equation}
@@ -80,71 +186,144 @@ Trong MoE, ta có $N$ expert với các ma trận $W_1,\ldots,W_N$ và hệ số
 $a_n(x)$ phụ thuộc đầu vào:
 \begin{equation}
     y = \sum_{n=1}^{N} a_n(x) W_n^\top x.
+    \label{eq:moe-standard}
 \end{equation}
 Nếu xếp các expert weights lại với nhau, ta thu được tensor
 \begin{equation}
     \mathcal{W} \in \mathbb{R}^{N \times I \times O}.
+    \label{eq:moe-weight-tensor}
 \end{equation}
-Góc nhìn này cho phép áp dụng tensor factorization vào MoE để chia sẻ tham số
-giữa các expert, giảm kích thước mô hình và vẫn cho phép expert specialization.
-Multilinear Mixture of Experts khai thác trực tiếp cấu trúc này để mở rộng MoE
-theo hướng factorized và hiệu quả hơn \cite{oldfield2024multilinear}.
+Mode thứ nhất đánh chỉ số expert, mode thứ hai là input dimension và mode thứ ba là
+output dimension. Cách nhìn này làm rõ một câu hỏi thiết kế quan trọng: các expert nên
+độc lập hoàn toàn, hay nên chia sẻ một phần cấu trúc?
+
+Multilinear Mixture of Experts khai thác trực tiếp cấu trúc này bằng cách factor hóa
+tensor expert weights \cite{oldfield2024multilinear}. Một dạng xấp xỉ đơn giản là
+\begin{equation}
+    \mathcal{W}_{n,i,o}
+    \approx
+    \sum_{r=1}^{R}
+    S_{n,r} U_{i,r} V_{o,r}.
+    \label{eq:factorized-moe}
+\end{equation}
+Ở đây $S$ điều khiển cách mỗi expert kết hợp các thành phần ẩn, còn $U,V$ là các factor
+được chia sẻ trên input và output dimensions. Khi $R$ nhỏ, mô hình có ít tham số hơn
+so với việc lưu toàn bộ $N$ ma trận expert riêng biệt. Đồng thời, mỗi expert vẫn có thể
+khác nhau thông qua hàng $S_{n,:}$. Đây là trade-off giữa \emph{parameter sharing} và
+\emph{expert specialization}.
 
 \subsubsection{LoRA và Low-Rank Tensor Adaptation}
 
-Trong fine-tuning truyền thống, mỗi ma trận trọng số $W_0 \in
-\mathbb{R}^{k \times d}$ có thể nhận một update đầy đủ $\Delta W$ cùng kích
-thước. Cách này linh hoạt nhưng rất tốn tham số, đặc biệt với language models
-lớn. LoRA đề xuất đóng băng $W_0$ và chỉ học một update low-rank
-\cite{hu2022lora}:
+Trong fine-tuning truyền thống, mỗi ma trận trọng số
+$W_0 \in \mathbb{R}^{k \times d}$ có thể nhận một update đầy đủ $\Delta W$ cùng kích
+thước. Cách này linh hoạt nhưng rất tốn tham số, đặc biệt với language models lớn.
+LoRA đề xuất đóng băng $W_0$ và chỉ học một update low-rank \cite{hu2022lora}:
 \begin{equation}
     h = W_0x + \frac{\alpha}{r}BAx,
     \qquad
     A \in \mathbb{R}^{r \times d},\quad
     B \in \mathbb{R}^{k \times r}.
+    \label{eq:lora}
 \end{equation}
 Số tham số trainable giảm từ $kd$ xuống
 \begin{equation}
     r(d+k) \ll kd
+    \label{eq:lora-params}
 \end{equation}
-khi rank $r$ nhỏ hơn nhiều so với $d,k$. Đây là lý do LoRA phù hợp với demo của
-đồ án: ta có thể đo trực tiếp trade-off giữa validation accuracy và số tham số
-trainable khi thay đổi rank $r$.
+khi rank $r$ nhỏ hơn nhiều so với $d,k$. Rank $r$ vì vậy là siêu tham số trực tiếp điều
+khiển trade-off: rank nhỏ giúp tiết kiệm tham số nhưng có thể thiếu khả năng thích nghi;
+rank lớn tăng khả năng biểu diễn nhưng làm mất dần lợi thế nén.
 
-LoRTA mở rộng tư duy này từ ma trận sang tensor adaptation: các update của nhiều
-layer và nhiều attention heads được xem như một đối tượng bậc cao, sau đó
-factor hóa và chia sẻ factor giữa các mode \cite{hounie2024lorta}. Nói cách
-khác, LoRA là trường hợp matrix low-rank adaptation, còn LoRTA đưa ý tưởng đó
-gần hơn với tensor factorization đúng nghĩa.
+\begin{example}[Ý nghĩa của rank trong LoRA]
+Nếu một lớp có $d=k=768$, full update cần $768^2=589{,}824$ tham số. Với LoRA rank
+$r=8$, số tham số update là $8(768+768)=12{,}288$, nhỏ hơn khoảng 48 lần. Ví dụ này
+giải thích vì sao LoRA phù hợp với fine-tuning mô hình lớn khi tài nguyên GPU hạn chế.
+\end{example}
+
+LoRTA mở rộng tư duy này từ ma trận sang tensor adaptation: các update của nhiều layer
+và nhiều attention heads được xem như một đối tượng bậc cao, sau đó factor hóa và chia
+sẻ factor giữa các mode \cite{hounie2024lorta}. Chẳng hạn, nếu gom update theo layer
+$\ell$, head $h$, output index $o$ và input index $i$, ta có thể xem
+\begin{equation}
+    \Delta\mathcal{W}
+    \in
+    \mathbb{R}^{L_{\mathrm{layer}} \times H_{\mathrm{head}} \times O \times I}.
+\end{equation}
+Một xấp xỉ CP-style có thể viết:
+\begin{equation}
+    \Delta\mathcal{W}_{\ell,h,o,i}
+    \approx
+    \sum_{r=1}^{R}
+    A_{\ell,r} B_{h,r} C_{o,r} D_{i,r}.
+    \label{eq:lorta-cp}
+\end{equation}
+Nói cách khác, LoRA là low-rank adaptation cục bộ trên từng ma trận, còn LoRTA đưa ý
+tưởng đó lên mức tensor để chia sẻ cấu trúc giữa nhiều layer/head. Đây là bước gần hơn
+với tinh thần tensor decomposition đúng nghĩa trong tutorial.
 
 \subsubsection{TensorGRAD và attention hiệu quả}
 
-Tutorial cũng đưa ra hai hướng deep learning khác. TensorGRAD xem gradient trong
-huấn luyện neural operators như một tensor bậc cao và dùng Tucker decomposition
-để giảm chi phí bộ nhớ \cite{loeschcke2025tensorgrad}. Thay vì lưu và cập nhật
-gradient đầy đủ, phương pháp làm việc với core tensor và sparse factors, phù hợp
-với các setting mà gradient quá lớn.
+Tutorial cũng đưa ra hai hướng học sâu khác. TensorGRAD xem gradient trong huấn luyện
+neural operators như một tensor bậc cao và dùng Tucker decomposition để giảm chi phí
+bộ nhớ \cite{loeschcke2025tensorgrad}. Nếu ký hiệu gradient đầy đủ là
+$\mathcal{G}_{\nabla}$, Tucker approximation có dạng tổng quát
+\begin{equation}
+    \mathcal{G}_{\nabla}
+    \approx
+    \mathcal{C}
+    \times_1 U^{(1)}
+    \times_2 U^{(2)}
+    \cdots
+    \times_N U^{(N)},
+    \label{eq:tensorgrad-tucker}
+\end{equation}
+trong đó $\mathcal{C}$ là core tensor nhỏ hơn và $U^{(n)}$ là các factor matrices. Thay
+vì lưu và cập nhật gradient đầy đủ, phương pháp làm việc với core tensor và các factor
+có kích thước nhỏ hơn. Lợi ích chính là giảm bộ nhớ trong các setting mà gradient có
+cấu trúc nhiều chiều và quá lớn để xử lý trực tiếp.
 
-Với attention, self-attention chuẩn có chi phí theo độ dài chuỗi gần $O(L^2)$.
-Poly-SA thay thế một phần cấu trúc softmax attention bằng các phép tính dựa trên
-tích Hadamard:
+Với attention, self-attention chuẩn có chi phí theo độ dài chuỗi gần $O(L^2)$ do phải
+tạo tensor attention scores trong \eqref{eq:attention-score-tensor}. Poly-SA thay thế
+một phần cấu trúc softmax attention bằng các phép tính dựa trên tích Hadamard:
 \begin{equation}
     f_{\mathrm{Poly\mbox{-}SA}}(X)
     =
     \Psi\big((XW_1) * (XW_2)\big) * XW_3,
+    \label{eq:poly-sa}
 \end{equation}
-hướng tới chi phí gần tuyến tính theo số token \cite{babiloni2023polysa}. Gần
-đây, Tensor Product Attention tiếp tục khai thác tensor product để thiết kế lại
-attention blocks \cite{zhang2025tensorproductattention}. Các ví dụ này cho thấy
-tensor không chỉ dùng để nén tham số, mà còn có thể dẫn tới kiến trúc mới.
+hướng tới chi phí gần tuyến tính theo số token \cite{babiloni2023polysa}. Gần đây,
+Tensor Product Attention tiếp tục khai thác tensor product để thiết kế lại attention
+blocks \cite{zhang2025tensorproductattention}. Các ví dụ này cho thấy tensor không chỉ
+dùng để nén tham số, mà còn có thể dẫn tới kiến trúc mới.
+
+\subsubsection{Đánh giá và hạn chế}
+
+Nhìn chung, tensor decomposition trong học sâu có ba ưu điểm rõ ràng. Thứ nhất, nó giảm
+số tham số trainable hoặc số tham số lưu trữ, thể hiện rõ trong LoRA/LoRTA và MoE
+factorization. Thứ hai, nó có thể giảm chi phí tính toán bằng cách thay một phép toán
+lớn bằng chuỗi phép toán nhỏ hơn, ví dụ trong convolution factorization hoặc efficient
+attention. Thứ ba, nó cung cấp cách diễn giải cấu trúc mô hình theo các mode có ý nghĩa
+như layer, head, expert, channel hoặc token.
+
+Tuy nhiên, lợi ích này không miễn phí. Rank hoặc số thành phần cần được chọn cẩn thận:
+rank quá thấp làm mô hình underfit, còn rank quá cao làm mất lợi thế nén. Ngoài ra,
+việc tensor hóa một mô hình không tự động tạo ra interpretability; các factor chỉ dễ
+diễn giải khi các mode ban đầu có ý nghĩa rõ ràng và decomposition đủ ổn định. Tutorial
+cũng nhấn mạnh các thách thức mở như chọn mô hình một cách có nguyên tắc, đưa prior
+information vào factorization, và mở rộng lý thuyết từ shallow factorizations sang các
+kiến trúc deep/circuit phức tạp hơn \cite{chrysos2025tutorial}.
 
 \subsubsection{Liên hệ với demo}
 
-Trong phần thực nghiệm, nhóm hiện thực demo \textit{LoRA rank sweep} trên bài
-toán phân loại cảm xúc. Demo so sánh frozen encoder, full fine-tuning và LoRA
-với các rank khác nhau. Các metric chính gồm validation accuracy, validation
-loss, số tham số trainable và thời gian huấn luyện. Kết quả kỳ vọng không phải
-là LoRA luôn vượt full fine-tuning, mà là LoRA có thể đạt trade-off tốt hơn giữa
-hiệu năng và số tham số cần cập nhật. Điều này bám sát thông điệp của tutorial:
-khai thác cấu trúc low-rank/multilinear giúp mô hình học sâu trở nên gọn và dễ
-triển khai hơn.
+Trong phần thực nghiệm, nhóm hiện thực demo \textit{LoRA rank sweep} trên bài toán phân
+loại cảm xúc. Demo so sánh frozen encoder, full fine-tuning và LoRA với các rank khác
+nhau. Các metric chính gồm validation accuracy, validation loss, số tham số trainable
+và thời gian huấn luyện. Đây là demo phù hợp với yêu cầu của đồ án vì có baseline, có
+thay đổi siêu tham số, có metric định lượng và có biểu đồ trực quan hóa.
+
+Kết quả thực nghiệm cho thấy full fine-tuning đạt validation accuracy khoảng
+$0.7569$, trong khi LoRA rank $8$ đạt khoảng $0.7511$ với chỉ $8{,}450$ tham số
+trainable. So với full fine-tuning có $4{,}386{,}178$ tham số trainable, LoRA rank $8$
+dùng ít hơn khoảng $519$ lần tham số nhưng accuracy chỉ giảm nhẹ. Kết quả này phản ánh
+đúng thông điệp của tutorial: khai thác cấu trúc low-rank/multilinear giúp mô hình học
+sâu trở nên gọn và dễ triển khai hơn, với đánh đổi hiệu năng có thể kiểm soát được.

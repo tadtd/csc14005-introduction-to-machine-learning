@@ -98,6 +98,7 @@ Tensor tổng quát hóa các đối tượng quen thuộc: vector ($N=1$), ma t
 
 \begin{figure}[h]
 \centering
+\resizebox{0.8\textwidth}{!}{%
 \begin{tikzpicture}[scale=0.88, every node/.style={font=\small}]
   % ---- Scalar (bậc 0) ----
   \drawtfgface{1}{1}{0}{0}{violet!18}{black!55}{0}
@@ -125,6 +126,7 @@ Tensor tổng quát hóa các đối tượng quen thuộc: vector ($N=1$), ma t
     \node[above=3pt, font=\tiny\color{gray}] at (0.95,0.45) {bậc 3};
   \end{scope}
 \end{tikzpicture}
+}
 \caption{Minh họa các bậc tensor: scalar (bậc 0), vector (bậc 1), ma trận (bậc 2), và tensor bậc 3.}
 \label{fig:tensor-orders}
 \end{figure}
@@ -161,7 +163,7 @@ Các mode-$n$ fiber trở thành các cột của $\mathbf{X}_{(n)}$.
 
 \begin{figure}[H]
 \centering
-\resizebox{\textwidth}{!}{%
+\resizebox{0.8\textwidth}{!}{%
 \begin{tikzpicture}[every node/.style={font=\small}]
   % --- Tensor cube 3 x 4 x 2 ---
   \begin{scope}[xshift=0cm, yshift=0cm]
@@ -193,8 +195,8 @@ Các mode-$n$ fiber trở thành các cột của $\mathbf{X}_{(n)}$.
       {$\mathbf{X}_{(1)}\in\mathbb{R}^{3\times8}$};
 
     \draw[teal, line width=0.85pt, <->, >=stealth]
-      (-0.55,0.02) -- (-0.55,-3*\tfgCellH-0.02);
-    \node[text=teal, font=\footnotesize, anchor=east] at (-0.68,-0.75) {$I_1=3$};
+      (8*\tfgCellW+0.55,0.02) -- (8*\tfgCellW+0.55,-3*\tfgCellH-0.02);
+    \node[text=teal, font=\footnotesize, anchor=west] at (8*\tfgCellW+0.68,-0.75) {$I_1=3$};
 
     \draw[teal, line width=0.85pt, <->, >=stealth]
       (0.02,-3*\tfgCellH-0.35) -- (8*\tfgCellW-0.02,-3*\tfgCellH-0.35);
@@ -222,7 +224,7 @@ Tensor thu được từ tích ngoài của $N$ vector được gọi là \texti
 
 \begin{figure}[H]
 \centering
-\resizebox{\textwidth}{!}{%
+\resizebox{0.8\textwidth}{!}{%
 \begin{tikzpicture}[every node/.style={font=\small}]
   \pgfmathsetmacro{\opCy}{-1.15}
   \pgfmathsetmacro{\labelY}{0.72}
@@ -368,7 +370,7 @@ trùng khớp với $[\mathbf{X}_{(1)}]_{i_1,j}$. Các mode khác chứng minh t
 
 \begin{figure}[h]
 \centering
-\resizebox{\textwidth}{!}{%
+\resizebox{0.8\textwidth}{!}{%
 \begin{tikzpicture}[every node/.style={font=\small}]
   %--- Tensor X gốc (4 x 3 x 3) ---
   \drawtfgtensor{4}{3}{3}{0}{0}{violet!18}{violet!60!black}
@@ -466,7 +468,7 @@ Phân rã Tucker tổng quát hóa SVD ma trận: khi $N=2$, ta có $\mathcal{X}
 
 \begin{figure}[h]
 \centering
-\resizebox{\textwidth}{!}{%
+\resizebox{0.8\textwidth}{!}{%
 \begin{tikzpicture}[every node/.style={font=\small}]
   % Tensor X
   \begin{scope}[xshift=0cm]

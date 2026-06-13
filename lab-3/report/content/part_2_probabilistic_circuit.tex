@@ -45,7 +45,7 @@ Tutorial định nghĩa circuit theo cách tensor hóa bằng ba quy tắc tổ 
 \begin{enumerate}[label=\Roman*.]
     \item Một tập các tractable functions là một circuit layer.
     \item Một linear projection của một layer là một circuit layer: $\mathbf{c}(\mathbf{x}) = \mathbf{W}\boldsymbol{\ell}(\mathbf{x})$, $\mathbf{W} \in \mathbb{R}^{K \times M}$.
-    \item Tích của hai layers là một circuit layer: $\mathbf{c}(\mathbf{x}) = \boldsymbol{\ell}(\mathbf{x}) \odot \mathbf{r}(\mathbf{x})$ (Hadamard) hoặc $\mathbf{c}(\mathbf{x}) = \mathrm{vec}(\boldsymbol{\ell}(\mathbf{x})\mathbf{r}(\mathbf{x})^\top)$ (Kronecker).
+    \item Tích của hai layers là một circuit layer: $\mathbf{c}(\mathbf{x}) = \boldsymbol{\ell}(\mathbf{x}) \ast \mathbf{r}(\mathbf{x})$ (Hadamard) hoặc $\mathbf{c}(\mathbf{x}) = \mathrm{vec}(\boldsymbol{\ell}(\mathbf{x})\mathbf{r}(\mathbf{x})^\top)$ (Kronecker).
 \end{enumerate}
 Ghép nhiều layers lại thu được một \emph{deep circuit}.
 

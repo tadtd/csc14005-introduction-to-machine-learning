@@ -1,1 +1,313 @@
-\subsection{Probabilistic Circuit}
+
+\subsection{Probabilistic Circuits và phân rã tensor}
+\makeatletter
+\@ifundefined{example}{\newtheorem{example}{Ví dụ}[subsection]}{}
+\makeatother
+
+\subsubsection{Giới thiệu và động lực}
+
+Một phân phối xác suất đồng thời trên $N$ biến rời rạc $X_1, \ldots, X_N$ về mặt hình thức tương ứng với một \emph{tensor xác suất}: mỗi phép gán $\mathbf{x} = (x_1, \ldots, x_N)$ được ánh xạ tới một số thực $p(\mathbf{x}) \geq 0$. Nếu mỗi biến $X_n$ có miền giá trị $\mathcal{D}_n$, kích thước của tensor này là
+\begin{equation}
+    |\mathcal{X}| = \prod_{n=1}^{N} |\mathcal{D}_n|,
+\end{equation}
+tăng theo hàm mũ khi số biến $N$ lớn. Do đó, biểu diễn tường minh toàn bộ bảng giá trị là không khả thi trong thực tế.
+
+Có hai hướng tiếp cận bổ sung nhau để đối phó với sự bùng nổ này \cite{chrysos2025foundationsTutorial}:
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{Tensor factorizations}: xấp xỉ tensor lớn bằng tổ hợp các tensor bậc thấp hơn, giúp giảm số tham số xuống còn đa thức.
+    \item \textbf{Circuits}: biểu diễn phép tính như một đồ thị tính toán, cho phép trả lời các câu hỏi suy luận mà không cần dựng toàn bộ tensor.
+\end{itemize}
+
+Điều thú vị là hai hướng này không độc lập với nhau. Mỗi tensor factorization có thể được mã hóa chính xác như một circuit, và ngược lại, một lớp circuit sâu (deep circuit) tương ứng với một hierarchical tensor factorization. Đây là mối liên hệ hình thức cốt lõi được phân tích chi tiết trong Loconte et al.\ \cite{loconte2025relationship}:
+\begin{equation}
+    \underbrace{\text{tensor factorizations}}_{\text{biểu diễn gọn}}
+    \;\Longleftrightarrow\;
+    \underbrace{\text{circuits}}_{\text{tổ chức phép tính}}
+    \;\Longrightarrow\;
+    \underbrace{\text{tractable inference}}_{\text{suy luận hiệu quả}}.
+\end{equation}
+
+Phần này trình bày bốn ứng dụng chính của mối liên hệ đó \cite{chrysos2025foundationsTutorial}: (1) xây dựng các tensor factorizations mới theo cách module hóa (``Lego block approach''), (2) ghép các layers để tạo deep factorizations, (3) thiết kế thuật toán tractable một cách có hệ thống dựa trên structural properties, và (4) coi tensor factorizations như generative models để lấy mẫu.
+
+\subsubsection{Circuit: định nghĩa và biểu diễn tensor hóa}
+
+\begin{definition}[Circuit]
+\label{def:circuit}
+Một \emph{circuit} là một đồ thị tính toán có hướng, không chu trình (DAG) trên các biến $X_1,\ldots,X_N$, dùng để mã hóa một hàm $c(X_1,\ldots,X_N)$. Khác với graphical models biểu diễn conditional independence, circuit tổ chức phép tính số học theo cấu trúc đồ thị. Circuit gồm ba loại đơn vị tính toán \cite{loconte2025relationship}:
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{Input functions}: các hàm cơ sở trên biến đầu vào, ví dụ embedding $f(x) = v_{x,r}$, xác suất rời rạc $f(x) = \mathrm{Binomial}(x; n, p)$, hoặc hàm liên tục $f(x) = \mathcal{N}(x; \mu, \sigma^2)$.
+    \item \textbf{Sum units}: tổng có trọng số của các đơn vị đầu vào (trộn nhiều nhánh).
+    \item \textbf{Product units}: tích của các đơn vị đầu vào (kết hợp các nhóm biến).
+\end{itemize}
+\end{definition}
+
+Tutorial định nghĩa circuit theo cách tensor hóa bằng ba quy tắc tổ hợp \cite{chrysos2025foundationsTutorial}:
+\begin{enumerate}[label=\Roman*.]
+    \item Một tập các tractable functions là một circuit layer.
+    \item Một linear projection của một layer là một circuit layer: $\mathbf{c}(\mathbf{x}) = \mathbf{W}\boldsymbol{\ell}(\mathbf{x})$, $\mathbf{W} \in \mathbb{R}^{K \times M}$.
+    \item Tích của hai layers là một circuit layer: $\mathbf{c}(\mathbf{x}) = \boldsymbol{\ell}(\mathbf{x}) \odot \mathbf{r}(\mathbf{x})$ (Hadamard) hoặc $\mathbf{c}(\mathbf{x}) = \mathrm{vec}(\boldsymbol{\ell}(\mathbf{x})\mathbf{r}(\mathbf{x})^\top)$ (Kronecker).
+\end{enumerate}
+Ghép nhiều layers lại thu được một \emph{deep circuit}.
+
+\paragraph{Kết nối với CP và Tucker.}
+CP decomposition của tensor bậc $N$ viết dưới dạng circuit như sau:
+\begin{equation}
+    \mathcal{X}_{x_1,\ldots,x_N}
+    \approx
+    \sum_{r=1}^{R} \prod_{n=1}^{N} V^{(n)}_{x_n, r},
+    \qquad
+    \mathbf{V}^{(n)} \in \mathbb{R}^{I_n \times R}.
+    \label{eq:cp-circuit}
+\end{equation}
+Các factor matrices $\mathbf{V}^{(n)}$ tương ứng với các input layers: với mỗi giá trị $x_n$, input layer trả về hàng $x_n$ của $\mathbf{V}^{(n)}$. Các product units thực hiện tích Hadamard theo chiều rank $r$, còn sum unit cuối cộng tổng trên $r = 1, \ldots, R$.
+
+Tucker decomposition tổng quát hóa CP bằng cách thêm một core tensor $\mathcal{W} \in \mathbb{R}^{R_1 \times \cdots \times R_N}$ điều phối cách trộn các latent components:
+\begin{equation}
+    \mathcal{X}_{x_1,\ldots,x_N}
+    \approx
+    \sum_{r_1=1}^{R_1} \cdots \sum_{r_N=1}^{R_N}
+    \mathcal{W}_{r_1 \cdots r_N}
+    \prod_{n=1}^{N} V^{(n)}_{x_n, r_n}.
+    \label{eq:tucker-circuit}
+\end{equation}
+Khi $\mathcal{W}$ là diagonal, Tucker suy biến về CP. Trong ngôn ngữ circuit, các factor matrices tương ứng với input layers, product units kết hợp các mode, sum unit cuối cộng trên các latent indices với trọng số là các phần tử của $\mathcal{W}$.
+
+\begin{example}[Tính phần tử $c(1, 2, 2)$ của CP decomposition bậc-3]
+Với $R = 2$ và các factor matrices:
+\[
+\mathbf{V}^{(1)} = \begin{pmatrix} 0.1 & 1.2 \\ 3.5 & -0.2 \\ -0.1 & 0.2 \end{pmatrix},\quad
+\mathbf{V}^{(2)} = \begin{pmatrix} 2.5 & 0.0 \\ -3.4 & -0.5 \\ -0.1 & 2.2 \end{pmatrix},\quad
+\mathbf{V}^{(3)} = \begin{pmatrix} -2.3 & 1.0 \\ 0.8 & -2.4 \\ 0.7 & 1.5 \end{pmatrix},
+\]
+phần tử tại $(x_1, x_2, x_3) = (1, 2, 2)$ (chỉ số từ 0) được tính bằng:
+\begin{equation}
+    c(1, 2, 2) = \sum_{r=1}^{2} V^{(1)}_{1r} V^{(2)}_{2r} V^{(3)}_{2r}
+    = (3.5)(-3.4)(0.8) + (-0.2)(-0.5)(-2.4) = -9.52 - 0.24 = -9.76.
+\end{equation}
+\end{example}
+
+\paragraph{Từ shallow đến deep: hierarchical factorizations.}
+Một ưu điểm quan trọng của ngôn ngữ circuit là khả năng xếp chồng các layers để xây dựng hierarchical factorizations sâu hơn. Loconte et al.\ chỉ ra rằng hierarchical Tucker factorization tương đương với một deep circuit, và trong nhiều trường hợp, circuit sâu có thể biểu diễn cùng một hàm với số tham số ít hơn theo hàm mũ so với circuit nông \cite{loconte2025relationship}. Việc ghép và trộn các layers khác nhau trong cirkit \cite{chrysos2025foundationsTutorial} cho phép tạo ra các factorization mới, chẳng hạn bằng cách thêm Monarch circuit layer dựa trên structured Monarch matrix factorization \cite{chrysos2025foundationsTutorial,dao2022monarch}.
+
+\subsubsection{Structural properties và tractable inference}
+
+\paragraph{Scope.}
+\emph{Scope} của một unit $n$ trong circuit, ký hiệu $\mathrm{sc}(n)$, là tập các biến mà hàm $c_n$ phụ thuộc vào. Với unit lá, scope được xác định bởi input function. Với sum/product unit:
+\begin{equation}
+    \mathrm{sc}(n) = \bigcup_{j \in \mathrm{in}(n)} \mathrm{sc}(j).
+\end{equation}
+
+\begin{definition}[Smoothness]
+\label{def:smoothness}
+Circuit được gọi là \emph{smooth} nếu mọi sum unit chỉ cộng các input units có cùng scope:
+\begin{equation}
+    \forall n \in \mathcal{S},\; \forall i, j \in \mathrm{in}(n): \quad \mathrm{sc}(i) = \mathrm{sc}(j),
+\end{equation}
+trong đó $\mathcal{S}$ là tập các sum units \cite{vergari2021compositional}.
+\end{definition}
+
+\begin{definition}[Decomposability]
+\label{def:decomposability}
+Circuit được gọi là \emph{decomposable} nếu mọi product unit chỉ nhân các input units có scope rời nhau từng đôi một:
+\begin{equation}
+    \forall n \in \mathcal{P},\; \forall i \neq j \in \mathrm{in}(n): \quad \mathrm{sc}(i) \cap \mathrm{sc}(j) = \varnothing,
+\end{equation}
+trong đó $\mathcal{P}$ là tập các product units \cite{vergari2021compositional}.
+\end{definition}
+
+Hai tính chất này kết hợp với nhau đảm bảo \emph{multilinearity} của circuit: mỗi biến xuất hiện trong mỗi đơn thức của đa thức được mã hóa nhiều nhất một lần. Nhờ decomposability, tổng trên product node có thể tách theo hai nhóm biến rời nhau:
+\begin{equation}
+    \int p_A(\mathbf{x}_A) p_B(\mathbf{x}_B)\, d\mathbf{x}_A\, d\mathbf{x}_B
+    = \left(\int p_A(\mathbf{x}_A)\, d\mathbf{x}_A\right) \left(\int p_B(\mathbf{x}_B)\, d\mathbf{x}_B\right),
+    \quad A \cap B = \varnothing.
+    \label{eq:factored-integral}
+\end{equation}
+Kết hợp smoothness và decomposability, mọi marginal và conditional đều có thể tính trong một feedforward pass duy nhất qua circuit \cite{vergari2021compositional}.
+
+\begin{definition}[Compatibility]
+\label{def:compatibility}
+Hai circuits được gọi là \emph{compatible} nếu chúng phân rã các scope theo cùng một cấu trúc. Điều kiện đủ thường gặp: hai deep circuits cùng tuân theo một tree region graph, tức là mỗi cặp product units có cùng scope đều chia scope đó thành cùng các child scopes \cite{vergari2021compositional}.
+\end{definition}
+
+\begin{definition}[Determinism]
+\label{def:determinism}
+Circuit được gọi là \emph{deterministic} nếu các inputs của mọi sum unit được định nghĩa trên các disjoint supports:
+\begin{equation}
+    \forall n \in \mathcal{S},\; \forall i \neq j \in \mathrm{in}(n): \quad \mathrm{supp}(c_i) \cap \mathrm{supp}(c_j) = \varnothing.
+\end{equation}
+Định nghĩa này theo cùng hệ structural properties được dùng trong atlas của Vergari et al.\ \cite{vergari2021compositional}.
+\end{definition}
+
+Tóm lại, mỗi tổ hợp structural properties mở khóa một lớp queries tractable tương ứng \cite{vergari2021compositional}:
+
+\begin{table}[h]
+\centering
+\caption{Structural properties và các query classes tractable.}
+\label{tab:properties}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Properties} & \textbf{Query class} & \textbf{Cơ chế} \\
+\midrule
+Smoothness $+$ Decomposability & Arbitrary marginals/integrals & Một feedforward pass \\
+Smoothness $+$ Compatibility   & Expectations $\mathbb{E}_{\mathbf{x} \sim p}[f(\mathbf{x})]$ & Tích hai circuits \\
+Decomposability                & Partition function, conditionals & Tuyến tính theo kích thước \\
+Determinism $+$ Decomposability & MAP inference & Tối ưu tractable \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Probabilistic Circuits}
+
+\begin{definition}[Probabilistic Circuit]
+\label{def:pc}
+Một \emph{probabilistic circuit} (PC) là một circuit $c$ biểu diễn hàm không âm:
+\begin{equation}
+    c(\mathbf{x}) \geq 0, \qquad \forall\, \mathbf{x}.
+\end{equation}
+Phân phối xác suất thu được bằng chuẩn hóa:
+\begin{equation}
+    p(\mathbf{x}) = \frac{c(\mathbf{x})}{Z},
+    \qquad
+    Z =
+    \begin{cases}
+        \displaystyle\sum_{\mathbf{x}} c(\mathbf{x}), & \text{nếu } \mathbf{x} \text{ rời rạc},\\[3mm]
+        \displaystyle\int c(\mathbf{x})\, d\mathbf{x}, & \text{nếu } \mathbf{x} \text{ liên tục}.
+    \end{cases}
+    \label{eq:pc-normalize}
+\end{equation}
+Điều kiện đủ để circuit là một PC: sum parameters không âm và input functions không âm \cite{chrysos2025foundationsTutorial}.
+\end{definition}
+
+Điều kiện không âm này kết nối tự nhiên với non-negative tensor factorization, nơi các nhân tử được ràng buộc không âm \cite{cichocki2009nonnegative}. Cụ thể, non-negative Tucker factorization (khi tất cả phần tử của $\mathcal{W}$ và các $\mathbf{V}^{(n)}$ đều không âm) chính là một monotonic PC; và tính chất smoothness cùng decomposability được thừa hưởng tự động từ cấu trúc của factorization \cite{loconte2025relationship}.
+
+\begin{example}[Phân phối hỗn hợp như PC]
+\label{ex:mixture-pc}
+Xét phân phối hỗn hợp hai thành phần trên $(X_1, X_2)$:
+\begin{equation}
+    p(\mathbf{x}) = w_1 p_1(x_1) p_1(x_2) + w_2 p_2(x_1) p_2(x_2),
+    \quad w_1, w_2 \geq 0,\; w_1 + w_2 = 1.
+\end{equation}
+Circuit tương ứng có 4 input nodes (một cho mỗi $p_k(x_n)$), 2 product nodes (tích $p_k(x_1) p_k(x_2)$), và 1 sum node ($w_1(\cdots) + w_2(\cdots)$). Circuit này smooth (sum node có hai input cùng scope $\{X_1, X_2\}$) và decomposable (mỗi product node có hai input với scope $\{X_1\}$ và $\{X_2\}$ rời nhau).
+\end{example}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[
+    every node/.style={font=\small},
+    op/.style={circle, draw, thick, minimum size=0.75cm, align=center},
+    leaf/.style={draw, rounded corners=2pt, thick, minimum width=1.2cm, minimum height=0.62cm, align=center},
+    edge/.style={->, >=stealth, thick},
+    scope/.style={font=\scriptsize, text=gray!70}
+]
+    \node[op, fill=blue!12, draw=blue!65!black] (s0) at (0,2.6) {$+$};
+    \node[op, fill=green!12, draw=green!55!black] (p1) at (-1.8,1.25) {$\times$};
+    \node[op, fill=green!12, draw=green!55!black] (p2) at (1.8,1.25) {$\times$};
+
+    \node[leaf, fill=teal!12, draw=teal!65!black] (a1) at (-2.7,0) {$p_1(x_1)$};
+    \node[leaf, fill=orange!12, draw=orange!80!black] (b1) at (-0.9,0) {$p_1(x_2)$};
+    \node[leaf, fill=teal!12, draw=teal!65!black] (a2) at (0.9,0) {$p_2(x_1)$};
+    \node[leaf, fill=orange!12, draw=orange!80!black] (b2) at (2.7,0) {$p_2(x_2)$};
+
+    \draw[edge] (s0) -- node[above left, font=\scriptsize] {$w_1$} (p1);
+    \draw[edge] (s0) -- node[above right, font=\scriptsize] {$w_2$} (p2);
+    \draw[edge] (p1) -- (a1);
+    \draw[edge] (p1) -- (b1);
+    \draw[edge] (p2) -- (a2);
+    \draw[edge] (p2) -- (b2);
+
+    \node[scope] at (0,3.25) {smooth: sum node có input cùng scope $\{X_1,X_2\}$};
+    \node[scope] at (-1.8,0.65) {decomposable};
+    \node[scope] at (1.8,0.65) {decomposable};
+    \node[align=center, font=\footnotesize, text=gray!75] at (0,-0.85)
+        {$p(\mathbf{x}) = w_1 p_1(x_1) p_1(x_2) + w_2 p_2(x_1) p_2(x_2)$};
+\end{tikzpicture}
+\caption{PC đơn giản biểu diễn phân phối hỗn hợp hai thành phần. Sum node biểu diễn phép trộn; product nodes kết hợp các scope rời nhau.}
+\label{fig:pc-basic-circuit}
+\end{figure}
+
+\paragraph{Cách tham số hóa circuits.}
+Ngoài cách kinh điển dùng embedding entries hay PMFs, sum unit weights và input functions trong circuits hiện đại có thể được tham số hóa bởi neural networks hoặc deep generative models \cite{chrysos2025foundationsTutorial}. Điều này cho phép kết hợp tính tractable của PC với khả năng biểu diễn của các mô hình học sâu.
+
+\subsubsection{Suy luận xác suất trên Probabilistic Circuits}
+
+\paragraph{Diễn giải sum node và product node.}
+Sum node trong PC có diễn giải như một mixture model với biến latent rời rạc $Z$:
+\begin{equation}
+    p(\mathbf{x}) = \sum_{z=1}^{K} p(z)\, p(\mathbf{x} \mid z),
+    \qquad p(z) \geq 0,\; \sum_z p(z) = 1.
+    \label{eq:sum-mixture}
+\end{equation}
+Product node có diễn giải như tích xác suất trên các nhóm biến rời nhau:
+\begin{equation}
+    c(\mathbf{x}_A, \mathbf{x}_B) = c_A(\mathbf{x}_A)\, c_B(\mathbf{x}_B),
+    \qquad A \cap B = \varnothing.
+    \label{eq:prod-factored}
+\end{equation}
+
+\paragraph{Marginal inference.}
+Với $O \subseteq \{1,\ldots,N\}$ là tập chỉ số biến quan sát và $M=\{1,\ldots,N\}\setminus O$ là tập chỉ số biến ẩn, ký hiệu $X_O=\{X_i:i\in O\}$, $X_M=\{X_i:i\in M\}$ và $\mathcal{D}_M=\prod_{i\in M}\mathcal{D}_i$. Marginal distribution là:
+\begin{equation}
+    p(\mathbf{x}_O) = \sum_{\mathbf{x}_M \in \mathcal{D}_M} p(\mathbf{x}_O, \mathbf{x}_M).
+    \label{eq:marginal}
+\end{equation}
+Điều kiện smoothness và decomposability đảm bảo rằng tổng này có thể tính trong một feedforward pass duy nhất, tức là tuyến tính theo kích thước circuit, và partition function $Z$ cũng có thể tính hiệu quả theo cách tương tự \cite{vergari2021compositional}.
+
+\paragraph{Expectation và reasoning về ML models.}
+Khi cả $p(\mathbf{x})$ lẫn $f(\mathbf{x})$ đều là circuits compatible với nhau, expectation
+\begin{equation}
+    \mathbb{E}_{\mathbf{x} \sim p}[f(\mathbf{x})] = \int p(\mathbf{x}) f(\mathbf{x})\, d\mathbf{x}
+    \label{eq:expectation}
+\end{equation}
+có thể tính trong thời gian $\mathcal{O}(|p| \cdot |f|)$. Điều này cho phép trả lời nhiều câu hỏi thực tế về ML models \cite{chrysos2025foundationsTutorial}:
+\begin{align}
+    \text{Missing values:}\quad & \int p(\mathbf{x}_O, \mathbf{x}_M)\, d\mathbf{x}_M, \label{eq:missing}\\
+    \text{Fairness:}\quad & \mathbb{E}_{\mathbf{x} \sim p(\cdot \mid a=0)}[f(\mathbf{x})] - \mathbb{E}_{\mathbf{x} \sim p(\cdot \mid a=1)}[f(\mathbf{x})], \label{eq:fairness}\\
+    \text{Adversarial robustness:}\quad & \mathbb{E}_{\boldsymbol{\varepsilon} \sim p_{\text{noise}}}[f(\mathbf{x} + \boldsymbol{\varepsilon})]. \label{eq:robustness}
+\end{align}
+Khi $f$ không phải là một circuit (ví dụ neural network), tích $p \cdot f$ không còn tractable; lúc này sampling trở thành lựa chọn xấp xỉ tự nhiên.
+
+\paragraph{Sampling.}
+Khi PC là smooth và decomposable, có thể lấy mẫu từ $p(\mathbf{x})$ trong thời gian tuyến tính theo kích thước circuit bằng một backward pass \cite{choi2021probabilistic}. Diễn giải latent variable của sum node là chìa khóa:
+\begin{equation}
+    \begin{array}{ll}
+        \text{Sum node:} & z \sim \mathrm{Categorical}(w_1, \ldots, w_K),\text{ sau đó đi vào nhánh } z,\\[1mm]
+        \text{Product node:} & \mathbf{x}_A \sim p_A,\; \mathbf{x}_B \sim p_B \text{ độc lập vì } A \cap B = \varnothing,\\[1mm]
+        \text{Input node:} & x_n \sim p_n(x_n), \text{ ví dụ Categorical hoặc Gaussian.}
+    \end{array}
+    \label{eq:sampling}
+\end{equation}
+Đây cũng là cơ sở để coi non-negative tensor factorizations như generative models: một deep non-negative Tucker factorization không chỉ xấp xỉ tensor mà còn cho phép sampling hiệu quả theo đúng thủ tục trên \cite{loconte2025relationship}.
+
+\subsubsection{Ứng dụng và thảo luận}
+
+\paragraph{Tractable models trong intractable pipelines.}
+Ý tưởng thực tế là dùng PC ở những nơi trong pipeline cần suy luận chính xác, trong khi phần còn lại vẫn có thể là neural network không tractable. Braun et al.\ minh họa điều này với tractable conditioning over every missing mask, đạt kết quả tốt hơn (V)AE trên bài toán missing value imputation \cite{braun2025tractable}.
+
+\paragraph{Liên hệ với các mô hình khác.}
+Deep circuits hợp nhất nhiều họ mô hình dưới cùng một ngôn ngữ \cite{chrysos2025foundationsTutorial}:
+
+\begin{table}[h]
+\centering
+\caption{Mối quan hệ giữa deep circuits và một số họ mô hình.}
+\label{tab:circuit-models}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Circuit family} & \textbf{Liên hệ} \\
+\midrule
+Shallow smooth+decomposable circuit & Mixture models, sum-product networks \\
+Deep smooth+decomposable circuit    & Hierarchical mixtures, tensorized networks \\
+Non-negative CP-layer circuit       & Non-negative matrix/tensor factorization \\
+Tucker-layer circuit                & Hierarchical Tucker factorization \\
+Deterministic + smooth + decomp.    & Decision trees, logical formulas \& constraints \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Các thách thức còn mở.}
+Tutorial kết thúc với một số câu hỏi nghiên cứu chưa được giải quyết \cite{chrysos2025foundationsTutorial}:
+\begin{enumerate}[label=\textbf{\arabic*.}, leftmargin=2em]
+    \item \textbf{Optimization}: lý thuyết hội tụ của shallow factorizations có thể mở rộng sang deep circuits không?
+    \item \textbf{Identifiability}: khi nào deep circuit có biểu diễn duy nhất (ground truth recovery)?
+    \item \textbf{Approximate inference}: xây dựng property-driven approximate algorithms như thế nào?
+    \item \textbf{Scalability}: scale ứng dụng với circuits lên hàng triệu biến và constraints.
+\end{enumerate}

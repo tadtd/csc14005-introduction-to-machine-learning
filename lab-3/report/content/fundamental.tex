@@ -161,50 +161,47 @@ Các mode-$n$ fiber trở thành các cột của $\mathbf{X}_{(n)}$.
 
 \begin{figure}[h]
 \centering
-\begin{tikzpicture}[scale=0.82, every node/.style={font=\small}]
-  \pgfmathsetmacro{\tfgCy}{-0.75}
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[every node/.style={font=\small}]
+  % --- Tensor cube 3 x 4 x 2 ---
+  \begin{scope}[xshift=0cm, yshift=0cm]
+    \drawtfgtensor{3}{4}{2}{0}{0}{pink!22}{magenta!70!black}
+    \node[above=8pt, font=\footnotesize\bfseries] at (1.05,0.18)
+      {$\mathcal{X}\in\mathbb{R}^{3\times4\times2}$};
 
-  % --- Tensor 3 x 4 x 2 ---
-  \pgfmathsetmacro{\tXTop}{\tfgCy+1.5*\tfgCellH}
-  \begin{scope}
-    \drawtfgtensor{3}{4}{2}{0}{\tXTop}{pink!22}{magenta!70!black}
-    \node[above=4pt, font=\footnotesize\bfseries] at (1.0, \tXTop+0.05)
-      {$\mathcal{X}\in\mathbb{R}^{3\times 4\times 2}$};
-    % mode 1
     \draw[teal, line width=0.85pt, <->, >=stealth]
-      (-0.42, \tXTop+0.04) -- (-0.42, \tXTop-3*\tfgCellH-0.04)
-      node[midway, left, align=right, text=teal, font=\footnotesize]
-        {mode 1\\($I_1{=}3$)};
-    % mode 2
+      (-0.55,0.02) -- (-0.55,-3*\tfgCellH-0.02);
+    \node[text=teal, font=\footnotesize, anchor=east] at (-0.68,-0.75) {$I_1=3$};
+
     \draw[orange!85!black, line width=0.85pt, <->, >=stealth]
-      (0.04, \tXTop-3*\tfgCellH-0.28) -- (4*\tfgCellW-0.04, \tXTop-3*\tfgCellH-0.28)
-      node[midway, below, text=orange!85!black, font=\footnotesize]
-        {mode 2 ($I_2{=}4$)};
-    % mode 3
+      (0.02,-3*\tfgCellH-0.35) -- (4*\tfgCellW-0.02,-3*\tfgCellH-0.35);
+    \node[text=orange!85!black, font=\footnotesize, anchor=north] at (1.0,-3*\tfgCellH-0.43) {$I_2=4$};
+
     \draw[purple!75!black, line width=0.85pt, ->, >=stealth]
-      (4*\tfgCellW+0.02, \tXTop-0.02) -- (4*\tfgCellW-0.20, \tXTop+0.18)
-      node[midway, right, xshift=2pt, text=purple!75!black, font=\footnotesize]
-        {mode 3 ($I_3{=}2$)};
+      (2.30,0.22) -- (1.85,0.42);
+    \node[text=purple!75!black, font=\footnotesize, anchor=west] at (2.40,0.32) {$I_3=2$};
   \end{scope}
 
-  % --- unfold ---
-  \draw[->, line width=1.1pt, gray!60, >=stealth] (2.55, \tfgCy) -- (3.55, \tfgCy)
-    node[midway, above=2pt, font=\footnotesize, text=gray!65] {unfold};
+  % --- unfold arrow ---
+  \draw[->, line width=1.1pt, gray!60, >=stealth] (3.05,-0.75) -- (4.35,-0.75);
+  \node[font=\footnotesize, text=gray!65, fill=white, inner sep=1pt] at (3.70,-0.42) {unfold};
 
-  % --- Ma trận 3 x 8 ---
-  \begin{scope}[xshift=3.75cm]
-    \pgfmathsetmacro{\mXTop}{\tfgCy+1.5*\tfgCellH}
-    \drawtfgface{3}{8}{0}{\mXTop}{teal!18}{teal!65!black}{0}
-    \node[above=4pt, font=\footnotesize\bfseries, text=teal] at (2.0, \mXTop+0.05)
-      {$\mathbf{X}_{(1)}\in\mathbb{R}^{3\times 8}$};
+  % --- Matrix 3 x 8 ---
+  \begin{scope}[xshift=4.80cm, yshift=0cm]
+    \drawtfgface{3}{8}{0}{0}{teal!18}{teal!65!black}{0}
+    \node[above=8pt, font=\footnotesize\bfseries, text=teal] at (2.0,0.18)
+      {$\mathbf{X}_{(1)}\in\mathbb{R}^{3\times8}$};
+
     \draw[teal, line width=0.85pt, <->, >=stealth]
-      (-0.42, \mXTop+0.04) -- (-0.42, \mXTop-3*\tfgCellH-0.04)
-      node[midway, left, text=teal, font=\footnotesize] {$I_1{=}3$};
+      (-0.55,0.02) -- (-0.55,-3*\tfgCellH-0.02);
+    \node[text=teal, font=\footnotesize, anchor=east] at (-0.68,-0.75) {$I_1=3$};
+
     \draw[teal, line width=0.85pt, <->, >=stealth]
-      (0.04, \mXTop-3*\tfgCellH-0.28) -- (8*\tfgCellW-0.04, \mXTop-3*\tfgCellH-0.28)
-      node[midway, below, text=teal, font=\footnotesize] {$I_2 I_3 {=} 8$};
+      (0.02,-3*\tfgCellH-0.35) -- (8*\tfgCellW-0.02,-3*\tfgCellH-0.35);
+    \node[text=teal, font=\footnotesize, anchor=north] at (2.0,-3*\tfgCellH-0.43) {$I_2I_3=8$};
   \end{scope}
 \end{tikzpicture}
+}
 \caption{Mode-1 matricization của $\mathcal{X}\in\mathbb{R}^{3\times 4\times 2}$ thành $\mathbf{X}_{(1)}\in\mathbb{R}^{3\times 8}$: các mode-1 fiber trở thành cột của ma trận kết quả.}
 \label{fig:matricization}
 \end{figure}
@@ -225,39 +222,41 @@ Tensor thu được từ tích ngoài của $N$ vector được gọi là \texti
 
 \begin{figure}[h]
 \centering
-\begin{tikzpicture}[scale=0.82, every node/.style={font=\small}]
-  \pgfmathsetmacro{\opCy}{-1.05}
-  \pgfmathsetmacro{\labelY}{0.55}
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[every node/.style={font=\small}]
+  \pgfmathsetmacro{\opCy}{-1.15}
+  \pgfmathsetmacro{\labelY}{0.72}
 
   % ===== Hàng nhãn (căn theo tâm đồ họa bên dưới) =====
   \node[text=teal, font=\footnotesize\bfseries] at (0.25, \labelY)
     {$\mathbf{a}\in\mathbb{R}^I$};
-  \node[text=orange!85!black, font=\footnotesize\bfseries] at (1.30, \labelY)
+  \node[text=orange!85!black, font=\footnotesize\bfseries] at (1.95, \labelY)
     {$\mathbf{b}\in\mathbb{R}^J$};
-  \node[text=magenta!70!black, font=\footnotesize\bfseries] at (2.30, \labelY)
+  \node[text=magenta!70!black, font=\footnotesize\bfseries] at (3.45, \labelY)
     {$\mathbf{c}\in\mathbb{R}^K$};
-  \node[text=violet!80!black, font=\footnotesize\bfseries, align=center] at (3.90, \labelY)
+  \node[text=violet!80!black, font=\footnotesize\bfseries, align=center] at (6.35, \labelY)
     {$\mathcal{X}=\mathbf{a}\circ\mathbf{b}\circ\mathbf{c}$\\[1pt]
      $\in\mathbb{R}^{I\times J\times K}$};
 
   % ===== Hàng đồ họa =====
   \drawtfgveccy{4}{0.00}{\opCy}{teal!28}{teal!55!black}
-  \node[font=\Large] at (0.72, \opCy) {$\circ$};
+  \node[font=\Large] at (1.05, \opCy) {$\circ$};
 
-  \drawtfgveccy{3}{1.05}{\opCy}{orange!28}{orange!70!black}
-  \node[font=\Large] at (1.72, \opCy) {$\circ$};
+  \drawtfgveccy{3}{1.70}{\opCy}{orange!28}{orange!70!black}
+  \node[font=\Large] at (2.75, \opCy) {$\circ$};
 
-  \drawtfgveccy{2}{2.05}{\opCy}{pink!30}{magenta!55!black}
-  \node[font=\Large] at (2.72, \opCy) {$=$};
+  \drawtfgveccy{2}{3.20}{\opCy}{pink!30}{magenta!55!black}
+  \node[font=\Large] at (4.25, \opCy) {$=$};
 
   % Tensor 4 x 3 x 2
-  \begin{scope}[xshift=3.15cm]
+  \begin{scope}[xshift=5.35cm]
     \pgfmathsetmacro{\tTop}{\opCy+2*\tfgCellH}
     \drawtfgtensor{4}{3}{2}{0}{\tTop}{violet!18}{violet!65!black}
-    \node[font=\scriptsize, text=violet!75!black, align=center] at (0.75, \opCy)
-      {$\mathcal{X}_{i,j,k}$\\[0pt]$= a_i b_j c_k$};
+    \node[font=\scriptsize, text=violet!75!black, align=center] at (2.85, \opCy)
+      {$\mathcal{X}_{i,j,k}=a_i b_j c_k$};
   \end{scope}
 \end{tikzpicture}
+}
 \caption{Tích ngoài $\mathbf{a} \circ \mathbf{b} \circ \mathbf{c}$ tạo ra tensor hạng 1 bậc 3. Mỗi phần tử $\mathcal{X}_{i,j,k} = a_i b_j c_k$.}
 \label{fig:outer-product}
 \end{figure}
@@ -369,35 +368,37 @@ trùng khớp với $[\mathbf{X}_{(1)}]_{i_1,j}$. Các mode khác chứng minh t
 
 \begin{figure}[h]
 \centering
-\begin{tikzpicture}[scale=0.85, every node/.style={font=\small}]
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[every node/.style={font=\small}]
   %--- Tensor X gốc (4 x 3 x 3) ---
   \drawtfgtensor{4}{3}{3}{0}{0}{violet!18}{violet!60!black}
   \node[above, font=\footnotesize\bfseries] at (0.95, 0.45)
     {$\mathcal{X}\in\mathbb{R}^{I\times J\times K}$};
 
-  \node[font=\Large, text=gray!70] at (2.8, -1.0) {$\approx$};
+  \node[font=\Large, text=gray!70] at (3.15, -1.0) {$\approx$};
 
   %--- Thành phần CP ---
-  \begin{scope}[xshift=3.5cm]
-    \node[font=\footnotesize, text=gray!75] at (-0.55, 0.45) {$\displaystyle\sum_{r=1}^{R}$};
+  \begin{scope}[xshift=4.05cm]
+    \node[font=\footnotesize, text=gray!75] at (-0.72, 0.45) {$\displaystyle\sum_{r=1}^{R}$};
     \drawtfgvec{4}{0}{0}{teal!28}{teal!55!black}
     \node[above, font=\scriptsize, text=teal] at (0.25, 0.38) {$\mathbf{A}_{:r}^{(1)}$};
-    \node[font=\normalsize] at (0.85,-1.0) {$\circ$};
+    \node[font=\normalsize] at (1.05,-1.0) {$\circ$};
 
-    \begin{scope}[xshift=1.35cm]
+    \begin{scope}[xshift=1.75cm]
       \drawtfgvec{3}{0}{0}{orange!28}{orange!70!black}
       \node[above, font=\scriptsize, text=orange!85!black] at (0.25,0.38)
         {$\mathbf{A}_{:r}^{(2)}$};
-      \node[font=\normalsize] at (0.85,-0.75) {$\circ$};
+      \node[font=\normalsize] at (1.05,-0.75) {$\circ$};
     \end{scope}
 
-    \begin{scope}[xshift=2.55cm]
+    \begin{scope}[xshift=3.45cm]
       \drawtfgvec{2}{0}{0}{pink!30}{magenta!55!black}
       \node[above, font=\scriptsize, text=magenta!70!black] at (0.25,0.38)
         {$\mathbf{A}_{:r}^{(3)}$};
     \end{scope}
   \end{scope}
 \end{tikzpicture}
+}
 \caption{Phân rã CP biểu diễn tensor $\mathcal{X}$ như tổng $R$ tensor hạng 1. Mỗi thành phần là tích ngoài của $N$ vector (các cột của factor matrices).}
 \label{fig:cp-decomp}
 \end{figure}
@@ -465,7 +466,8 @@ Phân rã Tucker tổng quát hóa SVD ma trận: khi $N=2$, ta có $\mathcal{X}
 
 \begin{figure}[h]
 \centering
-\begin{tikzpicture}[scale=0.82, every node/.style={font=\small}]
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[every node/.style={font=\small}]
   % Tensor X
   \begin{scope}[xshift=0cm]
     \def\dx{0.24}\def\dy{-0.24}
@@ -484,10 +486,10 @@ Phân rã Tucker tổng quát hóa SVD ma trận: khi $N=2$, ta có $\mathcal{X}
     \node[above,font=\footnotesize\bfseries] at (1.1,0.4) {$\mathcal{X}$};
   \end{scope}
 
-  \node[font=\Large,gray] at (2.75,-1.0) {$\approx$};
+  \node[font=\Large,gray] at (3.05,-1.0) {$\approx$};
 
   % Core G (nho hon)
-  \begin{scope}[xshift=3.4cm]
+  \begin{scope}[xshift=3.85cm]
     \def\dx{0.2}\def\dy{-0.2}
     \foreach \s in {0,...,1}
       \foreach \i in {0,...,1}
@@ -505,7 +507,7 @@ Phân rã Tucker tổng quát hóa SVD ma trận: khi $N=2$, ta có $\mathcal{X}
   \end{scope}
 
   % times_1 U1
-  \begin{scope}[xshift=5.1cm]
+  \begin{scope}[xshift=5.95cm]
     \node[font=\footnotesize] at (0,-0.5) {$\times_1$};
     \foreach \i in {0,...,3}
       \foreach \j in {0,...,1}
@@ -515,7 +517,7 @@ Phân rã Tucker tổng quát hóa SVD ma trận: khi $N=2$, ta có $\mathcal{X}
   \end{scope}
 
   % times_2 U2
-  \begin{scope}[xshift=6.9cm]
+  \begin{scope}[xshift=8.05cm]
     \node[font=\footnotesize] at (0,-0.5) {$\times_2$};
     \foreach \i in {0,...,3}
       \foreach \j in {0,...,1}
@@ -525,7 +527,7 @@ Phân rã Tucker tổng quát hóa SVD ma trận: khi $N=2$, ta có $\mathcal{X}
   \end{scope}
 
   % times_3 U3
-  \begin{scope}[xshift=8.7cm]
+  \begin{scope}[xshift=10.15cm]
     \node[font=\footnotesize] at (0,-0.5) {$\times_3$};
     \foreach \i in {0,...,3}
       \foreach \j in {0,...,1}
@@ -534,6 +536,7 @@ Phân rã Tucker tổng quát hóa SVD ma trận: khi $N=2$, ta có $\mathcal{X}
     \node[below,font=\scriptsize,gray] at (0.28,-3*0.56-0.2) {$I_3\times R_3$};
   \end{scope}
 \end{tikzpicture}
+}
 \caption{Phân rã Tucker: tensor $\mathcal{X}$ được xấp xỉ bởi core tensor $\mathcal{G}$ nhỏ hơn và $N$ factor matrices $\mathbf{U}^{(n)}$. Core tensor mô tả tương tác giữa các mode; factor matrices chiếu mỗi mode xuống không gian con chiều thấp hơn.}
 \label{fig:tucker-decomp}
 \end{figure}

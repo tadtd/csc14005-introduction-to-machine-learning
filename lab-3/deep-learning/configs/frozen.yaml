@@ -1,0 +1,30 @@
+experiment:
+  name: frozen
+  mode: frozen
+
+model:
+  name: prajjwal1/bert-tiny
+  num_labels: 2
+  use_fast_tokenizer: false
+
+dataset:
+  name: glue
+  subset: sst2
+  text_column: sentence
+  label_column: label
+  train_split: train
+  eval_split: validation
+  max_length: 128
+  train_subset: 5000
+  eval_subset: 1000
+  fallback_to_toy: true
+
+training:
+  seed: 42
+  prefer_cuda: true
+  epochs: 3
+  batch_size: 16
+  learning_rate: 0.0005
+  weight_decay: 0.0
+
+output_dir: results/runs

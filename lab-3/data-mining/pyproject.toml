@@ -1,0 +1,20 @@
+[project]
+name = "data-mining"
+version = "0.1.0"
+description = "Part III – Data Mining: Tensor Decomposition for EEG Analysis"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "matplotlib>=3.7",
+    "mne>=1.6",
+    "jupyter>=1.0",
+    "notebook>=7.0",
+    "tqdm>=4.65",
+    "ipykernel>=6.0",
+]
+
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.backends._legacy:_Backend"

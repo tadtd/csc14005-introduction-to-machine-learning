@@ -482,8 +482,6 @@ def cp_als(tensor, rank, max_iter=200, tol=1e-8, random_state=None,
         factors = [np.zeros((s, rank)) for s in shape]
         weights = np.zeros(rank)
         info = {'fit_history': [0.0], 'n_iter': 0, 'converged': True}
-        if tensor.ndim == 3:
-            return weights, factors[0], factors[1], factors[2]
         return weights, factors, info
 
     # =========================================================================
@@ -601,8 +599,6 @@ def cp_als(tensor, rank, max_iter=200, tol=1e-8, random_state=None,
                     'n_iter': iteration + 1,
                     'converged': True
                 }
-                if tensor.ndim == 3:
-                    return weights, factors[0], factors[1], factors[2]
                 return weights, factors, info
 
         prev_fit = fit
@@ -616,8 +612,6 @@ def cp_als(tensor, rank, max_iter=200, tol=1e-8, random_state=None,
         'n_iter': max_iter,
         'converged': False
     }
-    if tensor.ndim == 3:
-        return weights, factors[0], factors[1], factors[2]
     return weights, factors, info
 
 

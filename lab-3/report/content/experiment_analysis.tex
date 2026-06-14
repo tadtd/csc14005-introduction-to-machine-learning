@@ -140,3 +140,300 @@ kết quả không nên được diễn giải như một benchmark đầy đủ
 vụ NLP. Tuy nhiên, demo đã đáp ứng mục tiêu của đồ án: có baseline, có mở rộng
 rank sweep, có metric định lượng, có visualization, và minh họa rõ ràng
 trade-off giữa hiệu năng và số tham số cần cập nhật.
+
+\subsection{Demo Probabilistic Circuit: CPJ Circuit trên Tensor Xác suất}
+
+Demo thứ hai minh họa phần Probabilistic Circuits trong báo cáo: một circuit
+smooth và decomposable có thể được xem như một phân rã tensor không âm, đánh giá
+từng entry $p(\mathbf{x})$ của tensor xác suất mà không cần materialize toàn bộ
+tensor. Code được đặt trong thư mục \texttt{lab-3/probabilistic-circuit} và cài
+đặt bằng PyTorch một mô hình \texttt{BinaryCPJCircuit} gồm:
+
+\begin{itemize}
+    \item \textbf{Input layer}: categorical/Bernoulli log-probabilities cho từng
+    biến nhị phân.
+    \item \textbf{Region graph}: cây nhị phân ngẫu nhiên, cân bằng, chia tập biến
+    thành các scope rời nhau để đảm bảo decomposability.
+    \item \textbf{CPJ/CP-T layer}: lớp sum-product dạng CPJ trong log-domain,
+    dùng \texttt{log\_softmax} cho trọng số để giữ phân phối chuẩn hóa.
+    \item \textbf{Huấn luyện}: maximum likelihood với Adam.
+\end{itemize}
+
+\subsubsection{Môi trường chạy trên Kaggle}
+
+Thực nghiệm được chạy bằng notebook \texttt{probabilistic-circuit/demo.ipynb}
+trên Kaggle. Notebook clone branch \texttt{lab-3}, vào thư mục
+\texttt{lab-3/probabilistic-circuit}, cài \texttt{uv}, pin Python 3.13, sau đó
+chạy hai script \texttt{experiments/run\_toy.py} và
+\texttt{experiments/run\_mnist.py}. Cấu hình máy ghi nhận từ metadata notebook và
+\texttt{nvidia-smi} được tóm tắt trong Bảng~\ref{tab:pc-kaggle-env}.
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{ll}
+\toprule
+\textbf{Thành phần} & \textbf{Cấu hình} \\
+\midrule
+Nền tảng & Kaggle Notebook \\
+Docker image version & 31401 \\
+Internet & Enabled \\
+Accelerator & NVIDIA Tesla T4 \\
+GPU thực tế từ \texttt{nvidia-smi} & 2 $\times$ Tesla T4, 15,360 MiB/GPU \\
+Driver / CUDA & NVIDIA-SMI 580.105.08, CUDA 13.0 \\
+Python trong notebook & 3.12.13 \\
+Python dùng cho project & CPython 3.13.14 qua \texttt{uv} \\
+Package chính & \texttt{torch==2.12.0}, \texttt{torchvision==0.27.0} \\
+\bottomrule
+\end{tabular}
+\caption{Cấu hình môi trường Kaggle dùng cho demo Probabilistic Circuit.}
+\label{tab:pc-kaggle-env}
+\end{table}
+
+Hai lệnh chính trong notebook là:
+\begin{verbatim}
+uv run experiments/run_toy.py --width 8 --epochs 300
+uv run experiments/run_mnist.py --width 8 --epochs 50 \
+  --max-train 1000 --max-val 200 --max-test 200 --batch-size 128
+\end{verbatim}
+
+\subsubsection{Toy 4-bit correlated distribution}
+
+Thí nghiệm toy tạo một phân phối mục tiêu trên 4 biến nhị phân, tức tensor xác
+suất có $2^4 = 16$ entry. Dữ liệu train gồm 2000 mẫu được lấy từ phân phối mục
+tiêu. Mô hình CPJ có width $K=8$, seed 0, học trong 300 epoch với learning rate
+$5\times 10^{-2}$. Sau huấn luyện, mô hình được enumerate trên toàn bộ 16
+assignment để kiểm tra trực tiếp tensor xác suất học được.
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{rrrr}
+\toprule
+\textbf{Epoch} & \textbf{Train NLL} & \textbf{KL(target $\Vert$ circuit)} & \textbf{Ghi chú} \\
+\midrule
+1   & 2.7727 & 0.2967 & Khởi tạo gần uniform \\
+100 & 2.6111 & 0.1281 & Bắt đầu khớp các tương quan chính \\
+200 & 2.5225 & 0.0360 & Phân phối học được gần target \\
+300 & 2.5000 & 0.0054 & Hội tụ tốt trên tensor 16 entry \\
+\bottomrule
+\end{tabular}
+\caption{Kết quả huấn luyện CPJ circuit trên phân phối toy 4-bit.}
+\label{tab:pc-toy-training}
+\end{table}
+
+Tổng xác suất khi enumerate toàn bộ 16 assignment là $1.000000$, cho thấy circuit
+định nghĩa một phân phối chuẩn hóa. Một vài entry đại diện được trình bày trong
+Bảng~\ref{tab:pc-toy-entries}; sai khác nhỏ giữa target và circuit là kỳ vọng
+hợp lý vì mô hình học từ mẫu hữu hạn.
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{ccc}
+\toprule
+\textbf{Assignment} & \textbf{Target $p(\mathbf{x})$} & \textbf{Circuit $p(\mathbf{x})$} \\
+\midrule
+0000 & 0.07009 & 0.07131 \\
+0001 & 0.12772 & 0.13048 \\
+0111 & 0.00521 & 0.00739 \\
+1000 & 0.00521 & 0.00479 \\
+1101 & 0.12772 & 0.13111 \\
+1111 & 0.07009 & 0.07751 \\
+\bottomrule
+\end{tabular}
+\caption{Một số entry của tensor xác suất toy sau khi enumerate CPJ circuit.}
+\label{tab:pc-toy-entries}
+\end{table}
+
+\subsubsection{Binarized MNIST density estimation}
+
+Thí nghiệm MNIST dùng ảnh $28\times 28$ được threshold tại 0.5, nên mỗi ảnh trở
+thành một vector nhị phân gồm 784 biến. Mục tiêu không phải phân loại chữ số, mà
+là density estimation: học một phân phối xác suất trên ảnh nhị phân và đánh giá
+bằng log-likelihood/bits-per-dimension (bpd). Vì đây là demo nhanh trên Kaggle,
+notebook chỉ dùng subset nhỏ: 1000 ảnh train, 200 ảnh validation và 200 ảnh test.
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{ll}
+\toprule
+\textbf{Siêu tham số} & \textbf{Giá trị} \\
+\midrule
+Dataset & Binarized MNIST, threshold 0.5 \\
+Số biến & 784 binary variables \\
+Train / Val / Test & 1000 / 200 / 200 \\
+Width $K$ & 8 \\
+Epochs & 50 \\
+Batch size & 128 \\
+Optimizer & Adam \\
+Learning rate & $10^{-2}$ \\
+Device & CUDA \\
+\bottomrule
+\end{tabular}
+\caption{Cấu hình chạy MNIST CPJ probabilistic circuit trong notebook Kaggle.}
+\label{tab:pc-mnist-config}
+\end{table}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{rrrrr}
+\toprule
+\textbf{Epoch} & \textbf{Train NLL} & \textbf{Val LL} & \textbf{Val bpd} & \textbf{Time/epoch} \\
+\midrule
+1  & 524.178 & -499.040 & 0.9183 & 5.0s \\
+10 & 294.150 & -284.672 & 0.5238 & 4.3s \\
+20 & 231.515 & -226.047 & 0.4160 & 4.4s \\
+30 & 213.894 & -208.713 & 0.3841 & 4.3s \\
+40 & 207.032 & -201.993 & 0.3717 & 4.3s \\
+50 & 204.571 & -199.710 & 0.3675 & 4.4s \\
+\bottomrule
+\end{tabular}
+\caption{Quá trình validation của CPJ circuit trên Binarized MNIST subset.}
+\label{tab:pc-mnist-val}
+\end{table}
+
+Checkpoint tốt nhất theo validation log-likelihood nằm ở epoch 50 với
+\textbf{best val LL} $=-199.710$. Khi đánh giá trên test subset, mô hình đạt
+\textbf{test LL} $=-201.305$ và \textbf{test bpd} $=0.3704$.
+
+\subsubsection{Nhận xét}
+
+Thí nghiệm toy kiểm tra đúng tính chất cốt lõi của probabilistic circuit: mô hình
+có thể đánh giá từng entry của tensor xác suất, và khi enumerate toàn bộ miền nhỏ
+thì tổng xác suất bằng 1. Đây là minh họa trực tiếp cho cách nhìn ``PC như
+non-negative tensor factorization'' trong phần lý thuyết.
+
+Thí nghiệm MNIST cho thấy cùng kiến trúc có thể mở rộng từ 4 biến lên 784 biến
+nhị phân. Bpd thấp hơn nghĩa là log-likelihood tốt hơn; khi tăng thời gian huấn
+luyện lên 50 epoch, validation bpd giảm từ 0.9183 xuống 0.3675 và test bpd đạt
+0.3704. Kết quả này cho thấy pipeline không chỉ chạy được trên GPU Kaggle mà còn
+học được cấu trúc ảnh nhị phân rõ rệt qua nhiều epoch. Tuy nhiên, đây vẫn là
+demo nhỏ: width chỉ bằng 8 và train subset chỉ gồm 1000 ảnh. Vì vậy kết quả này
+nên được xem là kiểm chứng pipeline và minh họa tractable density estimation,
+không phải benchmark cuối cùng so với các PC lớn trong bài báo.
+
+\subsection{Demo Data Mining: CP, PARAFAC2 và CMTF}
+
+Các thực nghiệm trong phần Data Mining được chọn để minh họa vai trò của tensor
+factorization trong khai phá pattern có thể diễn giải. Khác với demo LoRA và
+Probabilistic Circuit, mục tiêu chính ở đây không phải tối ưu accuracy hay
+log-likelihood, mà là kiểm tra xem các phân rã có giữ được cấu trúc đa mode và
+tạo ra factor có thể diễn giải hay không.
+
+\subsubsection{CP-ALS và CP-OPT trên dữ liệu giả lập}
+
+Thực nghiệm đầu tiên dùng tensor hạng 3 kích thước $10 \times 15 \times 20$
+được sinh từ mô hình CP với nhiễu Gaussian mức $0.1$. Hai thuật toán được so
+sánh là CP-ALS và CP-OPT dùng L-BFGS-B. Cả hai đều được triển khai lại bằng
+NumPy để kiểm tra trực tiếp công thức cập nhật và gradient trong phần lý thuyết.
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Thuật toán} & \textbf{Vòng lặp} & \textbf{Sai số tái tạo} & \textbf{FMS} \\
+\midrule
+CP-ALS & 6 & 0.2159 & \textbf{0.7239} \\
+CP-OPT (L-BFGS-B) & 8 & 0.9988 & 0.3723 \\
+\bottomrule
+\end{tabular}
+\caption{So sánh CP-ALS và CP-OPT trên tensor synthetic với noise $=0.1$.}
+\label{tab:exp-dm-als-vs-opt}
+\end{table}
+
+Kết quả cho thấy CP-ALS đạt Factor Match Score cao hơn rõ rệt. Điều này phù hợp
+với mục tiêu minh họa của thí nghiệm: cập nhật luân phiên theo từng mode có thể
+khôi phục các factor ổn định hơn trong thiết lập synthetic nhỏ, trong khi CP-OPT
+dễ phụ thuộc vào khởi tạo và cực tiểu địa phương. Tuy nhiên, kết quả này không
+nên được hiểu là CP-ALS luôn tốt hơn CP-OPT; với loss function khác hoặc ràng
+buộc phức tạp hơn, cách tối ưu all-at-once vẫn có lợi thế về độ linh hoạt.
+
+\subsubsection{PARAFAC2 trên dữ liệu slice không đồng đều}
+
+Thực nghiệm PARAFAC2 mô phỏng tình huống thường gặp trong phân tích tín hiệu:
+mỗi subject có số trial hợp lệ khác nhau sau bước tiền xử lý. Dữ liệu gồm $K=5$
+subjects, mỗi slice có dạng $n_k \times 64$, trong đó $n_k$ có thể thay đổi theo
+subject. Mô hình dùng rank $R=4$ và cập nhật bằng PARAFAC2-ALS với bước
+Procrustes để căn chỉnh các slice.
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{cc}
+\toprule
+\textbf{Vòng lặp} & \textbf{Fit score} \\
+\midrule
+10 & 0.6811 \\
+20 & 0.6904 \\
+30 & 0.7250 \\
+40 & 0.7277 \\
+47 & $>0.7277$ \\
+\bottomrule
+\end{tabular}
+\caption{Quá trình hội tụ của PARAFAC2-ALS với rank $R=4$.}
+\label{tab:exp-dm-parafac2-fit}
+\end{table}
+
+Fit score tăng dần và hội tụ sau 47 vòng lặp, cho thấy PARAFAC2 xử lý được dữ
+liệu có độ dài slice không đồng đều trong khi vẫn giữ một factor chung. Đây là
+điểm khác biệt quan trọng so với CP chuẩn, vốn giả định tensor có cùng kích thước
+đều đặn trên mọi mode.
+
+\subsubsection{CMTF cho data fusion EEG và metadata}
+
+Thực nghiệm CMTF dùng hard coupling trên subject factor để ghép tensor EEG với
+một ma trận metadata giả lập. Tensor EEG có kích thước $10 \times 64 \times
+481$, tương ứng subject/trial, channel và time. Ma trận metadata có kích thước
+$10 \times 5$ và chia sẻ cùng factor subject với tensor EEG.
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{p{0.24\textwidth}p{0.24\textwidth}p{0.36\textwidth}}
+\toprule
+\textbf{Nguồn dữ liệu} & \textbf{Kích thước} & \textbf{Vai trò trong mô hình} \\
+\midrule
+Tensor EEG $\mathcal{X}$ & $10 \times 64 \times 481$ & Nguồn dữ liệu động, cung cấp factor subject, channel và time. \\
+Metadata $\mathbf{Y}$ & $10 \times 5$ & Nguồn dữ liệu tĩnh, chia sẻ factor subject với tensor EEG. \\
+\bottomrule
+\end{tabular}
+\caption{Thiết lập CMTF với hard coupling trên subject factor.}
+\label{tab:exp-dm-cmtf-setup}
+\end{table}
+
+Vì metadata được giả lập, kết quả CMTF trong báo cáo nên được xem là kiểm chứng
+pipeline data fusion, không phải phát hiện sinh học cuối cùng. Giá trị chính của
+thí nghiệm là minh họa cách factor subject nhận tín hiệu đồng thời từ dữ liệu
+động và dữ liệu tĩnh, từ đó điều hướng việc diễn giải các component EEG.
+
+\subsubsection{So sánh SVD/PCA và CP-ALS trên EEG}
+
+Thực nghiệm cuối cùng so sánh cách xử lý EEG bằng ma trận và tensor. Khi dùng
+SVD/PCA, dữ liệu phải được unfold thành ma trận $20 \times 30784$, làm trộn lẫn
+channel và time vào cùng một trục. Khi dùng CP-ALS, dữ liệu được giữ ở dạng
+tensor $20 \times 64 \times 481$, nên các factor trial, spatial và temporal được
+tách riêng.
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{p{0.22\textwidth}p{0.32\textwidth}p{0.34\textwidth}}
+\toprule
+\textbf{Phương pháp} & \textbf{Dạng dữ liệu} & \textbf{Khả năng diễn giải} \\
+\midrule
+SVD/PCA & Ma trận $20 \times 30784$ & Trộn channel và time, component khó tách thành pattern sinh lý riêng. \\
+CP-ALS & Tensor $20 \times 64 \times 481$ & Giữ riêng trial, channel và time, thuận lợi hơn cho diễn giải không-thời gian. \\
+\bottomrule
+\end{tabular}
+\caption{So sánh tiếp cận ma trận và tensor trên dữ liệu EEG.}
+\label{tab:exp-dm-eeg-cp-svd}
+\end{table}
+
+Kết quả này củng cố thông điệp chính của phần Data Mining: lợi ích của tensor
+factorization không chỉ nằm ở nén dữ liệu, mà còn ở việc bảo toàn ngữ nghĩa của
+từng mode. Với EEG, việc giữ riêng channel và time giúp component CP có thể được
+đọc như một pattern không-thời gian thay vì một vector đã bị trải phẳng.

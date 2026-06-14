@@ -11,6 +11,8 @@
 *.fls
 *.fdb_latexmk
 *.synctex.gz
+*.snm
+*.nav
 
 notes/
 *.synctex(busy)

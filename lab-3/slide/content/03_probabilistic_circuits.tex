@@ -1,74 +1,180 @@
 \section{Probabilistic Circuits}
 
-\begin{frame}{Tensor xác suất và circuit}
-\large
+\begin{frame}{Tensor xác suất và động lực}
+\[
+    \mathcal{P}\in
+    \mathbb{R}^{|\mathcal{D}_1|\times\cdots\times|\mathcal{D}_N|},
+    \qquad
+    |\mathcal{P}|=\prod_{n=1}^{N}|\mathcal{D}_n|
+\]
 \begin{itemize}
-    \item Phân phối đồng thời trên $N$ biến rời rạc tương ứng với một tensor xác suất.
-    \item Kích thước tensor tăng theo $\prod_{n=1}^{N}|\mathcal{D}_n|$.
-    \item Tensor factorizations biểu diễn gọn; circuits tổ chức phép tính để suy luận hiệu quả.
+    \item Mỗi entry là một xác suất $p(x_1,\ldots,x_N)$.
+    \item Tensor xác suất đầy đủ tăng theo hàm mũ theo số biến.
+    \item Tensor factorization biểu diễn gọn; circuit tổ chức phép tính để truy vấn hiệu quả.
 \end{itemize}
 \[
-    \text{tensor factorizations}
+    \text{Tensor Factorization}
     \Longleftrightarrow
-    \text{circuits}
+    \text{Circuit}
     \Longrightarrow
-    \text{tractable inference}.
+    \text{Tractable Inference}
 \]
 \end{frame}
 
-\begin{frame}{Circuit layer theo tutorial}
-\large
-\begin{enumerate}
-    \item Tập các tractable functions là một layer.
-    \item Linear projection:
+\begin{frame}{Circuit gồm những unit nào?}
+\begin{itemize}
+    \item \textbf{Input unit}: hàm cục bộ trên một scope nhỏ.
     \[
-        \mathbf{c}(\mathbf{x})=\mathbf{W}\boldsymbol{\ell}(\mathbf{x}).
+        c_n(x_{S_n})=f_n(x_{S_n})
     \]
-    \item Tích layer:
+    \item \textbf{Product unit}: nhân các nhánh con.
     \[
-        \mathbf{c}(\mathbf{x})=\boldsymbol{\ell}(\mathbf{x})\had\mathbf{r}(\mathbf{x})
-        \quad\text{hoặc}\quad
-        \mathrm{vec}(\boldsymbol{\ell}\mathbf{r}^{\top}).
+        c_n(x_{\mathrm{scope}(n)})
+        =
+        \prod_{j\in\mathrm{in}(n)}c_j(x_{\mathrm{scope}(j)})
     \]
-\end{enumerate}
+    \item \textbf{Sum unit}: tổ hợp tuyến tính các nhánh con.
+    \[
+        c_n(x_{\mathrm{scope}(n)})
+        =
+        \sum_{j\in\mathrm{in}(n)}w_{n,j}c_j(x_{\mathrm{scope}(j)})
+    \]
+\end{itemize}
 \end{frame}
 
-\begin{frame}{CP như một circuit}
-\large
+\begin{frame}{CP decomposition như một circuit sum-product}
+\begin{columns}[T,totalwidth=\textwidth]
+    \begin{column}{0.60\textwidth}
+        \centering
+        \begin{tikzpicture}[
+            sum/.style={circle, draw, fill=blue!10, minimum size=0.65cm, thick},
+            prod/.style={circle, draw, fill=orange!10, minimum size=0.65cm, thick},
+            leaf/.style={rectangle, draw, rounded corners=3pt, fill=teal!10, minimum height=0.45cm, minimum width=1.05cm, thick, font=\scriptsize},
+            arrow/.style={-{Stealth[length=2.2mm]}, thick}
+        ]
+            \node[sum] (out) at (0,0) {$+$};
+            \node[prod] (p1) at (-1.8,-1.1) {$\times$};
+            \node[prod] (p2) at (1.8,-1.1) {$\times$};
+            \foreach \x/\name/\lab in {-2.8/l11/$V^{(1)}_{x_1,1}$,-1.8/l12/$V^{(2)}_{x_2,1}$,-0.8/l13/$V^{(3)}_{x_3,1}$} {
+                \node[leaf] (\name) at (\x,-2.4) {\lab};
+                \draw[arrow] (\name) -- (p1);
+            }
+            \foreach \x/\name/\lab in {0.8/l21/$V^{(1)}_{x_1,2}$,1.8/l22/$V^{(2)}_{x_2,2}$,2.8/l23/$V^{(3)}_{x_3,2}$} {
+                \node[leaf] (\name) at (\x,-2.4) {\lab};
+                \draw[arrow] (\name) -- (p2);
+            }
+            \draw[arrow] (p1) -- (out);
+            \draw[arrow] (p2) -- (out);
+        \end{tikzpicture}
+    \end{column}
+    \begin{column}{0.36\textwidth}
+        \[
+            \mathcal{T}_{x_1,x_2,x_3}
+            =
+            \sum_{r=1}^{R}
+            V^{(1)}_{x_1,r}
+            V^{(2)}_{x_2,r}
+            V^{(3)}_{x_3,r}
+        \]
+        \begin{itemize}
+            \item Product nodes: nhân theo mode.
+            \item Sum node: cộng theo rank.
+        \end{itemize}
+    \end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Tucker circuit và chi phí core}
 \[
-    \mathcal{X}_{x_1,\ldots,x_N}
+    \mathcal{T}_{x_1,\ldots,x_N}
     \approx
-    \sum_{r=1}^{R}\prod_{n=1}^{N}V^{(n)}_{x_n,r}.
+    \sum_{r_1,\ldots,r_N}
+    \mathcal{W}_{r_1,\ldots,r_N}
+    \prod_{n=1}^{N}V^{(n)}_{x_n,r_n}
 \]
 \begin{itemize}
-    \item Input layers trả về hàng $x_n$ của factor matrix $\mathbf{V}^{(n)}$.
-    \item Product units nhân theo rank $r$.
-    \item Sum unit cuối cộng trên $r=1,\ldots,R$.
+    \item Tucker circuit dùng core tensor để trộn các latent dimensions.
+    \item Kích thước circuit/core có thể tăng như:
+    \[
+        O\!\left(N\prod_{n=1}^{N}R_n\right)
+    \]
+    \item Khi core superdiagonal, Tucker trở về CP.
 \end{itemize}
 \end{frame}
 
 \begin{frame}{Structural properties}
-\large
+\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{p{0.24\textwidth}p{0.38\textwidth}p{0.28\textwidth}}
+\toprule
+\textbf{Property} & \textbf{Điều kiện} & \textbf{Cho phép} \\
+\midrule
+Smoothness & Các nhánh vào sum node có cùng scope & Marginalization đúng \\
+Decomposability & Các nhánh vào product node có scope rời nhau & Tách tích phân theo nhóm biến \\
+Compatibility & Hai circuits chia scope cùng cấu trúc & Tính expectation giữa $p$ và $f$ \\
+Determinism & Supports của nhánh sum rời nhau & MAP inference hiệu quả hơn \\
+\bottomrule
+\end{tabular}
+\[
+    \text{smooth + decomposable}
+    \Rightarrow
+    \text{marginals trong }O(|c|)
+\]
+\end{frame}
+
+\begin{frame}{Các truy vấn suy luận}
 \begin{itemize}
-    \item \textbf{Scope}: tập biến mà một unit phụ thuộc vào.
-    \item \textbf{Smoothness}: sum unit chỉ cộng các input cùng scope.
-    \item \textbf{Decomposability}: product unit chỉ nhân các input có scope rời nhau.
-    \item \textbf{Compatibility}: hai circuits phân rã scope theo cùng cấu trúc.
-    \item \textbf{Determinism}: các input của sum unit có support rời nhau.
+    \item \textbf{Marginal}
+    \[
+        p(x_O)=\sum_{x_M}p(x_O,x_M)
+    \]
+    \item \textbf{Expectation}
+    \[
+        \mathbb{E}_{p}[f(x)]=\sum_xp(x)f(x)
+    \]
+    \item \textbf{Missing values}
+    \[
+        p(x_M\mid x_O)=
+        \frac{p(x_O,x_M)}{\sum_{x'_M}p(x_O,x'_M)}
+    \]
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Tractable inference}
-\large
+\begin{frame}{Non-negative TF như latent variable model}
+\[
+    p(x)
+    =
+    \sum_{r=1}^{R}p(r)\prod_{n=1}^{N}p_n(x_n\mid r)
+\]
+\begin{itemize}
+    \item Chỉ số rank $r$ có thể đọc như latent component.
+    \item Sum node tương ứng với mixture variable.
+    \item Product node sinh độc lập trên các scope rời nhau.
+    \item Sampling thực hiện top-down: chọn nhánh ở sum, đi qua tất cả nhánh ở product.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Demo CPJ Circuit}
 \centering
-\renewcommand{\arraystretch}{1.2}
-\begin{tabular}{lp{0.55\textwidth}}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{p{0.28\textwidth}p{0.30\textwidth}p{0.30\textwidth}}
 \toprule
-\textbf{Properties} & \textbf{Query tractable} \\
+\textbf{Demo} & \textbf{Thiết lập} & \textbf{Kết quả chính} \\
 \midrule
-Smoothness + decomposability & Marginals, integrals, partition function \\
-Smoothness + compatibility & Expectations $\mathbb{E}_{p}[f(\mathbf{x})]$ \\
-Determinism + decomposability & MAP inference \\
+Toy 4-bit & $2^4=16$ assignments & KL(target $\Vert$ circuit) $=0.0054$; tổng xác suất $=1.000000$ \\
+Binarized MNIST & $28\times 28=784$ biến nhị phân & Best val bpd $=0.3675$; test bpd $=0.3704$ \\
 \bottomrule
 \end{tabular}
+\[
+    \mathrm{bpd}=-\frac{\log p(x)}{784\log 2}
+\]
+\end{frame}
+
+\begin{frame}{Hạn chế và câu hỏi mở của PC}
+\begin{itemize}
+    \item Tractable inference không đảm bảo biểu diễn luôn nhỏ.
+    \item Tucker/core có thể tăng theo $R^N$ nếu số mode lớn.
+    \item Hiệu quả phụ thuộc region graph, width/rank và cấu trúc phụ thuộc thật trong dữ liệu.
+    \item Câu hỏi mở: optimization, identifiability, approximate inference, scalability.
+\end{itemize}
 \end{frame}

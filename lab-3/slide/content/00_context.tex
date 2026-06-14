@@ -1,37 +1,55 @@
 \section{Bối cảnh}
 
-\begin{frame}{Vì sao tensor computations quan trọng?}
-\large
-\begin{itemize}
-    \item Mô hình học sâu ngày càng lớn: chi phí huấn luyện, suy diễn và triển khai tăng nhanh.
-    \item Dữ liệu hiện đại thường có nhiều mode: batch, channel, head, token, subject, time, feature.
-    \item Tensor decomposition khai thác cấu trúc nhiều mode để giảm số tham số, tăng tốc và hỗ trợ diễn giải.
-\end{itemize}
+\begin{frame}{Vấn đề: AI scaling wall}
+\begin{columns}[T,totalwidth=\textwidth]
+    \begin{column}{0.48\textwidth}
+        \begin{tikzpicture}[
+            box/.style={draw, rounded corners=4pt, minimum width=3.7cm, minimum height=0.85cm, align=center, font=\small},
+            bad/.style={box, fill=red!10, draw=red!70!black},
+            good/.style={box, fill=teal!12, draw=teal!60!black},
+            arrow/.style={-{Stealth[length=2.6mm]}, thick, gray!70}
+        ]
+            \node[bad] (p1) at (0,0) {Mô hình lớn\\nhiều tham số};
+            \node[bad] (p2) at (0,-1.25) {Bộ nhớ và chi phí\\huấn luyện cao};
+            \node[bad] (p3) at (0,-2.5) {Khó triển khai\\trên tài nguyên nhỏ};
+            \node[good, minimum height=1.15cm] (tf) at (5.1,-1.25) {\textbf{Low-rank}\\\textbf{tensor structure}};
+            \draw[arrow] (p1.east) -- (tf.west);
+            \draw[arrow] (p2.east) -- (tf.west);
+            \draw[arrow] (p3.east) -- (tf.west);
+        \end{tikzpicture}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+        \begin{itemize}
+            \item Tensor không chỉ là kiểu dữ liệu trong PyTorch.
+            \item Trọng số, attention, gradient và dữ liệu khoa học đều có nhiều mode.
+            \item Nếu khai thác cấu trúc đó, ta có thể nén, suy luận nhanh hơn và diễn giải tốt hơn.
+        \end{itemize}
+    \end{column}
+\end{columns}
 \end{frame}
 
-\begin{frame}{Ba hướng chính trong tutorial}
-\large
-\begin{enumerate}
-    \item \textbf{Deep learning}: tensor hóa trọng số, gradient, attention và adaptation.
-    \item \textbf{Probabilistic circuits}: liên hệ tensor factorizations với circuits và tractable inference.
-    \item \textbf{Data mining}: CP, PARAFAC2 và CMTF cho pattern discovery có khả năng diễn giải.
-\end{enumerate}
-\end{frame}
-
-\begin{frame}{Quy ước ký hiệu dùng trong báo cáo}
+\begin{frame}{Ba hướng chính của report}
 \centering
-\renewcommand{\arraystretch}{1.25}
-\begin{tabular}{ll}
-\toprule
-\textbf{Ký hiệu} & \textbf{Ý nghĩa} \\
-\midrule
-$\mathcal{X}\in\R^{I_1\times\cdots\times I_N}$ & Tensor bậc $N$ \\
-$\mathbf{X}_{(n)}$ & Mode-$n$ matricization \\
-$\mathbf{A}^{(n)}\in\R^{I_n\times R}$ & Factor matrix mode $n$ \\
-$\circ$ & Outer product \\
-$\odot$ & Khatri-Rao product \\
-$\had$ & Hadamard product \\
-$\cp{\mathbf{A}^{(1)},\ldots,\mathbf{A}^{(N)}}$ & CP shorthand \\
-\bottomrule
-\end{tabular}
+\begin{tikzpicture}[
+    hub/.style={draw, rounded corners=5pt, fill=gray!10, line width=0.9pt, minimum width=3.2cm, minimum height=1.0cm, align=center},
+    app/.style={draw, rounded corners=5pt, line width=0.9pt, minimum width=3.5cm, minimum height=1.05cm, align=center},
+    arrow/.style={-{Stealth[length=3mm]}, line width=1pt, gray!70}
+]
+    \node[hub] (tf) at (0,0) {\textbf{Tensor}\\\textbf{Computations}};
+    \node[app, fill=teal!14, draw=teal!60!black] (dl) at (-4.9,-2.0) {Deep Learning\\nén và thích nghi};
+    \node[app, fill=violet!13, draw=violet!65!black] (pc) at (0,-2.0) {Probabilistic Circuits\\suy luận tractable};
+    \node[app, fill=orange!16, draw=orange!75!black] (dm) at (4.9,-2.0) {Data Mining\\diễn giải đa mode};
+    \draw[arrow] (tf) -- (dl);
+    \draw[arrow] (tf) -- (pc);
+    \draw[arrow] (tf) -- (dm);
+\end{tikzpicture}
+
+\vspace{0.3cm}
+\[
+    \text{tensor factorization}
+    \Rightarrow
+    \text{compact representation}
+    +
+    \text{interpretable factors}
+\]
 \end{frame}

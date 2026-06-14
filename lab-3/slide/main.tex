@@ -15,8 +15,69 @@
 \newcommand{\cp}[1]{[\![#1]\!]}
 \newcommand{\had}{\ast}
 
+% --- TikZ helpers for drawing tensors ---
+\newcommand{\tfgCellW}{0.40}
+\newcommand{\tfgCellH}{0.40}
+\newcommand{\drawtfgface}[7]{% rows, cols, x, y, fill, draw, dashed(0/1)
+  \pgfmathsetmacro{\tfgW}{#2*\tfgCellW}%
+  \pgfmathsetmacro{\tfgH}{#1*\tfgCellH}%
+  \draw[line width=0.55pt, fill=#5, draw=#6, rounded corners=2.0pt]
+    (#3,#4) rectangle (#3+\tfgW,#4-\tfgH);
+  \pgfmathtruncatemacro{\tfgRows}{#1}%
+  \ifnum\tfgRows>1
+    \foreach \i in {1,...,\numexpr\tfgRows-1\relax} {%
+      \ifnum#7=1
+        \draw[line width=0.4pt, dashed, #6!55] (#3,#4-\i*\tfgCellH) -- (#3+\tfgW,#4-\i*\tfgCellH);
+      \else
+        \draw[line width=0.4pt, #6!55] (#3,#4-\i*\tfgCellH) -- (#3+\tfgW,#4-\i*\tfgCellH);
+      \fi
+    }%
+  \fi
+  \pgfmathtruncatemacro{\tfgCols}{#2}%
+  \ifnum\tfgCols>1
+    \foreach \j in {1,...,\numexpr\tfgCols-1\relax} {%
+      \ifnum#7=1
+        \draw[line width=0.4pt, dashed, #6!55] (#3+\j*\tfgCellW,#4) -- (#3+\j*\tfgCellW,#4-\tfgH);
+      \else
+        \draw[line width=0.4pt, #6!55] (#3+\j*\tfgCellW,#4) -- (#3+\j*\tfgCellW,#4-\tfgH);
+      \fi
+    }%
+  \fi
+}
+\newcommand{\drawtfgvec}[5]{% len, x, ytop, fill, draw
+  \drawtfgface{#1}{1}{#2}{#3}{#4}{#5}{0}%
+}
+\newcommand{\drawtfgveccy}[5]{% len, x, ycenter, fill, draw
+  \pgfmathsetmacro{\tfgTop}{#3+0.5*#1*\tfgCellH}%
+  \drawtfgface{#1}{1}{#2}{\tfgTop}{#4}{#5}{0}%
+}
+\newcommand{\drawtfgtensor}[7]{% I, J, K, x, y, fill, draw
+  \def\tfgOx{-0.18}\def\tfgOy{0.16}%
+  \pgfmathsetmacro{\tfgW}{#2*\tfgCellW}%
+  \pgfmathsetmacro{\tfgH}{#1*\tfgCellH}%
+  \pgfmathtruncatemacro{\tfgDepth}{#3}%
+  \pgfmathtruncatemacro{\tfgLast}{\numexpr\tfgDepth-1\relax}%
+  \foreach \s in {\tfgLast,...,0} {%
+    \pgfmathsetmacro{\tfgSx}{#4+(\s)*\tfgOx}%
+    \pgfmathsetmacro{\tfgSy}{#5+(\s)*\tfgOy}%
+    \ifnum\s=0
+      \drawtfgface{#1}{#2}{\tfgSx}{\tfgSy}{#6}{#7}{1}%
+    \else
+      \drawtfgface{#1}{#2}{\tfgSx}{\tfgSy}{#6}{#7}{0}%
+    \fi
+  }%
+  \pgfmathsetmacro{\tfgBx}{#4+\tfgLast*\tfgOx}%
+  \pgfmathsetmacro{\tfgBy}{#5+\tfgLast*\tfgOy}%
+  \draw[line width=0.45pt, dashed, #7!35]
+    (#4,#5) -- (\tfgBx,\tfgBy)
+    (#4+\tfgW,#5) -- (\tfgBx+\tfgW,\tfgBy)
+    (#4,#5-\tfgH) -- (\tfgBx,\tfgBy-\tfgH)
+    (#4+\tfgW,#5-\tfgH) -- (\tfgBx+\tfgW,\tfgBy-\tfgH);
+}
+
+
 \title{Foundations of Tensor Computations for AI}
-\subtitle{Tensor factorizations, circuits, và interpretable data mining}
+% \subtitle{Tensor factorizations, circuits, và interpretable data mining}
 \author{Đỗ Tiến Đạt -- Lê Nhật Minh Tâm -- Triệu Tuấn Kiệt\\Nguyễn Đăng Khoa -- Huỳnh Mạnh Tường}
 \institute{Nhập môn học máy -- CSC14005\\Trường Đại học Khoa học Tự nhiên, ĐHQG-HCM}
 \date{\today}
@@ -43,9 +104,9 @@
 \begin{frame}{Kết luận}
 \large
 \begin{itemize}
-    \item Tensor computations là ngôn ngữ chung cho nén mô hình, thiết kế kiến trúc, circuit tractability và data mining.
-    \item CP/Tucker cung cấp biểu diễn gọn; structural properties của circuits cho phép suy luận hiệu quả.
-    \item Trong thực nghiệm, LoRA rank sweep minh họa trade-off rõ giữa số tham số trainable và accuracy.
+    \item Tensor factorization giúp biến dữ liệu nhiều chiều thành cấu trúc có thể nén và diễn giải.
+    \item CP/Tucker là nền tảng chung cho LoRA, probabilistic circuits và khai phá dữ liệu đa mode.
+    \item Các demo cho thấy cùng một ý tưởng low-rank xuất hiện ở cả tham số mô hình, tensor xác suất và dữ liệu EEG.
 \end{itemize}
 \end{frame}
 

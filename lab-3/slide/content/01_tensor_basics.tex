@@ -1,66 +1,208 @@
 \section{Cơ sở Tensor}
 
-\begin{frame}{Tensor và cấu trúc đa chiều}
-\large
-\begin{itemize}
-    \item Tensor tổng quát hóa scalar, vector và ma trận.
-    \item Mỗi chiều là một \textit{mode}; các fiber/slice giữ ý nghĩa riêng của dữ liệu.
-    \item Matricization giúp chuyển bài toán tensor về các phép toán ma trận nhưng vẫn theo từng mode.
-\end{itemize}
+\begin{frame}{Tensor và các mode}
+\centering
+\begin{tikzpicture}[scale=0.95, every node/.style={font=\small}]
+  \drawtfgface{1}{1}{0}{0}{violet!18}{black!55}{0}
+  \node[below=6pt] at (0.2,-0.7) {Scalar};
+  \begin{scope}[xshift=2.1cm]
+    \drawtfgvec{4}{0}{0}{teal!22}{teal!55!black}
+    \node[below=4pt] at (0.25,-2.0) {Vector};
+  \end{scope}
+  \begin{scope}[xshift=4.4cm]
+    \drawtfgface{4}{3}{0}{0}{orange!22}{orange!65!black}{0}
+    \node[below=4pt] at (0.65,-2.0) {Matrix};
+  \end{scope}
+  \begin{scope}[xshift=7.5cm, yshift=-0.05cm]
+    \drawtfgtensor{4}{3}{3}{0}{0}{pink!22}{magenta!55!black}
+    \node[below=4pt] at (0.95,-2.1) {Tensor};
+  \end{scope}
+\end{tikzpicture}
+
 \[
-    \mathcal{X}\in\R^{I_1\times I_2\times\cdots\times I_N},
-    \qquad
-    \mathbf{X}_{(n)}\in\R^{I_n\times \prod_{k\ne n}I_k}.
+    \mathcal{X}\in\mathbb{R}^{I_1\times I_2\times\cdots\times I_N}
 \]
+\begin{itemize}
+    \item Mỗi chiều là một \textbf{mode}.
+    \item Fiber: cố định mọi chỉ số trừ một mode.
+    \item Slice: cố định mọi chỉ số trừ hai mode.
+\end{itemize}
 \end{frame}
 
-\begin{frame}{CP decomposition}
-\large
+\begin{frame}{Matricization: trải phẳng theo mode}
+\begin{columns}[T,totalwidth=\textwidth]
+    \begin{column}{0.52\textwidth}
+        \centering
+        \begin{tikzpicture}[scale=0.68, every node/.style={font=\small}]
+            \drawtfgtensor{3}{4}{2}{0}{0}{pink!22}{magenta!70!black}
+            \node[above=6pt] at (1.0,0.2) {$\mathcal{X}$};
+            \draw[->, line width=1.1pt, gray!70, >=stealth] (2.5,-0.75) -- (3.6,-0.75);
+            \node[font=\scriptsize, text=gray!70] at (3.05,-0.45) {mode-1};
+            \begin{scope}[xshift=4.1cm, yshift=0.15cm]
+                \drawtfgface{3}{8}{0}{0}{teal!18}{teal!65!black}{0}
+                \node[above=6pt, text=teal!75!black] at (1.6,0.2) {$X_{(1)}$};
+            \end{scope}
+        \end{tikzpicture}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+        \[
+            \mathcal{X}\in\mathbb{R}^{I\times J\times K}
+            \mapsto
+            X_{(1)}\in\mathbb{R}^{I\times JK}
+        \]
+        \begin{itemize}
+            \item Fiber mode-1 trở thành cột của matrix.
+            \item Đây là cầu nối giữa tensor và đại số tuyến tính.
+        \end{itemize}
+    \end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Outer product và tensor hạng 1}
+\begin{columns}[T,totalwidth=\textwidth]
+    \begin{column}{0.52\textwidth}
+        \centering
+        \begin{tikzpicture}[scale=0.68, every node/.style={font=\small}]
+            \pgfmathsetmacro{\opCy}{-1.15}
+            \drawtfgveccy{4}{0.00}{\opCy}{teal!28}{teal!55!black}
+            \node[font=\large] at (0.8, \opCy) {$\circ$};
+            \drawtfgveccy{3}{1.30}{\opCy}{orange!28}{orange!70!black}
+            \node[font=\large] at (2.1, \opCy) {$\circ$};
+            \drawtfgveccy{2}{2.60}{\opCy}{pink!30}{magenta!55!black}
+            \node[font=\large] at (3.35, \opCy) {$=$};
+            \begin{scope}[xshift=4.1cm]
+                \pgfmathsetmacro{\tTop}{\opCy+2*\tfgCellH}
+                \drawtfgtensor{4}{3}{2}{0}{\tTop}{violet!18}{violet!65!black}
+            \end{scope}
+        \end{tikzpicture}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+        \[
+            \mathcal{X}=\mathbf{a}\circ\mathbf{b}\circ\mathbf{c},
+            \qquad
+            x_{ijk}=a_i b_j c_k
+        \]
+        \begin{itemize}
+            \item Đây là viên gạch cơ bản của CP decomposition.
+            \item Một component hạng 1 tạo pattern đồng thời trên nhiều mode.
+        \end{itemize}
+    \end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{CP decomposition: tổng các tensor hạng 1}
+\centering
+\begin{tikzpicture}[scale=0.86, every node/.style={font=\small}]
+  \drawtfgtensor{4}{3}{3}{0}{0}{violet!18}{violet!60!black}
+  \node[above=6pt, font=\footnotesize\bfseries] at (0.65,0.3)
+    {$\mathcal{X}\in\mathbb{R}^{I\times J\times K}$};
+
+  \node[font=\Large, text=gray!70] at (2.65,-0.85) {$\approx$};
+
+  \begin{scope}[xshift=3.45cm]
+    \node[font=\footnotesize, text=gray!75] at (-0.48,0.25) {$\displaystyle\sum_{r=1}^{R}$};
+    \drawtfgvec{4}{0}{0}{teal!28}{teal!55!black}
+    \node[above=4pt, font=\scriptsize, text=teal!70!black] at (0.2,0.18)
+      {$\mathbf{A}^{(1)}_{:r}$};
+    \node[font=\large] at (0.88,-0.78) {$\circ$};
+
+    \begin{scope}[xshift=1.4cm]
+      \drawtfgvec{3}{0}{0}{orange!28}{orange!70!black}
+      \node[above=4pt, font=\scriptsize, text=orange!80!black] at (0.2,0.18)
+        {$\mathbf{A}^{(2)}_{:r}$};
+      \node[font=\large] at (0.88,-0.6) {$\circ$};
+    \end{scope}
+
+    \begin{scope}[xshift=2.8cm]
+      \drawtfgvec{2}{0}{0}{pink!30}{magenta!55!black}
+      \node[above=4pt, font=\scriptsize, text=magenta!70!black] at (0.2,0.18)
+        {$\mathbf{A}^{(3)}_{:r}$};
+    \end{scope}
+  \end{scope}
+\end{tikzpicture}
+
+\vspace{0.2cm}
 \[
     \mathcal{X}
     \approx
     \sum_{r=1}^{R}
-    \mathbf{a}^{(1)}_r\circ\mathbf{a}^{(2)}_r\circ\cdots\circ\mathbf{a}^{(N)}_r
-    =
-    \cp{\mathbf{A}^{(1)},\ldots,\mathbf{A}^{(N)}}.
+    \mathbf{a}_r^{(1)}\circ\mathbf{a}_r^{(2)}\circ\mathbf{a}_r^{(3)},
+    \qquad
+    x_{ijk}\approx\sum_{r=1}^{R}A^{(1)}_{ir}A^{(2)}_{jr}A^{(3)}_{kr}
 \]
 \begin{itemize}
-    \item Mỗi component $r$ là một pattern đồng thời trên tất cả mode.
-    \item CP compact khi $R$ nhỏ so với kích thước tensor đầy đủ.
-    \item CP thường có lợi thế interpretability nhờ uniqueness properties.
+    \item $R$ là số component/rank; mỗi component là một pattern đồng thời trên các mode.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Tucker decomposition}
-\large
+\begin{frame}{Tucker decomposition: core tensor và factor matrices}
+\centering
+\begin{tikzpicture}[scale=0.64, every node/.style={font=\small}]
+  \begin{scope}[xshift=0cm]
+    \drawtfgtensor{4}{4}{2}{0}{0}{violet!18}{violet!60!black}
+    \node[above=6pt, font=\footnotesize\bfseries] at (0.7,0.35) {$\mathcal{X}$};
+  \end{scope}
+
+  \node[font=\Large, gray] at (2.65,-0.95) {$\approx$};
+
+  \begin{scope}[xshift=3.5cm, yshift=-0.25cm]
+    \drawtfgtensor{2}{2}{2}{0}{0}{red!18}{red!65!black}
+    \node[above=4pt, font=\footnotesize\bfseries, red!70!black] at (0.25,0.25) {$\mathcal{G}$};
+    \node[below=4pt, font=\scriptsize, gray] at (0.25,-1.1) {$R_1\times R_2\times R_3$};
+  \end{scope}
+
+  \begin{scope}[xshift=5.0cm]
+    \node[font=\footnotesize] at (-0.25,-0.55) {$\times_1$};
+    \drawtfgface{4}{2}{0}{0}{teal!22}{teal!60!black}{0}
+    \node[above=4pt, font=\scriptsize, text=teal!70!black] at (0.35,0.2) {$U^{(1)}$};
+    \node[below=4pt, font=\scriptsize, gray] at (0.35,-1.85) {$I_1\times R_1$};
+  \end{scope}
+
+  \begin{scope}[xshift=6.8cm]
+    \node[font=\footnotesize] at (-0.25,-0.55) {$\times_2$};
+    \drawtfgface{4}{2}{0}{0}{orange!22}{orange!70!black}{0}
+    \node[above=4pt, font=\scriptsize, text=orange!80!black] at (0.35,0.2) {$U^{(2)}$};
+    \node[below=4pt, font=\scriptsize, gray] at (0.35,-1.85) {$I_2\times R_2$};
+  \end{scope}
+
+  \begin{scope}[xshift=8.6cm]
+    \node[font=\footnotesize] at (-0.25,-0.55) {$\times_3$};
+    \drawtfgface{4}{2}{0}{0}{purple!22}{purple!65!black}{0}
+    \node[above=4pt, font=\scriptsize, text=purple!75!black] at (0.35,0.2) {$U^{(3)}$};
+    \node[below=4pt, font=\scriptsize, gray] at (0.35,-1.85) {$I_3\times R_3$};
+  \end{scope}
+\end{tikzpicture}
+
+\vspace{0.2cm}
 \[
-    \mathcal{X}
-    \approx
-    \mathcal{G}
-    \times_1 \mathbf{U}^{(1)}
-    \times_2 \mathbf{U}^{(2)}
-    \cdots
-    \times_N \mathbf{U}^{(N)}.
+    \mathcal{X}\approx
+    \mathcal{G}\times_1 U^{(1)}\times_2 U^{(2)}\times_3 U^{(3)},
+    \qquad
+    x_{ijk}\approx\sum_{p,q,r}G_{pqr}U^{(1)}_{ip}U^{(2)}_{jq}U^{(3)}_{kr}
 \]
 \begin{itemize}
-    \item $\mathcal{G}$ là core tensor mô tả tương tác giữa latent dimensions.
-    \item Tucker tổng quát hóa SVD ma trận.
-    \item CP là trường hợp đặc biệt khi core tensor là superdiagonal.
+    \item Core $\mathcal{G}$ mô tả tương tác giữa latent dimensions; Tucker trở về CP khi core là superdiagonal.
 \end{itemize}
 \end{frame}
-
-\begin{frame}{Kruskal uniqueness}
-\large
-Với tensor bậc 3:
-\[
-    \mathcal{X}=\sum_{r=1}^{R}\mathbf{a}_r\circ\mathbf{b}_r\circ\mathbf{c}_r.
-\]
-Nếu
-\[
-    k_{\mathbf{A}}+k_{\mathbf{B}}+k_{\mathbf{C}}\ge 2R+2,
-\]
-thì CP decomposition là duy nhất về cơ bản: chỉ sai khác hoán vị và co giãn component.
-\begin{block}{Ý nghĩa}
-Không cần ràng buộc trực giao như SVD nhưng vẫn có cơ sở để diễn giải các component.
-\end{block}
+\begin{frame}{Rank, uniqueness và độ khó}
+\begin{columns}[T,totalwidth=\textwidth]
+    \begin{column}{0.48\textwidth}
+        \textbf{Kruskal uniqueness}
+        \[
+            k_A+k_B+k_C\ge 2R+2
+        \]
+        \begin{itemize}
+            \item CP duy nhất đến hoán vị và co giãn.
+            \item Đây là lý do CP hữu ích cho diễn giải pattern.
+        \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+        \textbf{Khác với ma trận}
+        \begin{itemize}
+            \item Matrix rank tính được hiệu quả bằng SVD.
+            \item CP rank của tensor bậc $N\ge3$ là NP-hard.
+            \item Truncation tối ưu như Eckart-Young không còn đúng tổng quát.
+        \end{itemize}
+    \end{column}
+\end{columns}
 \end{frame}

@@ -1,64 +1,188 @@
 \section{Thực nghiệm}
 
-\begin{frame}{Demo: LoRA rank sweep}
-\large
-\begin{itemize}
-    \item Task: GLUE SST-2 sentiment classification.
-    \item Model: \texttt{prajjwal1/bert-tiny}.
-    \item Baselines: frozen encoder, full fine-tuning.
-    \item LoRA ranks: $r\in\{2,4,8\}$.
-    \item Metrics: accuracy, loss, trainable parameters, runtime.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Kết quả chính}
+\begin{frame}{Tổng quan các demo}
 \centering
-\small
-\renewcommand{\arraystretch}{1.2}
-\begin{tabular}{lrrrr}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{p{0.25\textwidth}p{0.31\textwidth}p{0.30\textwidth}}
 \toprule
-\textbf{Config} & \textbf{Rank} & \textbf{Trainable params} & \textbf{Best acc.} & \textbf{Time (s)} \\
+\textbf{Demo} & \textbf{Mục tiêu} & \textbf{Metric chính} \\
 \midrule
-Frozen & -- & 258 & 0.6525 & 16.68 \\
-Full fine-tune & -- & 4,386,178 & 0.7569 & 56.85 \\
-LoRA & 2 & 2,306 & 0.7248 & 29.82 \\
-LoRA & 4 & 4,354 & 0.7351 & 29.78 \\
-LoRA & 8 & 8,450 & 0.7511 & 30.90 \\
+LoRA rank sweep & Kiểm tra parameter-efficient adaptation & accuracy, trainable params, loss \\
+CPJ Circuit & Kiểm tra tensor xác suất và tractable density estimation & KL, log-likelihood, bpd \\
+Data Mining & Kiểm tra khả năng giữ cấu trúc đa mode & FMS, fit score, shared factor \\
 \bottomrule
 \end{tabular}
 \end{frame}
 
-\begin{frame}{Accuracy theo số tham số trainable}
-\centering
-\includegraphics[width=0.78\linewidth]{accuracy_vs_params.png}
-\begin{block}{Nhận xét}
-LoRA rank 8 gần full fine-tuning về accuracy nhưng chỉ cập nhật khoảng 0.1923\% tổng số tham số.
-\end{block}
+\begin{frame}{LoRA rank sweep: thiết lập}
+\begin{columns}[T,totalwidth=\textwidth]
+    \begin{column}{0.48\textwidth}
+        \begin{itemize}
+            \item Dataset: GLUE SST-2 sentiment classification.
+            \item Model: \texttt{prajjwal1/bert-tiny}.
+            \item Train subset: 5000 mẫu; validation: 872 mẫu.
+            \item Mỗi cấu hình chạy 3 epochs, seed 42.
+        \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+        \small
+        \renewcommand{\arraystretch}{1.2}
+        \begin{tabular}{ll}
+        \toprule
+        \textbf{Config} & \textbf{Chế độ} \\
+        \midrule
+        frozen & freeze encoder \\
+        full fine-tune & cập nhật toàn bộ model \\
+        LoRA r=2 & rank thấp \\
+        LoRA r=4 & rank trung bình \\
+        LoRA r=8 & rank cao hơn \\
+        \bottomrule
+        \end{tabular}
+    \end{column}
+\end{columns}
 \end{frame}
 
-\begin{frame}{Validation loss theo epoch}
-\centering
-\includegraphics[width=0.78\linewidth]{loss_curves.png}
-\begin{itemize}
-    \item Full fine-tuning tiếp tục giảm loss rõ nhất.
-    \item LoRA hội tụ nhanh hơn nhưng bị giới hạn bởi rank.
-\end{itemize}
+\begin{frame}{LoRA rank sweep: kết quả}
+\begin{columns}[T,totalwidth=\textwidth]
+    \begin{column}{0.58\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{accuracy_vs_params.png}
+    \end{column}
+    \begin{column}{0.38\textwidth}
+        \small
+        \renewcommand{\arraystretch}{1.15}
+        \begin{tabular}{lcc}
+        \toprule
+        \textbf{Config} & \textbf{Params} & \textbf{Acc} \\
+        \midrule
+        Frozen & 258 & 0.6525 \\
+        Full & 4,386,178 & 0.7569 \\
+        LoRA r=2 & 2,306 & 0.7248 \\
+        LoRA r=4 & 4,354 & 0.7351 \\
+        LoRA r=8 & 8,450 & \textbf{0.7511} \\
+        \bottomrule
+        \end{tabular}
+    \end{column}
+\end{columns}
 \end{frame}
 
-\begin{frame}{Accuracy theo rank LoRA}
-\centering
-\includegraphics[width=0.72\linewidth]{accuracy_vs_rank.png}
+\begin{frame}{LoRA rank sweep: nhận xét}
 \begin{itemize}
-    \item Trong lần chạy này, rank 8 tốt nhất trong các cấu hình LoRA.
-    \item Rank là tham số điều khiển capacity của low-rank update.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Thông điệp từ thực nghiệm}
-\large
-\begin{itemize}
-    \item LoRA rank 8 đạt $0.7511$ accuracy so với $0.7569$ của full fine-tuning.
+    \item LoRA rank 8 chỉ kém full fine-tuning khoảng $0.57$ điểm accuracy.
     \item Số tham số trainable giảm từ $4{,}386{,}178$ xuống $8{,}450$.
-    \item Đây là minh họa trực tiếp cho lợi ích của low-rank/tensor factorization trong học sâu.
+    \item Best accuracy tăng khi rank tăng từ 2 lên 8 trong lần chạy này.
+    \item Kết quả không nên xem là benchmark đầy đủ: model nhỏ, subset nhỏ, chỉ 3 epochs.
 \end{itemize}
+\[
+    \text{LoRA r=8: }0.1923\%\text{ tham số trainable}
+    \quad\text{và}\quad
+    \approx 519\times\text{ ít tham số hơn full fine-tune}
+\]
+\end{frame}
+
+\begin{frame}{CPJ Circuit: toy 4-bit}
+\begin{itemize}
+    \item Phân phối mục tiêu trên 4 biến nhị phân: $2^4=16$ entries.
+    \item Model: Binary CPJ Circuit, width $K=8$.
+    \item Train bằng maximum likelihood với Adam trong 300 epochs.
+    \item Sau huấn luyện, enumerate toàn bộ 16 assignments để kiểm tra tensor xác suất.
+\end{itemize}
+\[
+    \mathrm{KL}(\text{target}\Vert\text{circuit})
+    =
+    0.0054,
+    \qquad
+    \sum_x p_{\mathrm{circuit}}(x)=1.000000
+\]
+\end{frame}
+
+\begin{frame}{CPJ Circuit: Binarized MNIST}
+\begin{columns}[T,totalwidth=\textwidth]
+    \begin{column}{0.48\textwidth}
+        \begin{itemize}
+            \item Ảnh $28\times28$ threshold tại 0.5.
+            \item Mỗi ảnh thành vector 784 biến nhị phân.
+            \item Subset: 1000 train, 200 validation, 200 test.
+            \item Width $K=8$, 50 epochs, batch size 128.
+        \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+        \small
+        \renewcommand{\arraystretch}{1.15}
+        \begin{tabular}{ccc}
+        \toprule
+        \textbf{Epoch} & \textbf{Val LL} & \textbf{Val bpd} \\
+        \midrule
+        1 & -499.040 & 0.9183 \\
+        20 & -226.047 & 0.4160 \\
+        40 & -201.993 & 0.3717 \\
+        50 & \textbf{-199.710} & \textbf{0.3675} \\
+        \bottomrule
+        \end{tabular}
+
+        \vspace{0.2cm}
+        Test LL $=-201.305$, test bpd $=0.3704$.
+    \end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Data Mining: CP-ALS vs CP-OPT}
+\centering
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Thuật toán} & \textbf{Vòng lặp} & \textbf{Sai số tái tạo} & \textbf{FMS} \\
+\midrule
+CP-ALS & 6 & 0.2159 & \textbf{0.7239} \\
+CP-OPT (L-BFGS-B) & 8 & 0.9988 & 0.3723 \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.35cm}
+\begin{itemize}
+    \item Tensor synthetic kích thước $10\times15\times20$, noise $=0.1$.
+    \item CP-ALS khôi phục factor ổn định hơn trong thiết lập nhỏ này.
+    \item Không kết luận CP-ALS luôn tốt hơn CP-OPT; CP-OPT linh hoạt hơn với loss/ràng buộc khác.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Data Mining: PARAFAC2 và CMTF}
+\begin{columns}[T,totalwidth=\textwidth]
+    \begin{column}{0.48\textwidth}
+        \textbf{PARAFAC2}
+        \begin{itemize}
+            \item $K=5$ subjects, mỗi slice có số trial khác nhau.
+            \item Rank $R=4$.
+            \item Fit score hội tụ sau 47 vòng lặp, đạt $>0.7277$.
+        \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+        \textbf{CMTF}
+        \begin{itemize}
+            \item Tensor EEG: $10\times64\times481$.
+            \item Metadata giả lập: $10\times5$.
+            \item Hai nguồn chia sẻ factor subject $A$.
+        \end{itemize}
+    \end{column}
+\end{columns}
+\[
+    \min \|\mathcal{X}-\cp{A,B,C}\|_F^2+\|Y-AD^\top\|_F^2
+\]
+\end{frame}
+
+\begin{frame}{Data Mining: SVD/PCA vs CP-ALS trên EEG}
+\centering
+\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{p{0.22\textwidth}p{0.30\textwidth}p{0.36\textwidth}}
+\toprule
+\textbf{Phương pháp} & \textbf{Dạng dữ liệu} & \textbf{Khả năng diễn giải} \\
+\midrule
+SVD/PCA & $20\times30784$ & Trộn channel và time vào cùng một trục. \\
+CP-ALS & $20\times64\times481$ & Tách riêng trial, channel, time; đọc được spatial/temporal factors. \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.3cm}
+Thông điệp: tensor factorization không chỉ nén dữ liệu, mà còn giữ ngữ nghĩa từng mode để đọc component.
 \end{frame}

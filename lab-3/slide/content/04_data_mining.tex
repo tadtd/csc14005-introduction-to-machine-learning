@@ -1,86 +1,168 @@
 \section{Interpretable Data Mining}
 
-\begin{frame}{Vì sao CP hữu ích cho data mining?}
-\large
-\begin{itemize}
-    \item Dữ liệu khoa học thường có các mode như subject, time, metabolite, electrode/voxel.
-    \item CP giữ các mode riêng thay vì trải phẳng thành ma trận.
-    \item Mỗi component có thể được đọc như một pattern đồng thời trên nhiều trục.
-\end{itemize}
-\[
-    \mathcal{X}\approx\cp{\mathbf{A}^{(1)},\ldots,\mathbf{A}^{(N)}}.
-\]
+\begin{frame}{Data mining: giữ mode để giữ ý nghĩa}
+\begin{columns}[T,totalwidth=\textwidth]
+    \begin{column}{0.46\textwidth}
+        \centering
+        \begin{tikzpicture}[scale=0.75, every node/.style={font=\small}]
+            \drawtfgtensor{3}{4}{3}{0}{0}{violet!15}{violet!65!black}
+            \node[above] at (1.0,0.45) {EEG tensor};
+            \node[below=0.3cm, align=center] at (1.0,-1.9) {trial $\times$ channel $\times$ time};
+            \draw[->, thick, gray!70] (2.7,-0.8) -- (4.0,-0.8);
+            \begin{scope}[xshift=4.5cm, yshift=0.15cm]
+                \drawtfgface{3}{8}{0}{0}{red!12}{red!65!black}{0}
+                \node[above] at (1.5,0.2) {unfold};
+                \node[below=0.35cm, align=center] at (1.5,-1.6) {channel và time\\bị trộn};
+            \end{scope}
+        \end{tikzpicture}
+    \end{column}
+    \begin{column}{0.50\textwidth}
+        \begin{itemize}
+            \item Dữ liệu khoa học thường có các mode: subject, time, metabolite, electrode/voxel.
+            \item SVD/PCA phải unfold dữ liệu, làm mất ranh giới tự nhiên giữa các mode.
+            \item CP giữ dạng
+            \[
+                \mathcal{X}\approx\sum_{r=1}^R a_r\circ b_r\circ c_r
+            \]
+            nên mỗi component đọc được theo từng trục riêng.
+        \end{itemize}
+    \end{column}
+\end{columns}
 \end{frame}
 
-\begin{frame}{CP-ALS}
-\large
+\begin{frame}{CP-ALS: thuật toán nền tảng cho pattern discovery}
+\begin{columns}[T,totalwidth=\textwidth]
+    \begin{column}{0.50\textwidth}
+        \[
+            \min_{A^{(1)},\ldots,A^{(N)}}
+            \left\|\mathcal{X}-\cp{A^{(1)},\ldots,A^{(N)}}\right\|_F^2
+        \]
+        \[
+            A^{(n)} \leftarrow X_{(n)}Z^{(n)}
+            \left(Z^{(n)T}Z^{(n)}\right)^\dagger
+        \]
+        \[
+            Z^{(n)} =
+            A^{(N)}\odot\cdots\odot A^{(n+1)}
+            \odot A^{(n-1)}\odot\cdots\odot A^{(1)}
+        \]
+    \end{column}
+    \begin{column}{0.46\textwidth}
+        \begin{itemize}
+            \item Cố định các factor còn lại, cập nhật từng mode bằng least squares.
+            \item $X_{(n)}Z^{(n)}$ là MTTKRP, thường là nút thắt tính toán chính.
+            \item Gram matrix tính nhanh bằng Hadamard product:
+            \[
+                \Gamma^{(n)}=\mathop{\ast}_{k\ne n} A^{(k)T}A^{(k)}
+            \]
+        \end{itemize}
+    \end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{CP-OPT, dữ liệu khuyết và loss khác}
+\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{p{0.22\textwidth}p{0.36\textwidth}p{0.32\textwidth}}
+\toprule
+\textbf{Biến thể} & \textbf{Công thức chính} & \textbf{Khi dùng} \\
+\midrule
+CP-OPT &
+$\nabla_{A^{(n)}} f=A^{(n)}\Gamma^{(n)}-M^{(n)}$ &
+Tối ưu tất cả factor cùng lúc bằng L-BFGS/gradient-based optimizer. \\
+CP-WOPT &
+$\|\mathcal{W}\ast(\mathcal{X}-\hat{\mathcal{X}})\|_F^2$ &
+Chỉ fit trên entries quan sát được khi dữ liệu thiếu. \\
+GCP-OPT &
+$\sum_i \ell(X_i,\hat{X}_i)$ &
+Thay Frobenius loss bằng loss phù hợp count/binary data. \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.25cm}
 \[
-    \mathbf{Z}^{(n)}
+    \widetilde{\mathcal{X}}
     =
-    \mathbf{A}^{(N)}\odot\cdots\odot\mathbf{A}^{(n+1)}
-    \odot\mathbf{A}^{(n-1)}\odot\cdots\odot\mathbf{A}^{(1)}.
-\]
-\[
-    \mathbf{A}^{(n)}
-    \leftarrow
-    \underbrace{\mathbf{X}_{(n)}\mathbf{Z}^{(n)}}_{\text{MTTKRP}}
-    \left((\mathbf{Z}^{(n)})^\top\mathbf{Z}^{(n)}\right)^\dagger.
-\]
-\begin{itemize}
-    \item Lặp qua từng mode, cố định các factor còn lại.
-    \item Bottleneck tính toán là MTTKRP.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{CP-OPT, missing data và loss khác}
-\large
-\begin{itemize}
-    \item CP-OPT tối ưu tất cả factor matrices cùng lúc bằng gradient-based optimizer.
-    \item CP-WOPT dùng weight tensor để chỉ fit trên entries quan sát:
-    \[
-        \min\left\|
-        \mathcal{W}\had(\mathcal{X}-\cp{\mathbf{A}^{(1)},\ldots,\mathbf{A}^{(N)}})
-        \right\|_F^2.
-    \]
-    \item GCP-OPT thay Frobenius loss bằng loss phù hợp với count/binary data.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{PARAFAC2}
-\large
-\[
-    \mathbf{X}_k\approx \mathbf{U}_k\mathbf{S}_k\mathbf{V}^{\top},
-    \qquad
-    \mathbf{U}_k^\top\mathbf{U}_k=\boldsymbol{\Phi}.
-\]
-\begin{itemize}
-    \item Nới lỏng strict multilinearity của CP.
-    \item Cho phép một factor thay đổi theo slice.
-    \item Phù hợp dữ liệu time-evolving hoặc các chuỗi có độ dài/căn pha khác nhau.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{CMTF và data fusion}
-\large
-\[
-    \min_{\mathbf{A},\mathbf{B},\mathbf{C},\mathbf{D}}
-    \|\mathcal{X}-\cp{\mathbf{A},\mathbf{B},\mathbf{C}}\|_F^2
+    \mathcal{W}\ast\mathcal{X}
     +
-    \|\mathbf{Y}-\mathbf{A}\mathbf{D}^{\top}\|_F^2.
+    (1-\mathcal{W})\ast\hat{\mathcal{X}}
 \]
-\begin{itemize}
-    \item Joint analysis cho nhiều matrix/tensor có mode chung.
-    \item Factor $\mathbf{A}$ liên kết hai nguồn dữ liệu theo subject.
-    \item Coupling có thể cải thiện uniqueness và chất lượng pattern discovery.
-\end{itemize}
+\centering
+EM-style imputation: quan sát giữ nguyên, missing entries lấy từ mô hình hiện tại.
 \end{frame}
 
-\begin{frame}{Ứng dụng trong tutorial}
-\large
-\begin{itemize}
-    \item \textbf{Metabolomics}: tìm marker và pattern phản ứng chuyển hóa.
-    \item \textbf{Neuroscience}: phân tích EEG/fMRI theo không gian, thời gian, subject.
-    \item \textbf{Gut microbiome}: rút trích pattern cộng đồng vi sinh theo thời gian.
-    \item \textbf{Data fusion}: kết hợp dữ liệu động và tĩnh trên cùng nhóm subject.
-\end{itemize}
+\begin{frame}{PARAFAC2 và CMTF: hai mở rộng quan trọng}
+\begin{columns}[T,totalwidth=\textwidth]
+    \begin{column}{0.50\textwidth}
+        \centering
+        \textbf{PARAFAC2}
+        \vspace{0.1cm}
+
+        \includegraphics[width=\linewidth,height=3.6cm,keepaspectratio]{DM_03_0.png}
+
+        \[
+            X_k\approx U_kS_kV^\top,
+            \qquad U_k^\top U_k=\Phi
+        \]
+        Cho phép $U_k$ thay đổi theo slice nhưng vẫn giữ cấu trúc chung.
+    \end{column}
+    \begin{column}{0.46\textwidth}
+        \centering
+        \textbf{CMTF}
+        \vspace{0.1cm}
+
+        \begin{tikzpicture}[scale=0.52, every node/.style={font=\small}]
+            \drawtfgtensor{4}{3}{3}{0}{0}{violet!15}{violet!60!black}
+            \node[above] at (0.85,0.4) {$\mathcal{X}$ EEG};
+            \begin{scope}[yshift=-2.55cm]
+                \drawtfgface{4}{2}{0}{0}{teal!15}{teal!60!black}{0}
+                \node[below] at (0.4,-0.2) {$Y$ metadata};
+            \end{scope}
+            \begin{scope}[xshift=3.4cm, yshift=-1.05cm]
+                \drawtfgvec{4}{0}{0}{red!20}{red!70!black}
+                \node[above, text=red!70!black] at (0.25,0.25) {$A$};
+                \node[below, text=red!70!black] at (0.25,-2.0) {shared subject factor};
+            \end{scope}
+            \draw[->, thick, gray!70] (1.7,-0.9) -- (3.25,-1.0);
+            \draw[->, thick, gray!70] (1.0,-3.3) -- (3.25,-2.1);
+        \end{tikzpicture}
+
+        \[
+            \min \|\mathcal{X}-\cp{A,B,C}\|_F^2+\|Y-AD^\top\|_F^2
+        \]
+    \end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Kết quả Data Mining}
+\begin{columns}[T,totalwidth=\textwidth]
+    \begin{column}{0.45\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{DM_01_0.png}
+
+        \vspace{0.1cm}
+        CP ổn định khi noise nhỏ; FMS giảm khi noise tăng mạnh.
+    \end{column}
+    \begin{column}{0.51\textwidth}
+        \small
+        \renewcommand{\arraystretch}{1.15}
+        \begin{tabular}{lcc}
+        \toprule
+        \textbf{Demo} & \textbf{Chỉ số} & \textbf{Kết quả} \\
+        \midrule
+        CP-ALS & FMS & \textbf{0.7239} \\
+        CP-OPT & FMS & 0.3723 \\
+        PARAFAC2 & Fit & $>0.7277$ \\
+        CMTF & Coupling & Subject factor \\
+        \bottomrule
+        \end{tabular}
+
+        \vspace{0.2cm}
+        \begin{itemize}
+            \item EEG dạng tensor: $20\times64\times481$ giữ trial/channel/time.
+            \item SVD/PCA phải unfold thành $20\times30784$, làm trộn channel và time.
+            \item CP-ALS tách factor spatial và temporal riêng, dễ diễn giải hơn.
+        \end{itemize}
+    \end{column}
+\end{columns}
 \end{frame}

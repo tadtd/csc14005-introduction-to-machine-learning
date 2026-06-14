@@ -19,36 +19,36 @@ Mục tiêu của phần này là trình bày bốn ý chính theo tutorial:
 
 \begin{figure}[H]
 \centering
-\resizebox{0.9\textwidth}{!}{%
+\resizebox{0.95\textwidth}{!}{%
 \begin{tikzpicture}[
     every node/.style={font=\small},
-    data/.style={draw, rounded corners=4pt, line width=0.75pt, minimum width=3.2cm, minimum height=0.95cm, align=center},
-    factor/.style={draw, rounded corners=3pt, line width=0.65pt, minimum width=1.2cm, minimum height=0.7cm, align=center},
-    arrow/.style={-{Stealth[length=2.7mm]}, line width=0.85pt, gray!70}
+    data/.style={draw, rounded corners=4pt, line width=0.75pt, minimum width=3.45cm, minimum height=0.95cm, align=center},
+    factor/.style={draw, rounded corners=3pt, line width=0.65pt, minimum width=1.18cm, minimum height=0.74cm, align=center},
+    arrow/.style={-{Stealth[length=2.7mm]}, line width=0.85pt, gray!68, shorten >=2pt, shorten <=2pt}
 ]
-    \node[data, fill=orange!13, draw=orange!75!black] (tensor) at (0,0)
+    \node[data, fill=orange!13, draw=orange!75!black] (tensor) at (0,0.82)
       {Tensor khoa học\\subject $\times$ feature $\times$ time};
-    \node[data, fill=teal!12, draw=teal!60!black] (matrix) at (0,-1.45)
+    \node[data, fill=teal!12, draw=teal!60!black] (matrix) at (0,-1.02)
       {Metadata\\subject $\times$ covariate};
 
-    \node[factor, fill=violet!13, draw=violet!65!black] (a) at (4.0,-0.72) {$A$\\subject};
-    \node[factor, fill=orange!13, draw=orange!70!black] (b) at (5.55,0.18) {$B$\\feature};
-    \node[factor, fill=red!10, draw=red!60!black] (c) at (5.55,-1.62) {$C$\\time};
-    \node[factor, fill=teal!12, draw=teal!60!black] (d) at (7.0,-0.72) {$D$\\covariate};
+    \node[factor, fill=violet!13, draw=violet!65!black] (a) at (4.15,-0.10) {$A$\\subject};
+    \node[factor, fill=orange!13, draw=orange!70!black] (b) at (6.25,1.12) {$B$\\feature};
+    \node[factor, fill=red!10, draw=red!60!black] (c) at (6.25,-1.36) {$C$\\time};
+    \node[factor, fill=teal!12, draw=teal!60!black, minimum width=1.35cm] (d) at (7.95,-0.10) {$D$\\covariate};
 
-    \node[data, fill=green!10, draw=green!50!black, minimum width=3.3cm] (patterns) at (10.1,-0.72)
+    \node[data, fill=green!10, draw=green!50!black, minimum width=3.75cm] (patterns) at (11.45,-0.10)
       {Pattern có thể diễn giải\\theo từng mode};
 
-    \draw[arrow] (tensor.east) -- (a.west);
-    \draw[arrow] (matrix.east) -- (a.west);
-    \draw[arrow] (a.east) -- (b.west);
-    \draw[arrow] (a.east) -- (c.west);
+    \draw[arrow] (tensor.east) -- ++(0.55,0) |- (a.north west);
+    \draw[arrow] (matrix.east) -- ++(0.55,0) |- (a.south west);
+    \draw[arrow] (a.north east) .. controls +(0.80,0.65) and +(-0.85,0) .. (b.west);
+    \draw[arrow] (a.south east) .. controls +(0.80,-0.65) and +(-0.85,0) .. (c.west);
     \draw[arrow] (a.east) -- (d.west);
-    \draw[arrow] (b.east) -- (patterns.west);
-    \draw[arrow] (c.east) -- (patterns.west);
+    \draw[arrow] (b.east) -- ++(0.45,0) |- (patterns.north west);
+    \draw[arrow] (c.east) -- ++(0.45,0) |- (patterns.south west);
     \draw[arrow] (d.east) -- (patterns.west);
 
-    \node[font=\scriptsize, text=gray!70] at (3.4,-1.55) {shared factor};
+    \node[font=\scriptsize, text=gray!70] at (3.28,-0.98) {shared factor};
 \end{tikzpicture}
 }
 \caption{Trong data mining, tensor factorization giữ riêng các mode có ý nghĩa. CMTF mở rộng ý tưởng này bằng cách ghép nhiều nguồn dữ liệu qua factor dùng chung, ví dụ subject factor.}

@@ -24,3 +24,4 @@ deep-learning/results/runs/*
 !deep-learning/results/plots/
 deep-learning/results/plots/*
 !deep-learning/results/plots/.gitkeep
+.uv-cache/

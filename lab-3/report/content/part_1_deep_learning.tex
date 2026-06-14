@@ -148,38 +148,6 @@ khả năng biểu diễn và chi phí forward pass:
 CP có số tham số nhỏ và dễ hiểu, Tucker linh hoạt hơn nhờ core tensor, còn Tensor Train
 kiểm soát tốt sự tăng tham số khi số mode lớn \cite{kolda2009tensor,oseledets2011tensor}.
 
-\begin{table}[H]
-\centering
-\small
-\caption{So sánh trực giác giữa một số cách tensor hóa trọng số trong học sâu.}
-\label{tab:tensorized-layer-comparison}
-\begin{tabular}{@{}p{0.18\textwidth}p{0.26\textwidth}p{0.24\textwidth}p{0.23\textwidth}@{}}
-\toprule
-\textbf{Biểu diễn} & \textbf{Số tham số điển hình} & \textbf{Ưu điểm} & \textbf{Rủi ro} \\
-\midrule
-Ma trận đầy đủ &
-$OI$ &
-Linh hoạt nhất, dễ tối ưu &
-Tốn bộ nhớ và dễ overfit khi mô hình lớn. \\
-\addlinespace
-CP rank $R$ &
-$R\sum_n I_n$ &
-Rất gọn, factor dễ đọc theo mode &
-Rank CP khó chọn; rank thấp có thể quá cứng. \\
-\addlinespace
-Tucker rank $(R_1,\ldots,R_N)$ &
-$\prod_n R_n + \sum_n I_nR_n$ &
-Core tensor mô hình hóa tương tác giữa latent modes &
-Core có thể tăng nhanh khi số mode lớn. \\
-\addlinespace
-Tensor Train &
-$\sum_n R_{n-1}I_nR_n$ &
-Phù hợp tensor nhiều mode, tránh core quá lớn &
-Khó trực quan hơn CP/Tucker, phụ thuộc cách reshape. \\
-\bottomrule
-\end{tabular}
-\end{table}
-
 Điểm cần nhấn mạnh là việc reshape $W$ thành tensor không tự động làm mô hình tốt hơn.
 Hiệu quả chỉ xuất hiện khi cách tách mode phản ánh cấu trúc thật của bài toán, ví dụ:
 mode channel và mode không gian trong convolution, mode layer và head trong Transformer,
@@ -381,34 +349,6 @@ các tương tác bậc cao không hoàn toàn tự do, mà được tạo từ 
 rank. Bias này có thể giúp tổng quát hóa tốt hơn khi dữ liệu không đủ lớn để học toàn
 bộ tensor hệ số.
 
-\begin{table}[H]
-\centering
-\small
-\caption{So sánh cách biểu diễn tương tác đặc trưng.}
-\label{tab:feature-interaction-models}
-\begin{tabular}{@{}p{0.22\textwidth}p{0.34\textwidth}p{0.34\textwidth}@{}}
-\toprule
-\textbf{Mô hình} & \textbf{Cách tạo tương tác} & \textbf{Nhận xét} \\
-\midrule
-Linear model &
-Chỉ dùng $\langle w,x\rangle$ &
-Rẻ và ổn định nhưng không biểu diễn được tương tác phi tuyến. \\
-\addlinespace
-MLP chuẩn &
-Tương tác xuất hiện ngầm qua activation và nhiều layer &
-Linh hoạt nhưng khó tách rõ bậc tương tác. \\
-\addlinespace
-Polynomial network đầy đủ &
-Dùng tensor hệ số $\mathcal{W}^{[n]}$ cho từng bậc &
-Diễn giải rõ nhưng bùng nổ tham số theo $d^n$. \\
-\addlinespace
-Pi-net / CP polynomial &
-Dùng factor matrices và Hadamard product &
-Giữ tương tác bậc cao với số tham số kiểm soát được bằng rank $R$. \\
-\bottomrule
-\end{tabular}
-\end{table}
-
 \subsubsection{Mixture of Experts dưới góc nhìn tensor}
 
 Mixture of Experts (MoE) là một ví dụ khác về việc trọng số của mô hình có thể được
@@ -454,15 +394,6 @@ hoạt cho mỗi input; nếu dùng soft routing, nhiều slice expert được 
 Tensor factorization thêm một tầng chia sẻ bên dưới router: ngay cả khi hai input chọn
 hai expert khác nhau, các expert đó vẫn có thể dùng chung các factor $U,V$ trong
 \eqref{eq:factorized-moe}.
-
-\begin{example}[Một MoE factorized rank nhỏ]
-Giả sử có $N=16$ expert, mỗi expert là ma trận $I\times O$ với $I=O=1024$. Nếu lưu độc
-lập, số tham số là $16\cdot1024^2 \approx 16.8$ triệu. Với phân rã dạng
-\eqref{eq:factorized-moe} rank $R=64$, số tham số xấp xỉ
-$16\cdot64 + 1024\cdot64 + 1024\cdot64 \approx 132$ nghìn. Con số này chưa tính router
-và các biến thể thực tế, nhưng cho thấy vì sao tensor view hấp dẫn: mode expert tạo ra
-cơ hội chia sẻ tham số rất lớn.
-\end{example}
 
 \paragraph{Lợi ích và đánh đổi của Multilinear MoE.}
 MoE truyền thống tăng capacity bằng cách thêm expert, nhưng số tham số tăng tuyến tính
@@ -603,38 +534,6 @@ gradient thường là tensor có cùng cấu trúc nhiều mode với tham số
 gradient có cấu trúc low-rank, lưu và cập nhật nó dưới dạng Tucker/TT có thể giảm memory
 footprint mà không cần thay kiến trúc inference. Vì vậy TensorGRAD thuộc nhóm kỹ thuật
 tối ưu hóa/huấn luyện, còn LoRA thuộc nhóm parameter-efficient adaptation.
-
-\begin{table}[H]
-\centering
-\small
-\caption{Các đối tượng có thể được tensor hóa trong học sâu.}
-\label{tab:what-to-tensorize-dl}
-\begin{tabular}{@{}p{0.2\textwidth}p{0.3\textwidth}p{0.4\textwidth}@{}}
-\toprule
-\textbf{Đối tượng} & \textbf{Ví dụ} & \textbf{Mục tiêu} \\
-\midrule
-Dữ liệu &
-Batch ảnh $B\times C\times H\times W$ &
-Giữ cấu trúc mode để thiết kế phép toán phù hợp. \\
-\addlinespace
-Trọng số &
-Conv kernel, expert weights, projection matrices &
-Nén tham số, tăng tốc inference, chia sẻ cấu trúc. \\
-\addlinespace
-Update tham số &
-LoRA/LoRTA updates &
-Fine-tuning ít tham số nhưng vẫn thích nghi task mới. \\
-\addlinespace
-Activation &
-Attention scores $B\times H\times L\times L$ &
-Giảm chi phí bộ nhớ/tính toán trong forward pass. \\
-\addlinespace
-Gradient &
-TensorGRAD trong neural operators &
-Giảm bộ nhớ huấn luyện và chi phí optimizer state. \\
-\bottomrule
-\end{tabular}
-\end{table}
 
 Với attention, self-attention chuẩn có chi phí theo độ dài chuỗi gần $O(L^2)$ do phải
 tạo tensor attention scores trong \eqref{eq:attention-score-tensor}. Poly-SA thay thế

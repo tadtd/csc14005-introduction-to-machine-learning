@@ -8,17 +8,34 @@
     |\mathcal{P}|=\prod_{n=1}^{N}|\mathcal{D}_n|
 \]
 \begin{itemize}
-    \item Mỗi entry là một xác suất $p(x_1,\ldots,x_N)$.
-    \item Tensor xác suất đầy đủ tăng theo hàm mũ theo số biến.
-    \item Tensor factorization biểu diễn gọn; circuit tổ chức phép tính để truy vấn hiệu quả.
+    \item Mỗi entry là một xác suất $p(x_1,\ldots,x_N)$ của một assignment.
+    \item Tensor xác suất đầy đủ tăng theo hàm mũ theo số biến, nên không thể materialize khi $N$ lớn.
+    \item Tensor factorizations biểu diễn gọn; circuits tổ chức phép tính để trả lời truy vấn hiệu quả.
 \end{itemize}
 \[
-    \text{Tensor Factorization}
+    \underbrace{\text{Tensor Factorization}}_{\text{biểu diễn gọn}}
     \Longleftrightarrow
-    \text{Circuit}
+    \underbrace{\text{Circuit}}_{\text{tổ chức phép tính}}
     \Longrightarrow
-    \text{Tractable Inference}
+    \underbrace{\text{Tractable Inference}}_{\text{suy luận hiệu quả}}
 \]
+\end{frame}
+
+\begin{frame}{Mạch trình bày}
+\small
+\renewcommand{\arraystretch}{1.18}
+\begin{tabular}{p{0.25\textwidth}p{0.64\textwidth}}
+\toprule
+\textbf{Bước} & \textbf{Ý chính bám theo report} \\
+\midrule
+1. Circuit & Định nghĩa circuit, scope, input/product/sum units. \\
+2. TF $\to$ circuit & CP/Tucker decomposition được đọc như sum-product circuits. \\
+3. Layer hóa & Tensor hóa circuit, Lego block approach, deep/hierarchical circuits. \\
+4. Structural properties & Smoothness, decomposability, compatibility, determinism quyết định query nào tractable. \\
+5. Probabilistic circuits & Thêm không âm và chuẩn hóa để TF trở thành mô hình xác suất/generative model. \\
+6. Inference & Marginal, conditional, expectation, fairness, robustness, MAP, sampling. \\
+\bottomrule
+\end{tabular}
 \end{frame}
 
 \begin{frame}{Circuit là gì?}
@@ -54,9 +71,9 @@
             \item Kích thước $|c|$ thường tính bằng số node/cạnh/tham số.
         \end{itemize}
         \[
-            c(x)=\sum_{j\in\mathrm{in}(n)}w_{n,j}c_j(x)
+            c_n(x)=\sum_{j\in\mathrm{in}(n)}w_{n,j}c_j(x)
             \quad\text{hoặc}\quad
-            c(x)=\prod_{j\in\mathrm{in}(n)}c_j(x)
+            c_n(x)=\prod_{j\in\mathrm{in}(n)}c_j(x)
         \]
     \end{column}
 \end{columns}
@@ -72,7 +89,7 @@
         \]
         \begin{itemize}
             \item Đọc biến hoặc hàm cục bộ.
-            \item Scope nhỏ.
+            \item Scope nhỏ: $S_n\subseteq\mathbf{X}$.
         \end{itemize}
     \end{column}
     \begin{column}{0.32\textwidth}
@@ -100,7 +117,27 @@
     \mathrm{scope}(n)=\bigcup_{j\in\mathrm{in}(n)}\mathrm{scope}(j)
 \]
 \end{frame}
-\begin{frame}{CP decomposition như một circuit sum-product}
+
+\begin{frame}{Từ tensor factorization đến circuit}
+\small
+\begin{itemize}
+    \item Quan sát chính trong report/tutorial: một circuit có thể tính một tensor entry tại một index bất kỳ.
+    \[
+        \mathcal{T}_{x_1,\ldots,x_N}\approx c(x_1,\ldots,x_N).
+    \]
+    \item Hướng TF $\to$ circuit: công thức factorization trở thành computational graph.
+    \item Hướng circuit $\to$ TF: smooth và decomposable circuit mã hóa một multilinear polynomial, tương ứng với một tensor factorization.
+\end{itemize}
+\[
+    \text{factor matrices/core}
+    \quad\longrightarrow\quad
+    \text{input/product/sum layers}
+    \quad\longrightarrow\quad
+    \text{query without full tensor}
+\]
+\end{frame}
+
+\begin{frame}{CP decomposition như circuit sum-product}
 \begin{columns}[T,totalwidth=\textwidth]
     \begin{column}{0.60\textwidth}
         \centering
@@ -135,14 +172,15 @@
             V^{(3)}_{x_3,r}
         \]
         \begin{itemize}
-            \item Product nodes: nhân theo mode.
+            \item Input layer: đọc hàng $x_n$ của factor matrix.
+            \item Product nodes: nhân theo mode cho từng rank $r$.
             \item Sum node: cộng theo rank.
         \end{itemize}
     \end{column}
 \end{columns}
 \end{frame}
 
-\begin{frame}{Tucker circuit và chi phí core}
+\begin{frame}{Tucker decomposition như circuit}
 \[
     \mathcal{T}_{x_1,\ldots,x_N}
     \approx
@@ -151,67 +189,236 @@
     \prod_{n=1}^{N}V^{(n)}_{x_n,r_n}
 \]
 \begin{itemize}
-    \item Tucker circuit dùng core tensor để trộn các latent dimensions.
-    \item Kích thước circuit/core có thể tăng như:
+    \item Factor matrices cung cấp input layers, tương tự CP.
+    \item Core tensor $\mathcal{W}$ trộn các latent components $(r_1,\ldots,r_N)$.
+    \item Circuit tương ứng có kích thước:
     \[
-        O\!\left(N\prod_{n=1}^{N}R_n\right)
+        |c|\in O\!\left(N\prod_{n=1}^{N}R_n\right).
     \]
-    \item Khi core superdiagonal, Tucker trở về CP.
+    \item Khi core superdiagonal, Tucker suy biến thành CP.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Structural properties}
+\begin{frame}{Tensor hóa circuit và layer rules}
+\small
+\begin{itemize}
+    \item Tensor hóa circuit là cách xem forward pass của circuit như công thức tensor factorization.
+    \item Report dùng ba quy tắc để xây circuit theo layer:
+\end{itemize}
+\[
+    \mathbf{c}(\mathbf{x})=\mathbf{W}\boldsymbol{\ell}(\mathbf{x})
+    \qquad
+    \mathbf{c}=\boldsymbol{\ell}\had\mathbf{r}
+    \qquad
+    \mathbf{c}=\operatorname{vec}\!\left(\boldsymbol{\ell}\mathbf{r}^{\top}\right)
+\]
+\begin{itemize}
+    \item Linear projection tương ứng sum/mixture layer.
+    \item Hadamard product tạo CP-style product layer.
+    \item Kronecker product tạo Tucker-style product layer trước khi chiếu tuyến tính.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Lego block approach}
+\small
+\begin{columns}[T,totalwidth=\textwidth]
+    \begin{column}{0.48\textwidth}
+        \textbf{Mục tiêu}
+        \begin{itemize}
+            \item Thống nhất các tensor factorizations theo block/layer.
+            \item Ghép các block để tạo factorization mới.
+            \item Giữ structural properties để suy luận vẫn tractable.
+        \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+        \textbf{Các block}
+        \begin{itemize}
+            \item CP layer: Hadamard product rồi sum theo rank.
+            \item Tucker layer: Kronecker product rồi linear projection bằng core/weight.
+            \item Monarch layer: dùng structured weight matrix trong pipeline factorization.
+        \end{itemize}
+    \end{column}
+\end{columns}
+\[
+    \text{input functions}
+    \rightarrow
+    \text{product block}
+    \rightarrow
+    \text{linear/sum block}
+    \rightarrow
+    \text{new circuit layer}
+\]
+\end{frame}
+
+\begin{frame}{Lego block approach: minh họa}
+\centering
+\resizebox{0.86\textwidth}{!}{%
+\begin{tikzpicture}[
+    block/.style={draw, rounded corners=3pt, thick, minimum width=1.75cm, minimum height=0.82cm, align=center, font=\small},
+    knob/.style={circle, draw, thick, minimum size=0.20cm, inner sep=0pt},
+    arrow/.style={-{Stealth[length=2.3mm]}, thick},
+    note/.style={font=\small, align=center}
+]
+    \node[block, fill=teal!12] (input) at (0,0) {input\\functions};
+
+
+    \node[block, fill=orange!15] (cp) at (-2.25,-1.45) {CP\\Hadamard};
+
+
+    \node[block, fill=blue!12] (tucker) at (0,-1.45) {Tucker\\Kronecker};
+
+    \node[block, fill=violet!12] (monarch) at (2.25,-1.45) {Monarch\\structured $W$};
+
+    \node[block, fill=green!13, minimum width=3.4cm] (layer) at (0,-3.15) {new circuit layer};
+
+    \draw[arrow] (input) -- (cp);
+    \draw[arrow] (input) -- (tucker);
+    \draw[arrow] (input) -- (monarch);
+    \draw[arrow] (cp) -- (layer);
+    \draw[arrow] (tucker) -- (layer);
+    \draw[arrow] (monarch) -- (layer);
+
+    \node[note] at (0,-4.05) {Ghép block nhưng vẫn giữ điều kiện smooth/decomposable khi cần suy luận};
+\end{tikzpicture}%
+}
+\end{frame}
+
+\begin{frame}{Deep circuit và hierarchical TF}
+\small
+\begin{itemize}
+    \item Deep circuit thu được khi stack nhiều circuit layers theo ba quy tắc: tractable functions, linear projection, product.
+    \item Deep circuit tương ứng với hierarchical tensor factorization.
+    \item Ý nghĩa chính: chia nhỏ scope, chia sẻ sub-factorizations, biểu diễn một số hàm gọn hơn circuit nông.
+    \item Độ gọn không tự đảm bảo: hiệu quả phụ thuộc region graph, layer type, rank/width và cấu trúc phụ thuộc thật trong dữ liệu.
+\end{itemize}
+\[
+    \text{shallow CP/Tucker}
+    \quad\longrightarrow\quad
+    \text{stacked blocks}
+    \quad\longrightarrow\quad
+    \text{hierarchical/deep circuit}
+\]
+\end{frame}
+
+\begin{frame}{Hierarchical tensor factorization: minh họa}
+\centering
+\resizebox{0.82\textwidth}{!}{%
+\begin{tikzpicture}[
+    tensor/.style={draw, thick, rounded corners=3pt, fill=blue!10, minimum width=1.55cm, minimum height=0.68cm, font=\small, align=center},
+    factor/.style={draw, thick, rounded corners=3pt, fill=teal!12, minimum width=1.25cm, minimum height=0.55cm, font=\small, align=center},
+    op/.style={circle, draw, thick, fill=orange!15, minimum size=0.68cm, font=\small},
+    edge/.style={-{Stealth[length=2.3mm]}, thick}
+]
+    \node[tensor, fill=green!13] (root) at (0,0) {$\mathcal{T}_{1:N}$};
+    \node[op] (p0) at (0,-1.0) {$\times$};
+    \node[tensor] (left) at (-2.1,-2.0) {$\mathcal{T}_{1:k}$};
+    \node[tensor] (right) at (2.1,-2.0) {$\mathcal{T}_{k+1:N}$};
+
+    \node[op] (p1) at (-2.1,-3.0) {$\times$};
+    \node[op] (p2) at (2.1,-3.0) {$\times$};
+    \node[factor] (a) at (-3.35,-4.0) {$V^{(1)}$};
+    \node[factor] (b) at (-0.85,-4.0) {$V^{(k)}$};
+    \node[factor] (c) at (0.85,-4.0) {$V^{(k+1)}$};
+    \node[factor] (d) at (3.35,-4.0) {$V^{(N)}$};
+
+    \draw[edge] (root) -- (p0);
+    \draw[edge] (p0) -- (left);
+    \draw[edge] (p0) -- (right);
+    \draw[edge] (left) -- (p1);
+    \draw[edge] (right) -- (p2);
+    \draw[edge] (p1) -- (a);
+    \draw[edge] (p1) -- (b);
+    \draw[edge] (p2) -- (c);
+    \draw[edge] (p2) -- (d);
+
+    \node[font=\small, align=center] at (0,-4.85)
+        {Tucker/CP nông $\rightarrow$ chia scope theo cây $\rightarrow$ hierarchical factorization};
+\end{tikzpicture}%
+}
+\end{frame}
+
+\begin{frame}{Structural properties quyết định tractability}
 \small
 \renewcommand{\arraystretch}{1.25}
 \begin{tabular}{p{0.24\textwidth}p{0.38\textwidth}p{0.28\textwidth}}
 \toprule
 \textbf{Property} & \textbf{Điều kiện} & \textbf{Cho phép} \\
 \midrule
-Smoothness & Các nhánh vào sum node có cùng scope & Marginalization đúng \\
-Decomposability & Các nhánh vào product node có scope rời nhau & Tách tích phân theo nhóm biến \\
-Compatibility & Hai circuits chia scope cùng cấu trúc & Tính expectation giữa $p$ và $f$ \\
-Determinism & Supports của nhánh sum rời nhau & MAP inference hiệu quả hơn \\
+Smoothness & Các input vào sum node có cùng scope & Marginals/integrals \\
+Decomposability & Input vào product node có scope rời nhau & Tách tổng/tích phân theo nhóm biến \\
+Compatibility & Hai circuits chia scope cùng cấu trúc & Expectation giữa $p$ và $f$ \\
+Determinism & Supports của nhánh sum rời nhau & MAP/MPE hiệu quả hơn \\
 \bottomrule
 \end{tabular}
 \[
     \text{smooth + decomposable}
     \Rightarrow
+    \text{multilinearity}
+    \Rightarrow
     \text{marginals trong }O(|c|)
 \]
 \end{frame}
 
-\begin{frame}{Truy vấn suy luận: marginal và conditional}
+\begin{frame}{Probabilistic circuits: thêm không âm và chuẩn hóa}
 \begin{columns}[T,totalwidth=\textwidth]
-    \begin{column}{0.48\textwidth}
-        \textbf{Marginal}
-        \[
-            p(\mathbf{x}_O)
-            =
-            \sum_{\mathbf{x}_M\in\mathcal{D}_M}
-            p(\mathbf{x}_O,\mathbf{x}_M)
-        \]
-        \begin{itemize}
-            \item $O$: biến quan sát, $M$: biến bị sum-out.
-            \item Smooth + decomposable $\Rightarrow O(|c|)$.
-        \end{itemize}
+    \begin{column}{0.46\textwidth}
+        \centering
+        \begin{tikzpicture}[
+            node/.style={circle, draw, thick, minimum size=0.66cm, font=\small},
+            leaf/.style={rectangle, draw, rounded corners=3pt, fill=teal!12, minimum width=1.25cm, minimum height=0.46cm, font=\scriptsize},
+            sum/.style={node, fill=blue!12},
+            prod/.style={node, fill=orange!15},
+            arrow/.style={-{Stealth[length=2.2mm]}, thick}
+        ]
+            \node[sum] (s) at (0,0) {$\sum$};
+            \node[prod] (p1) at (-1.3,-1.0) {$\prod$};
+            \node[prod] (p2) at (1.3,-1.0) {$\prod$};
+            \node[leaf] (x1) at (-2.25,-2.05) {$p_1(x_1)$};
+            \node[leaf] (x2) at (-0.75,-2.05) {$p_2(x_2)$};
+            \node[leaf] (x3) at (0.75,-2.05) {$q_1(x_1)$};
+            \node[leaf] (x4) at (2.25,-2.05) {$q_2(x_2)$};
+            \draw[arrow] (x1) -- (p1);
+            \draw[arrow] (x2) -- (p1);
+            \draw[arrow] (x3) -- (p2);
+            \draw[arrow] (x4) -- (p2);
+            \draw[arrow] (p1) -- node[left, font=\scriptsize] {$w_1$} (s);
+            \draw[arrow] (p2) -- node[right, font=\scriptsize] {$w_2$} (s);
+        \end{tikzpicture}
     \end{column}
-    \begin{column}{0.48\textwidth}
-        \textbf{Conditional}
-        \[
-            p(\mathbf{x}_M\mid\mathbf{x}_O)
-            =
-            \frac{p(\mathbf{x}_O,\mathbf{x}_M)}
-            {\sum_{\mathbf{x}'_M}p(\mathbf{x}_O,\mathbf{x}'_M)}
-        \]
+    \begin{column}{0.50\textwidth}
         \begin{itemize}
-            \item Tử số: evaluate circuit tại assignment.
-            \item Mẫu số: marginalize biến missing.
+            \item PC là circuit biểu diễn phân phối xác suất hợp lệ: $c(\mathbf{x})\ge 0$ và $\sum_{\mathbf{x}}c(\mathbf{x})=1$.
+            \item Điều kiện đủ phổ biến: weights và input functions không âm, tạo \emph{monotonic PC}.
+            \item Non-negative CP/Tucker/HOSVD chính là PC khi nhìn qua circuit.
         \end{itemize}
+        \[
+            p(\mathbf{x})
+            =
+            \sum_{r=1}^{R}
+            p(r)
+            \prod_{n=1}^{N}p_n(x_n\mid r)
+        \]
     \end{column}
 \end{columns}
 \end{frame}
 
-\begin{frame}{Truy vấn suy luận dưới góc nhìn tensor factorization}
+\begin{frame}{Các truy vấn suy luận trong report}
+\small
+\renewcommand{\arraystretch}{1.22}
+\begin{tabular}{p{0.22\textwidth}p{0.34\textwidth}p{0.34\textwidth}}
+\toprule
+\textbf{Query} & \textbf{Dạng toán học} & \textbf{Thao tác trên TF/circuit} \\
+\midrule
+Marginal & $\sum_{\mathbf{x}_M}p(\mathbf{x}_O,\mathbf{x}_M)$ & Sum-out/contract modes trong $M$ \\
+Missing values & $p(\mathbf{x}_M\mid\mathbf{x}_O)$ & Fix observed modes, sum-out missing modes \\
+Expectation & $\sum_{\mathbf{x}}p(\mathbf{x})f(\mathbf{x})$ & Product circuit hoặc tensor contraction \\
+Fairness & $\mathbb{E}[f\mid A=0]-\mathbb{E}[f\mid A=1]$ & Chọn slice theo sensitive mode \\
+Robustness & $\mathbb{E}_{\varepsilon}[f(\mathbf{x}+\varepsilon)]$ & Contract nếu compatible; nếu không thì sampling \\
+\bottomrule
+\end{tabular}
+\end{frame}
+
+\begin{frame}{Marginal và conditional dưới góc nhìn TF}
 \[
     c(x_1,\ldots,x_N)
     =
@@ -225,12 +432,12 @@ Determinism & Supports của nhánh sum rời nhau & MAP inference hiệu quả 
     \left(\prod_{m\in M}\sum_{x_m\in\mathcal{D}_m}V^{(m)}_{x_m,r}\right)
 \]
 \begin{itemize}
-    \item Marginalize một mode $m$ bằng cách thay factor $V^{(m)}_{x_m,r}$ bởi tổng theo hàng của mode đó.
-    \item Vì product node decomposable, phép cộng trên nhiều assignment được đẩy xuống từng factor matrix.
+    \item Marginalize mode $m$ bằng cách thay factor $V^{(m)}_{x_m,r}$ bởi tổng theo hàng.
+    \item Conditional query dùng tử số là evaluate tại assignment, mẫu số là marginal trên biến missing.
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Truy vấn suy luận: expectation}
+\begin{frame}{Expectation và reasoning về ML models}
 \[
     \mathbb{E}_{\mathbf{x}\sim p}[f(\mathbf{x})]
     =
@@ -239,51 +446,44 @@ Determinism & Supports của nhánh sum rời nhau & MAP inference hiệu quả 
     \langle\mathcal{P},\mathcal{F}\rangle
 \]
 \begin{itemize}
-    \item Nếu $p$ và $f$ là hai circuits compatible, có thể tính bằng product circuit rồi marginalize.
+    \item Nếu $p$ và $f$ là compatible circuits, tính expectation bằng product circuit rồi marginalize.
     \item Dưới góc nhìn TF: contract tensor xác suất $\mathcal{P}$ với tensor hàm $\mathcal{F}$.
-    \item Ứng dụng trong report: missing values, fairness query, adversarial robustness.
+    \item Các ví dụ trong tutorial/report:
+    \[
+        \mathbb{E}[f(\mathbf{x})\mid A=0]
+        -
+        \mathbb{E}[f(\mathbf{x})\mid A=1],
+        \qquad
+        \mathbb{E}_{\varepsilon\sim p_{\mathrm{noise}}}[f(\mathbf{x}+\varepsilon)].
+    \]
 \end{itemize}
-\[
-    \mathbb{E}[f(\mathbf{x})\mid A=0]-\mathbb{E}[f(\mathbf{x})\mid A=1]
-\]
 \end{frame}
 
-\begin{frame}{Truy vấn suy luận: MAP và sampling}
+\begin{frame}{Latent variable view, MAP và sampling}
 \begin{columns}[T,totalwidth=\textwidth]
     \begin{column}{0.48\textwidth}
-        \textbf{MAP / MPE}
+        \textbf{Latent variable view}
         \[
-            \mathbf{x}^{\star}
+            p(\mathbf{x})
             =
-            \arg\max_{\mathbf{x}}p(\mathbf{x}\mid\mathbf{e})
+            \sum_{r=1}^{R}p(r)\prod_{n=1}^{N}p_n(x_n\mid r)
         \]
         \begin{itemize}
-            \item Cần thêm determinism để tối ưu tractable hơn.
-            \item Sum node chọn nhánh tốt nhất thay vì cộng tất cả nhánh.
+            \item Rank index $r$ là latent component.
+            \item Sum node là mixture variable.
+            \item Product node sinh độc lập trên scope rời nhau.
         \end{itemize}
     \end{column}
     \begin{column}{0.48\textwidth}
-        \textbf{Sampling top-down}
+        \textbf{MAP / sampling}
         \begin{itemize}
-            \item Sum node: lấy mẫu nhánh categorical theo trọng số.
-            \item Product node: đi qua tất cả nhánh con vì scope rời nhau.
-            \item Leaf/input: lấy mẫu biến quan sát cục bộ.
+            \item MAP/MPE cần thêm determinism để tối ưu tractable hơn.
+            \item Sampling top-down: sum node chọn nhánh categorical theo weight.
+            \item Product node đi qua tất cả nhánh con vì scope rời nhau.
+            \item Input node lấy mẫu từ phân phối lá.
         \end{itemize}
     \end{column}
 \end{columns}
-\end{frame}
-\begin{frame}{Non-negative TF như latent variable model}
-\[
-    p(x)
-    =
-    \sum_{r=1}^{R}p(r)\prod_{n=1}^{N}p_n(x_n\mid r)
-\]
-\begin{itemize}
-    \item Chỉ số rank $r$ có thể đọc như latent component.
-    \item Sum node tương ứng với mixture variable.
-    \item Product node sinh độc lập trên các scope rời nhau.
-    \item Sampling thực hiện top-down: chọn nhánh ở sum, đi qua tất cả nhánh ở product.
-\end{itemize}
 \end{frame}
 
 \begin{frame}{Demo CPJ Circuit}
@@ -302,11 +502,13 @@ Binarized MNIST & $28\times 28=784$ biến nhị phân & Best val bpd $=0.3675$;
 \]
 \end{frame}
 
-\begin{frame}{Hạn chế và câu hỏi mở của PC}
+\begin{frame}{Ứng dụng, mở rộng và câu hỏi mở}
+\small
 \begin{itemize}
-    \item Tractable inference không đảm bảo biểu diễn luôn nhỏ.
-    \item Tucker/core có thể tăng theo $R^N$ nếu số mode lớn.
-    \item Hiệu quả phụ thuộc region graph, width/rank và cấu trúc phụ thuộc thật trong dữ liệu.
-    \item Câu hỏi mở: optimization, identifiability, approximate inference, scalability.
+    \item \textbf{Tractable trong pipeline không tractable}: dùng PC ở chỗ cần marginalization/expectation chính xác, rồi nối với neural encoder/decoder.
+    \item \textbf{Từ rời rạc sang liên tục}: input functions có thể là Gaussian, spline, polynomial; tensor xác suất trở thành quasi-tensor/infinite-dimensional.
+    \item \textbf{Hạn chế}: tractable inference không đồng nghĩa với biểu diễn luôn gọn; Tucker core có thể tăng như $R^N$.
+    \item \textbf{Phụ thuộc cấu trúc}: hiệu quả biểu diễn phụ thuộc region graph, layer type, rank/width và dependency thật trong dữ liệu.
+    \item \textbf{Câu hỏi mở}: optimization, identifiability, approximate inference, scalability.
 \end{itemize}
 \end{frame}

@@ -357,7 +357,7 @@ buộc phức tạp hơn, cách tối ưu all-at-once vẫn có lợi thế về
 Thực nghiệm PARAFAC2 mô phỏng tình huống thường gặp trong phân tích tín hiệu:
 mỗi subject có số trial hợp lệ khác nhau sau bước tiền xử lý. Dữ liệu gồm $K=5$
 subjects, mỗi slice có dạng $n_k \times 64$, trong đó $n_k$ có thể thay đổi theo
-subject. Mô hình dùng rank $R=4$ và cập nhật bằng PARAFAC2-ALS với bước
+subject. Mô hình dùng rank $R=2$ và cập nhật bằng PARAFAC2-ALS với bước
 Procrustes để căn chỉnh các slice.
 
 \begin{table}[H]
@@ -374,7 +374,7 @@ Procrustes để căn chỉnh các slice.
 47 & $>0.7277$ \\
 \bottomrule
 \end{tabular}
-\caption{Quá trình hội tụ của PARAFAC2-ALS với rank $R=4$.}
+\caption{Quá trình hội tụ của PARAFAC2-ALS với rank $R=2$.}
 \label{tab:exp-dm-parafac2-fit}
 \end{table}
 

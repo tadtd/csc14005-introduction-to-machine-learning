@@ -19,36 +19,36 @@ Mục tiêu của phần này là trình bày bốn ý chính theo tutorial:
 
 \begin{figure}[H]
 \centering
-\resizebox{0.9\textwidth}{!}{%
+\resizebox{0.95\textwidth}{!}{%
 \begin{tikzpicture}[
     every node/.style={font=\small},
-    data/.style={draw, rounded corners=4pt, line width=0.75pt, minimum width=3.2cm, minimum height=0.95cm, align=center},
-    factor/.style={draw, rounded corners=3pt, line width=0.65pt, minimum width=1.2cm, minimum height=0.7cm, align=center},
-    arrow/.style={-{Stealth[length=2.7mm]}, line width=0.85pt, gray!70}
+    data/.style={draw, rounded corners=4pt, line width=0.75pt, minimum width=3.45cm, minimum height=0.95cm, align=center},
+    factor/.style={draw, rounded corners=3pt, line width=0.65pt, minimum width=1.18cm, minimum height=0.74cm, align=center},
+    arrow/.style={-{Stealth[length=2.7mm]}, line width=0.85pt, gray!68, shorten >=2pt, shorten <=2pt}
 ]
-    \node[data, fill=orange!13, draw=orange!75!black] (tensor) at (0,0)
+    \node[data, fill=orange!13, draw=orange!75!black] (tensor) at (0,0.82)
       {Tensor khoa học\\subject $\times$ feature $\times$ time};
-    \node[data, fill=teal!12, draw=teal!60!black] (matrix) at (0,-1.45)
+    \node[data, fill=teal!12, draw=teal!60!black] (matrix) at (0,-1.02)
       {Metadata\\subject $\times$ covariate};
 
-    \node[factor, fill=violet!13, draw=violet!65!black] (a) at (4.0,-0.72) {$A$\\subject};
-    \node[factor, fill=orange!13, draw=orange!70!black] (b) at (5.55,0.18) {$B$\\feature};
-    \node[factor, fill=red!10, draw=red!60!black] (c) at (5.55,-1.62) {$C$\\time};
-    \node[factor, fill=teal!12, draw=teal!60!black] (d) at (7.0,-0.72) {$D$\\covariate};
+    \node[factor, fill=violet!13, draw=violet!65!black] (a) at (4.15,-0.10) {$A$\\subject};
+    \node[factor, fill=orange!13, draw=orange!70!black] (b) at (6.25,1.12) {$B$\\feature};
+    \node[factor, fill=red!10, draw=red!60!black] (c) at (6.25,-1.36) {$C$\\time};
+    \node[factor, fill=teal!12, draw=teal!60!black, minimum width=1.35cm] (d) at (7.95,-0.10) {$D$\\covariate};
 
-    \node[data, fill=green!10, draw=green!50!black, minimum width=3.3cm] (patterns) at (10.1,-0.72)
+    \node[data, fill=green!10, draw=green!50!black, minimum width=3.75cm] (patterns) at (11.45,-0.10)
       {Pattern có thể diễn giải\\theo từng mode};
 
-    \draw[arrow] (tensor.east) -- (a.west);
-    \draw[arrow] (matrix.east) -- (a.west);
-    \draw[arrow] (a.east) -- (b.west);
-    \draw[arrow] (a.east) -- (c.west);
+    \draw[arrow] (tensor.east) -- ++(0.55,0) |- (a.north west);
+    \draw[arrow] (matrix.east) -- ++(0.55,0) |- (a.south west);
+    \draw[arrow] (a.north east) .. controls +(0.80,0.65) and +(-0.85,0) .. (b.west);
+    \draw[arrow] (a.south east) .. controls +(0.80,-0.65) and +(-0.85,0) .. (c.west);
     \draw[arrow] (a.east) -- (d.west);
-    \draw[arrow] (b.east) -- (patterns.west);
-    \draw[arrow] (c.east) -- (patterns.west);
+    \draw[arrow] (b.east) -- ++(0.45,0) |- (patterns.north west);
+    \draw[arrow] (c.east) -- ++(0.45,0) |- (patterns.south west);
     \draw[arrow] (d.east) -- (patterns.west);
 
-    \node[font=\scriptsize, text=gray!70] at (3.4,-1.55) {shared factor};
+    \node[font=\scriptsize, text=gray!70] at (3.28,-0.98) {shared factor};
 \end{tikzpicture}
 }
 \caption{Trong data mining, tensor factorization giữ riêng các mode có ý nghĩa. CMTF mở rộng ý tưởng này bằng cách ghép nhiều nguồn dữ liệu qua factor dùng chung, ví dụ subject factor.}
@@ -243,23 +243,6 @@ Một điểm thực tế quan trọng trong data mining là dữ liệu thườ
 \end{itemize}
 Các biến thể này giữ nguyên tinh thần CP nhưng điều chỉnh bài toán tối ưu cho dữ liệu thực tế hơn, thay vì giả định mọi entry đều quan sát được và nhiễu luôn có dạng Gaussian.
 
-\paragraph{Kết quả thực nghiệm trên dữ liệu giả lập (Synthetic Data).}
-Để kiểm chứng tính đúng đắn và khả năng chống nhiễu của các thuật toán được nhắc đến trong tutorial, chúng tôi đã triển khai lại CP-ALS và CP-OPT từ đầu bằng NumPy và thử nghiệm trên một tensor hạng 3 kích thước $10 \times 15 \times 20$ với dữ liệu mô phỏng. Bảng~\ref{tab:als-vs-opt} tóm tắt hiệu năng giữa hai phương pháp ở cùng một mức nhiễu (noise=0.1).
-
-\begin{table}[H]
-\centering
-\begin{tabular}{lccc}
-\toprule
-\textbf{Thuật toán} & \textbf{Vòng lặp} & \textbf{Sai số tái tạo} & \textbf{Factor Match Score (FMS)} \\
-\midrule
-CP-ALS & $6$ & $0.2159$ & \textbf{$0.7239$} \\
-CP-OPT (L-BFGS-B) & $8$ & $0.9988$ & $0.3723$ \\
-\bottomrule
-\end{tabular}
-\caption{Tổng hợp hiệu năng giữa CP-ALS và CP-OPT. Chỉ số FMS của CP-ALS vượt trội ($0.7239$ so với $0.3723$) do cơ chế cập nhật luân phiên giúp tránh được các cực tiểu địa phương (local minima) mà CP-OPT gặp phải.}
-\label{tab:als-vs-opt}
-\end{table}
-
 \subsubsection{PARAFAC2: nới lỏng strict multilinearity}
 \label{sec:dm-parafac2}
 
@@ -312,26 +295,6 @@ nên ràng buộc cross-product được thỏa mãn tự động. Thuật toán
 \end{algorithm}
 
 Trong tutorial, PARAFAC2 được dùng để minh họa các tình huống như time-evolving fMRI, chemometrics, longitudinal microbiome và các dữ liệu có individual temporal profiles \cite{chrysos2025foundationsTutorial}. Điểm chung của các ví dụ này là dữ liệu vẫn có nhiều mode liên quan nhau, nhưng không nên bị ép thành một tensor hoàn toàn đều đặn trước khi phân tích.
-
-\paragraph{Kết quả thực nghiệm mô hình PARAFAC2.}
-Trong thực tiễn phân tích tín hiệu não bộ, sau quá trình loại bỏ nhiễu, mỗi Subject thường giữ lại một số lượng Epochs/Trials (đoạn dữ liệu hợp lệ) khác nhau. Sự linh hoạt tuyệt đối của PARAFAC2 nằm ở chỗ nó cho phép các slice không đồng đều về kích thước theo một chiều nhất định. Khi áp dụng PARAFAC2 trên tập dữ liệu gồm $K=5$ Subjects (tương ứng 5 slices), trong đó mỗi Subject có độ dài trial khác nhau lần lượt là $76, 79, 75, 78,$ và $76$ mẫu ($n_k \times 64$ kênh), mô hình luân phiên giải bài toán Procrustes để căn chỉnh sự dịch pha (phase shift) và trích xuất cấu trúc không gian chung. Bảng~\ref{tab:parafac2-fit} thể hiện quá trình hội tụ của hàm mục tiêu (fit score) khi thiết lập rank $R=2$.
-
-\begin{table}[H]
-\centering
-\begin{tabular}{cc}
-\toprule
-\textbf{Vòng lặp (Iteration)} & \textbf{Hệ số độ khớp (Fit Score)} \\
-\midrule
-1 & $0.5481$ \\
-2 & $0.6236$ \\
-3 & $0.6247$ \\
-4 & $0.6248$ \\
-5 (Hội tụ) & \textbf{$> 0.6248$} \\
-\bottomrule
-\end{tabular}
-\caption{Quá trình hội tụ của PARAFAC2-ALS qua các vòng lặp. Điểm sáng lớn nhất của thuật toán là khả năng duy trì sự ổn định hội tụ ngay cả khi cấu trúc dữ liệu bị lệch pha hoặc khác biệt số lượng mẫu (trial) giữa các đối tượng.}
-\label{tab:parafac2-fit}
-\end{table}
 
 \subsubsection{CMTF và data fusion}
 \label{sec:dm-parafac2-cmtf}
@@ -424,9 +387,6 @@ Ma trận $\mathbf{Y}$ (Metadata giả lập) & $10 \times 5$ & Chứa thông ti
 \label{tab:cmtf-structure}
 \end{table}
 
-\paragraph{Kết quả hội tụ và định lượng.}
-Khi chạy mô hình CMTF, thuật toán hội tụ nhanh chóng chỉ sau $7$ vòng lặp với sai số tái thiết trên Tensor $\mathcal{X}$ là $1791.94$ và trên Ma trận $\mathbf{Y}$ là $7435.05$. Đặc biệt, độ tương quan cao nhất giữa Factor $\mathbf{A}$ (Subject mode) và nhãn Metadata giả lập (chẵn/lẻ) đạt đến $0.9954$ tại Component 1. Để kiểm chứng tính hiệu quả của Data fusion, một nghiên cứu cắt bỏ (Ablation study) đã được thực hiện bằng cách thay thế $\mathbf{Y}$ bằng ma trận ngẫu nhiên $\mathbf{Y}_{\text{null}}$. Kết quả cho thấy thuật toán hội tụ chậm hơn ($13$ vòng lặp) và pattern phân tách trong Factor $\mathbf{A}$ hoàn toàn biến mất, chứng minh CMTF thực sự đã khai thác thành công thông tin cấu trúc chéo giữa $\mathcal{X}$ và $\mathbf{Y}$.
-
 \subsubsection{Các ứng dụng trong tutorial}
 \label{sec:dm-applications}
 
@@ -440,26 +400,26 @@ Tutorial dùng nhiều ví dụ để nhấn mạnh vai trò của tensor factor
 
 Từ các ví dụ này, thông điệp chính của Part III là: tensor factorizations hữu ích trong data mining không chỉ vì chúng nén dữ liệu, mà vì chúng bảo toàn các mode có ý nghĩa và tạo ra component có thể diễn giải. CP cung cấp mô hình nền tảng với uniqueness properties; PARAFAC2 nới lỏng giả định đa tuyến tính khi dữ liệu thay đổi qua slice; CMTF mở rộng sang phân tích đa nguồn. Các thách thức còn lại trong tutorial gồm chọn số component, đưa prior knowledge vào mô hình, xử lý dữ liệu thiếu hoặc lệch thời gian, và cân bằng giữa interpretability/uniqueness với độ phi tuyến của mô hình \cite{chrysos2025foundationsTutorial}.
 
-\paragraph{Kết quả tổng hợp khả năng diễn giải trên EEG.}
-Khi phân tích trực tiếp tập dữ liệu thực EEGMMIDB với CP-ALS, Bảng~\ref{tab:eeg-cp-svd} tóm lược những khác biệt về mặt diễn giải hình học khi sử dụng phương pháp ma trận và phân rã Tensor.
+% \paragraph{Kết quả tổng hợp khả năng diễn giải trên EEG.}
+% Khi phân tích trực tiếp tập dữ liệu thực EEGMMIDB với CP-ALS, Bảng~\ref{tab:eeg-cp-svd} tóm lược những khác biệt về mặt diễn giải hình học khi sử dụng phương pháp ma trận và phân rã Tensor.
 
-\begin{table}[H]
-\centering
-\begin{tabular}{p{0.25\textwidth} p{0.35\textwidth} p{0.3\textwidth}}
-\toprule
-\textbf{Phương pháp} & \textbf{Kích thước xử lý} & \textbf{Khả năng bóc tách đặc trưng} \\
-\midrule
-SVD/PCA (Ma trận) & Unfolded: $20 \times 30784$ (ép phẳng Channels và Time) & Chỉ phân xuất được 2 mode (Trials vs Không-Thời gian trộn lẫn), khó diễn giải. \\
-\addlinespace
-CP-ALS (Tensor) & 3D Tensor: $20 \times 64 \times 481$ (Trials $\times$ Channels $\times$ Time) & Trích xuất độc lập 3 nhân tử (Spatial, Spectral, Temporal), bảo toàn cấu trúc não bộ. \\
-\bottomrule
-\end{tabular}
-\caption{So sánh ứng dụng tiếp cận ma trận và Tensor trên dữ liệu EEG thực tế. CP-ALS vượt trội trong việc duy trì ngữ nghĩa không gian của các điện cực (Channels).}
-\label{tab:eeg-cp-svd}
-\end{table}
+% \begin{table}[H]
+% \centering
+% \begin{tabular}{p{0.25\textwidth} p{0.35\textwidth} p{0.3\textwidth}}
+% \toprule
+% \textbf{Phương pháp} & \textbf{Kích thước xử lý} & \textbf{Khả năng bóc tách đặc trưng} \\
+% \midrule
+% SVD/PCA (Ma trận) & Unfolded: $20 \times 30784$ (ép phẳng Channels và Time) & Chỉ phân xuất được 2 mode (Trials vs Không-Thời gian trộn lẫn), khó diễn giải. \\
+% \addlinespace
+% CP-ALS (Tensor) & 3D Tensor: $20 \times 64 \times 481$ (Trials $\times$ Channels $\times$ Time) & Trích xuất độc lập 3 nhân tử (Spatial, Spectral, Temporal), bảo toàn cấu trúc não bộ. \\
+% \bottomrule
+% \end{tabular}
+% \caption{So sánh ứng dụng tiếp cận ma trận và Tensor trên dữ liệu EEG thực tế. CP-ALS vượt trội trong việc duy trì ngữ nghĩa không gian của các điện cực (Channels).}
+% \label{tab:eeg-cp-svd}
+% \end{table}
 
-Đặc biệt, sự ưu việt của phân rã Tensor so với ma trận trong khai phá dữ liệu thần kinh học được củng cố bởi hai tính chất cơ bản:
-\begin{itemize}[leftmargin=2em]
-    \item \textbf{Tránh sự trộn lẫn Không-Thời gian (Spatial-Temporal Entanglement):} SVD ép buộc trải phẳng (unfold) tensor, dẫn đến việc không gian (các kênh điện cực) và thời gian bị gộp chung thành một trục $C \times T$. Mỗi component của SVD là một ma trận 2D không thể phân tích riêng rẽ thành tín hiệu không gian và thời gian. Ngược lại, dạng tích ngoài $a_r \circ b_r \circ c_r$ của CP cho biết chính xác cụm điện cực nào ($b_r$) đang phản ứng ở chuỗi thời điểm nào ($c_r$).
-    \item \textbf{Loại bỏ Ràng buộc Trực giao cứng nhắc (Orthogonality Constraints):} SVD toán học yêu cầu các loadings (cột của $\mathbf{U}$) và các pattern (hàng của $\mathbf{V}^\top$) phải trực giao (vuông góc) hoàn toàn. Trong thực tế sinh lý, các nguồn phát tín hiệu của não bộ hoặc phản xạ của các chủ thể thường có sự tương quan mật thiết. CP-ALS không áp đặt điều kiện trực giao này, giúp các nhân tử (factors) học được uyển chuyển, tự nhiên và phản ánh đúng bản chất sinh học hơn.
-\end{itemize}
+% Đặc biệt, sự ưu việt của phân rã Tensor so với ma trận trong khai phá dữ liệu thần kinh học được củng cố bởi hai tính chất cơ bản:
+% \begin{itemize}[leftmargin=2em]
+%     \item \textbf{Tránh sự trộn lẫn Không-Thời gian (Spatial-Temporal Entanglement):} SVD ép buộc trải phẳng (unfold) tensor, dẫn đến việc không gian (các kênh điện cực) và thời gian bị gộp chung thành một trục $C \times T$. Mỗi component của SVD là một ma trận 2D không thể phân tích riêng rẽ thành tín hiệu không gian và thời gian. Ngược lại, dạng tích ngoài $a_r \circ b_r \circ c_r$ của CP cho biết chính xác cụm điện cực nào ($b_r$) đang phản ứng ở chuỗi thời điểm nào ($c_r$).
+%     \item \textbf{Loại bỏ Ràng buộc Trực giao cứng nhắc (Orthogonality Constraints):} SVD toán học yêu cầu các loadings (cột của $\mathbf{U}$) và các pattern (hàng của $\mathbf{V}^\top$) phải trực giao (vuông góc) hoàn toàn. Trong thực tế sinh lý, các nguồn phát tín hiệu của não bộ hoặc phản xạ của các chủ thể thường có sự tương quan mật thiết. CP-ALS không áp đặt điều kiện trực giao này, giúp các nhân tử (factors) học được uyển chuyển, tự nhiên và phản ánh đúng bản chất sinh học hơn.
+% \end{itemize}

@@ -1,8 +1,35 @@
 \section{Một số ứng dụng}
 
+\begin{figure}[H]
+\centering
+\resizebox{0.92\textwidth}{!}{%
+\begin{tikzpicture}[
+    every node/.style={font=\small},
+    hub/.style={draw, rounded corners=5pt, fill=gray!10, line width=0.8pt, minimum width=3.4cm, minimum height=1.0cm, align=center},
+    app/.style={draw, rounded corners=5pt, line width=0.8pt, minimum width=3.4cm, minimum height=1.05cm, align=center},
+    arrow/.style={-{Stealth[length=3mm]}, line width=0.9pt, gray!70}
+]
+    \node[hub] (tf) at (0,0) {Tensor\\factorizations};
+    \node[app, fill=teal!14, draw=teal!60!black] (dl) at (-5.0,-2.0) {Deep Learning\\nén và thích nghi};
+    \node[app, fill=violet!13, draw=violet!65!black] (pc) at (0,-2.0) {Probabilistic Circuits\\suy luận hiệu quả};
+    \node[app, fill=orange!16, draw=orange!75!black] (dm) at (5.0,-2.0) {Data Mining\\diễn giải đa mode};
+
+    \draw[arrow] (tf) -- (dl);
+    \draw[arrow] (tf) -- (pc);
+    \draw[arrow] (tf) -- (dm);
+
+    \node[font=\scriptsize, text=teal!65!black, align=center] at (-5.0,-3.0) {LoRA, tensorized layers, MoE};
+    \node[font=\scriptsize, text=violet!70!black, align=center] at (0,-3.0) {smooth, decomposable circuits};
+    \node[font=\scriptsize, text=orange!75!black, align=center] at (5.0,-3.0) {CP, PARAFAC2, CMTF};
+\end{tikzpicture}
+}
+\caption{Ba nhóm ứng dụng chính của tensor factorizations được dùng xuyên suốt báo cáo, theo tinh thần của tutorial: học sâu, probabilistic circuits và data mining có khả năng diễn giải.}
+\label{fig:application-map}
+\end{figure}
 
 \input{content/part_1_deep_learning}
 \clearpage
 \input{content/part_2_probabilistic_circuit}
 \clearpage
 \input{content/part_3_data_mining}
+\clearpage

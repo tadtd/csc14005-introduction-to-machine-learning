@@ -14,22 +14,21 @@ $p(\mathbf{x}) \geq 0$.  Kích thước của tensor này là
 \end{equation}
 tăng theo hàm mũ khi $N$ lớn, nên việc dựng tường minh toàn bộ bảng xác suất
 thường không khả thi. Hai hướng tiếp cận bổ sung nhau để vượt qua rào cản này là
-tensor factorizations (xấp xỉ tensor bằng các nhân tử bậc thấp hơn) và circuits
+tensor factorizations (xấp xỉ tensor bằng các nhân tử tensor có bậc thấp hơn) và circuits
 (tổ chức phép tính dưới dạng computational graph để trả lời truy vấn mà không cần
 dựng toàn bộ tensor) \cite{chrysos2025foundationsTutorial}.
 
-Thông điệp trung tâm của tutorial là: hai hướng này không hề độc lập với nhau.
-Mỗi tensor factorization có thể được mã hóa chính xác như một circuit, và một deep
-circuit tương ứng với một hierarchical tensor factorization
-\cite{chrysos2025foundationsTutorial, loconte2025relationship}.  Mối liên hệ này
-quan trọng theo hai chiều:
+Hai hướng này không hề độc lập với nhau. Mỗi tensor factorization có thể được mã hóa
+chính xác như một circuit, và một deep circuit tương ứng với một hierarchical tensor
+factorization \cite{chrysos2025foundationsTutorial, loconte2025relationship}.  Mối
+liên hệ này quan trọng theo hai chiều:
 
 \begin{itemize}[leftmargin=2em]
     \item Chiều TF $\to$ circuit: biết cách một tensor factorization hoạt động,
     ta biết cách xây một circuit tính đúng từng phần tử của nó.
-    \item Chiều circuit $\to$ TF: các structural properties của circuit (smoothness,
-    decomposability) tương ứng chính xác với điều kiện để một phân rã tensor hỗ
-    trợ suy luận hiệu quả.
+    \item Chiều circuit $\to$ TF: các tính chất cấu trúc (structural properties)
+    của circuit (smoothness, decomposability) tương ứng chính xác với điều kiện để
+    một phân rã tensor hỗ trợ suy luận hiệu quả.
 \end{itemize}
 
 \begin{equation}
@@ -40,17 +39,85 @@ quan trọng theo hai chiều:
     \underbrace{\text{tractable inference}}_{\text{suy luận hiệu quả}}.
 \end{equation}
 
-Phần này trình bày bốn mục tiêu mà tutorial xây dựng dựa trên mối liên hệ đó
-\cite{chrysos2025foundationsTutorial}: (1) thống nhất các tensor factorizations
-theo cách module hóa (``Lego block approach''), (2) xây các factorization mới bằng
-cách ghép layers, (3) thiết kế thuật toán tractable có hệ thống dựa trên structural
+Phần này trình bày bốn mục tiêu xây dựng dựa trên mối liên hệ đó
+\cite{chrysos2025foundationsTutorial}: (1) thống nhất các tensor factorizations theo
+cách module hóa (``Lego block approach''), (2) xây các factorization mới bằng cách
+ghép layers, (3) thiết kế thuật toán tractable có hệ thống dựa trên structural
 properties, và (4) coi tensor factorizations như generative models để lấy mẫu.
 
+% ──────────────────────────────────────────────────────────────────────────────
+\subsubsection{Circuit là gì?}
+
+Xét tập biến $\mathbf{X}=\{X_1,\ldots,X_N\}$, trong đó mỗi biến
+$X_i$ có miền giá trị $\mathcal{D}_i$.  Một phép gán đầy đủ được ký hiệu
+$\mathbf{x}=(x_1,\ldots,x_N)$.  Với một tập con biến $S\subseteq\mathbf{X}$, ký
+hiệu $\mathbf{x}_S$ là phần của phép gán $\mathbf{x}$ chỉ chứa các biến trong $S$.
+
+\begin{definition}[Scope \cite{loconte2025relationship, chrysos2025foundationsTutorial}]
+\label{def:circuit-scope}
+\emph{Scope} của một unit $n$, ký hiệu $\mathrm{scope}(n)$, là tập biến mà hàm tại
+unit đó phụ thuộc vào.  Nếu $\mathrm{scope}(n)=S$, output của unit $n$ được viết là
+$c_n(\mathbf{x}_S)$.
+\end{definition}
+
+\begin{definition}[Circuit \cite{loconte2025relationship, chrysos2025foundationsTutorial}]
+\label{def:circuit}
+Một \emph{circuit} $c$ là một đồ thị có hướng không chu trình (DAG) tham số hóa.
+Mỗi đỉnh là một computational unit, mỗi cạnh biểu diễn quan hệ phụ thuộc tính toán,
+và $\mathrm{in}(n)$ là tập các unit đầu vào trực tiếp của unit $n$.  Circuit gồm
+các input units, product units và sum units.  Nếu $o$ là output unit, giá trị của
+circuit là
+$c(\mathbf{x})=c_o(\mathbf{x}_{\mathrm{scope}(o)})$, được tính bằng một lượt
+feedforward theo thứ tự topo.  Kích thước circuit, ký hiệu $|c|$, thường được tính
+bằng số cạnh giữa các computational units.
+\end{definition}
+
+\begin{definition}[Các loại unit trong circuit \cite{loconte2025relationship}]
+\label{def:circuit-units}
+Các unit trong Definition~\ref{def:circuit} được định nghĩa đệ quy như sau:
+\begin{enumerate}[label=(\roman*), leftmargin=2em]
+    \item \textbf{Input unit}: nếu $n$ là unit lá với scope
+    $S_n\subseteq\mathbf{X}$ và hàm cơ sở $f_n$, thì
+    \begin{equation}
+        \mathrm{scope}(n)=S_n,\qquad
+        c_n(\mathbf{x}_{S_n}) = f_n(\mathbf{x}_{S_n}).
+        \label{eq:circuit-input-unit}
+    \end{equation}
+
+    \item \textbf{Product unit}: nếu $n$ là product unit, thì
+    \begin{equation}
+        \mathrm{scope}(n)
+        =
+        \bigcup_{j \in \mathrm{in}(n)} \mathrm{scope}(j),
+        \qquad
+        c_n(\mathbf{x}_{\mathrm{scope}(n)})
+        =
+        \prod_{j \in \mathrm{in}(n)}
+        c_j(\mathbf{x}_{\mathrm{scope}(j)}).
+        \label{eq:circuit-product-unit}
+    \end{equation}
+
+    \item \textbf{Sum unit}: nếu $n$ là sum unit với trọng số $w_{n,j}\in\mathbb{R}$,
+    thì
+    \begin{equation}
+        \mathrm{scope}(n)
+        =
+        \bigcup_{j \in \mathrm{in}(n)} \mathrm{scope}(j),
+        \qquad
+        c_n(\mathbf{x}_{\mathrm{scope}(n)})
+        =
+        \sum_{j \in \mathrm{in}(n)}
+        w_{n,j}\,
+        c_j(\mathbf{x}_{\mathrm{scope}(j)}).
+        \label{eq:circuit-sum-unit}
+    \end{equation}
+\end{enumerate}
+\end{definition}
 % ──────────────────────────────────────────────────────────────────────────────
 \subsubsection{Từ Tensor Factorization đến Circuit}
 
 \paragraph{Cơ chế chuyển đổi.}
-Điểm khởi đầu của Part~II trong tutorial là quan sát sau
+Với quan sát sau
 \cite{chrysos2025foundationsTutorial}: \emph{một circuit có thể tính một tensor
 entry tại một index bất kỳ}.  Với tensor $\mathcal{T}$ và một phép gán
 $\mathbf{x} = (x_1, \ldots, x_N)$, bất kỳ công thức nào tính phần tử
@@ -118,7 +185,7 @@ các latent components:
     \prod_{n=1}^{N} V^{(n)}_{x_n,\, r_n}.
     \label{eq:tucker-decomp}
 \end{equation}
-Trong ngôn ngữ circuit, factor matrices cung cấp input layers (tương tự CP),
+Với circuit, factor matrices cung cấp input layers (tương tự CP),
 product layer kết hợp các mode, còn sum layer cộng trên tất cả bộ chỉ số
 $(r_1, \ldots, r_N)$ với trọng số lấy từ các phần tử của $\mathcal{W}$.  Khi
 $\mathcal{W}$ là diagonal với $R_1 = \cdots = R_N = R$, Tucker suy biến thành CP.
@@ -134,7 +201,7 @@ $|c| \in \mathcal{O}\!\left(N \prod_{n=1}^{N} R_n\right)$.
 \end{proposition}
 
 \paragraph{Định nghĩa tensor hóa của circuit.}
-Tutorial định nghĩa circuit theo ba quy tắc tổ hợp, cho phép xây dựng circuit từng
+Circuit với ba quy tắc tổ hợp, cho phép ta xây dựng circuit từng
 tầng một \cite{chrysos2025foundationsTutorial}:
 \begin{enumerate}[label=\Roman*.]
     \item Một tập các hàm tractable là một circuit layer.
@@ -149,8 +216,7 @@ tầng một \cite{chrysos2025foundationsTutorial}:
 Xếp chồng nhiều layers theo ba quy tắc này cho ra một \emph{deep circuit}.
 
 \paragraph{Lego block approach.}
-Tutorial đặt tên ``A Lego block approach to unify tensor factorizations'': mỗi loại
-factorization tương ứng với một ``block'', và ta tạo factorization mới bằng cách
+Mỗi loại factorization tương ứng với một ``block'', và ta tạo factorization mới bằng cách
 ghép các blocks lại \cite{chrysos2025foundationsTutorial}:
 \begin{itemize}[leftmargin=2em]
     \item \textbf{CP layer}: tích Hadamard của các input vectors, sau đó cộng---tương
@@ -175,17 +241,9 @@ Tucker so với shallow Tucker: nó cần số rank nhỏ hơn đáng kể để
 % ──────────────────────────────────────────────────────────────────────────────
 \subsubsection{Từ Circuit đến Tractable Inference qua Structural Properties}
 
-Sau khi mã hóa tensor factorization thành circuit, câu hỏi trung tâm là: circuit đó
+Sau khi mã hóa tensor factorization thành circuit, câu hỏi đặt ra là: circuit đó
 có thể trả lời những truy vấn nào một cách hiệu quả?  Câu trả lời phụ thuộc vào
 \emph{structural properties} của circuit \cite{vergari2021compositional}.
-
-\paragraph{Scope.}
-\emph{Scope} của unit $n$, ký hiệu $\mathrm{scope}(n)$, là tập biến mà hàm $c_n$
-tại unit đó phụ thuộc vào.  Với unit lá, scope được xác định bởi input function.
-Với sum/product unit:
-\begin{equation}
-    \mathrm{scope}(n) = \bigcup_{j \in \mathrm{in}(n)} \mathrm{scope}(j).
-\end{equation}
 
 \begin{definition}[Smoothness \cite{vergari2021compositional}]
 \label{def:smoothness}
@@ -305,12 +363,11 @@ Liên hệ với tensor factorizations: một \emph{non-negative Tucker factoriz
 một PC monotonic.  Nói cách khác, bất kỳ non-negative Tucker (hay CP, HOSVD) nào
 cũng là một PC với tất cả các ưu điểm về tractable inference \cite{loconte2025relationship}.
 
-Input functions không nhất thiết chỉ là embedding entries $f(x) = v_{x,r}$.
-Loconte et al.\ chỉ ra rằng có thể thay thế chúng bằng probability mass functions
-(Binomial, Categorical), continuous distributions ($\mathcal{N}(\mu,\sigma^2)$,
-splines, polynomials), hoặc thậm chí các deep generative models
-\cite{loconte2025relationship}. Khi input functions là hàm liên tục, tensor
-tương ứng trở thành \emph{infinite-dimensional} và circuit mã hóa một PDF thay vì PMF.
+Input functions không nhất thiết chỉ là embedding entries $f(x) = v_{x,r}$.  Chúng
+có thể được thay bằng \textbf{PMF} (Binomial, Categorical),
+continuous distributions ($\mathcal{N}(\mu,\sigma^2)$, splines, polynomials), hoặc
+thậm chí các deep generative models \cite{loconte2025relationship}. Khi input functions là hàm liên tục, tensor
+tương ứng trở thành \emph{infinite-dimensional} và circuit mã hóa một \textbf{PDF} thay vì \textbf{PMF}.
 
 \begin{example}[Non-negative CP factorization là PC]
 \label{ex:nn-cp-pc}
@@ -515,9 +572,9 @@ Diễn giải rank/sum index như latent variable và sinh mẫu backward. \\
 \end{table}
 
 \paragraph{Non-negative factorizations như latent variable models.}
-Bài của Loconte et al.\ nhấn mạnh rằng non-negative tensor factorizations, khi
-được biểu diễn như monotonic PCs, không chỉ hỗ trợ marginal inference mà còn có thể
-được đọc như các mô hình sinh với biến ẩn rời rạc \cite{loconte2025relationship}.
+Non-negative tensor factorizations, khi được biểu diễn như monotonic PCs, không chỉ
+hỗ trợ marginal inference mà còn có thể được đọc như các mô hình sinh với biến ẩn
+rời rạc \cite{loconte2025relationship}.
 Chìa khóa là diễn giải mỗi sum node như một mixture với biến latent $Z$:
 \begin{equation}
     p(\mathbf{x}) = \sum_{z=1}^{K} p(z)\, p(\mathbf{x} \mid z),
@@ -575,46 +632,54 @@ PC xử lý marginal inference, kết quả được truyền vào neural networ
 và cách tiếp cận này cho kết quả tốt hơn (V)AE trên bài toán imputation
 \cite{braun2025tractable}.
 
-\paragraph{Liên hệ thống nhất với các họ mô hình.}
-Bức tranh tổng thể của tutorial là: deep circuits là một ngôn ngữ chung cho nhiều
-họ mô hình \cite{chrysos2025foundationsTutorial}.  Bảng~\ref{tab:circuit-models}
-tóm tắt các mối liên hệ chính.
-
-\begin{table}[h]
-\centering
-\caption{Mối quan hệ giữa deep circuits, tensor factorizations và các họ mô hình
-         khác \cite{chrysos2025foundationsTutorial, loconte2025relationship}.}
-\label{tab:circuit-models}
-\begin{tabular}{@{}ll@{}}
-\toprule
-\textbf{Circuit / Factorization} & \textbf{Tương đương} \\
-\midrule
-Non-negative CP circuit (shallow)    & Mixture model bậc 1, PMF rank-$R$ \\
-Non-negative Tucker circuit (shallow) & Tucker factorization không âm \\
-Deep smooth+decomposable circuit      & Hierarchical Tucker, hierarchical mixtures \\
-Deterministic + smooth + decomposable & Decision trees, logical formulas \& constraints \\
-Circuit với CP layers + linear tree   & MPS / Tensor-Train \\
-\bottomrule
-\end{tabular}
-\end{table}
-
 \paragraph{Mở rộng: Từ Tensor rời rạc đến Hàm liên tục.}
 Khi input functions là hàm liên tục (Gaussian, spline, polynomial), tensor xác suất
 tương ứng trở thành \emph{infinite-dimensional}---một quasi-tensor theo thuật ngữ
 của \cite{loconte2025relationship}.  Circuit lúc đó mã hóa một PDF thay vì PMF,
-với công thức chuẩn hóa dùng tích phân thay vì tổng.  Loconte et al.\ cũng chỉ ra
-rằng quasi-tensors có thể được biểu diễn bằng circuits trên các biến có miền vô hạn,
-và rằng việc thêm \emph{integral units} cho phép xem một lớp PC gần đây như các
-factorization liên tục hoặc infinite-rank.  Đây là cơ sở đúng cho Probabilistic
+với công thức chuẩn hóa dùng tích phân thay vì tổng.  Quasi-tensors có thể được
+biểu diễn bằng circuits trên các biến có miền vô hạn; việc thêm \emph{integral
+units} cho phép xem một lớp PC gần đây như các factorization liên tục hoặc
+infinite-rank \cite{loconte2025relationship}.  Đây là cơ sở đúng cho Probabilistic
 Integral Circuits và các mô hình latent liên tục mở rộng từ PC
 \cite{loconte2025relationship, gala2024probabilisticIntegral, gala2024scalingContinuous}.
+
+\paragraph{Hạn chế: tractable không đồng nghĩa với biểu diễn luôn gọn.}
+Các structural properties như smoothness và decomposability giúp suy luận chính xác
+trở nên tractable, nhưng chúng không bảo đảm rằng mọi phân phối đều có một circuit
+nhỏ.  Đây là điểm cần phân biệt rõ: \emph{tractability} nói về chi phí trả lời truy
+vấn khi circuit đã được cho trước, còn \emph{expressiveness/compactness} nói về việc
+cần circuit lớn đến mức nào để biểu diễn hoặc xấp xỉ một phân phối.
+
+Với Tucker factorization, nếu tensor xác suất bậc $N$ được viết với multilinear rank
+$(R_1,\ldots,R_N)$ thì riêng core tensor đã có
+\begin{equation}
+    \prod_{n=1}^{N} R_n
+\end{equation}
+tham số.  Khi $R_1=\cdots=R_N=R$, kích thước core là $R^N$, tức tăng theo hàm mũ theo
+số biến/mode.  Vì vậy, nếu một phân phối cần rank lớn để biểu diễn tốt, shallow
+Tucker hoặc CP không còn là biểu diễn gọn, dù circuit tương ứng vẫn hỗ trợ một số
+truy vấn suy luận hiệu quả sau khi đã được xây dựng.  Nói cách khác, tồn tại những
+phân phối có tương tác bậc cao hoặc phụ thuộc phức tạp khiến rank cần thiết tăng rất
+nhanh; lúc đó việc học và lưu trữ mô hình có thể trở thành nút thắt chính
+\cite{loconte2025relationship}.
+
+Deep circuits/hierarchical factorizations giảm vấn đề này bằng cách chia nhỏ scope và
+chia sẻ sub-factorizations, nhưng đây không phải bảo đảm phổ quát.  Hiệu quả biểu
+diễn phụ thuộc mạnh vào region graph, loại layer, rank/width, và mức độ phù hợp giữa
+cấu trúc circuit với phụ thuộc thật trong dữ liệu.  Nếu chọn cấu trúc sai, ta vẫn có
+thể cần width rất lớn, thậm chí tăng theo hàm mũ, để đạt xấp xỉ tốt.
 
 \paragraph{Các thách thức nghiên cứu còn mở.}
 Tutorial kết thúc với bốn câu hỏi chưa được giải quyết
 \cite{chrysos2025foundationsTutorial}:
 \begin{enumerate}[label=\textbf{\arabic*.}, leftmargin=2em]
-    \item \textbf{Optimization}: lý thuyết hội tụ của shallow factorizations có thể
-    mở rộng sang deep circuits không?
+    \item \textbf{Optimization}: không chỉ là chọn một optimizer như SGD hay Adam,
+    mà là hiểu bài toán học tham số và học cấu trúc của circuit/factorization.  Với
+    shallow factorizations, ta có một số phân tích về hội tụ, local minima hoặc điều
+    kiện khôi phục trong các thiết lập đơn giản.  Câu hỏi mở là liệu các kết quả này
+    có thể mở rộng sang deep circuits, nơi loss vẫn không lồi nhưng còn phụ thuộc vào
+    region graph, cách ghép layers, width/rank và các ràng buộc tractability hay
+    không.
     \item \textbf{Identifiability}: khi nào deep circuit có biểu diễn duy nhất
     (khôi phục được ground truth)?
     \item \textbf{Approximate inference}: xây dựng property-driven approximate

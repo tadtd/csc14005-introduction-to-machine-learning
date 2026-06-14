@@ -290,21 +290,6 @@ Cho $\mathcal{X} \in \mathbb{R}^{I_1 \times \cdots \times I_N}$, $\mathbf{U} \in
 \end{enumerate}
 \end{proposition}
 
-\begin{proof}
-\textit{(i)} Theo định nghĩa và biểu diễn matricization:
-\begin{equation}
-    ((\mathcal{X} \times_n \mathbf{U}) \times_n \mathbf{V})_{(n)}
-    = \mathbf{V}\,(\mathcal{X} \times_n \mathbf{U})_{(n)}
-    = \mathbf{V}\,\mathbf{U}\,\mathbf{X}_{(n)}
-    = (\mathcal{X} \times_n \mathbf{V}\mathbf{U})_{(n)}.
-\end{equation}
-
-\textit{(ii)} Với $m \neq n$, tích mode-$m$ và mode-$n$ tác động lên các chiều độc lập nhau, do đó thứ tự thực hiện không ảnh hưởng tới kết quả. Cụ thể, phần tử tổng quát của cả hai vế đều bằng:
-\begin{equation}
-    \sum_{i_m} \sum_{i_n} \mathcal{X}_{\ldots,i_m,\ldots,i_n,\ldots} \cdot A_{j_m, i_m} \cdot B_{j_n, i_n}. \qedhere
-\end{equation}
-\end{proof}
-
 %%============================================================
 \subsection{Phân rã tensor}
 %%============================================================
@@ -355,17 +340,49 @@ Dưới dạng matricization, phân rã CP thỏa mãn:
 \end{proposition}
 
 \begin{proof}
-Ta chứng minh cho trường hợp $N=3$. Phần tử $(i_1, j)$ của $\mathbf{X}_{(1)}$ là $\mathcal{X}_{i_1, i_2, i_3}$, với $j = (i_3-1)I_2 + i_2$. Từ định nghĩa CP:
+Đặt
 \begin{equation}
-    [\mathbf{X}_{(1)}]_{i_1, j} = \sum_{r=1}^R A^{(1)}_{i_1, r} A^{(2)}_{i_2, r} A^{(3)}_{i_3, r}.
+    \mathbf{Z}^{(n)}
+    =
+    \mathbf{A}^{(N)} \odot \cdots \odot \mathbf{A}^{(n+1)}
+    \odot \mathbf{A}^{(n-1)} \odot \cdots \odot \mathbf{A}^{(1)}
+    \in \mathbb{R}^{I_{-n}\times R}.
 \end{equation}
-Nhận thấy $(\mathbf{C} \odot \mathbf{B})_{j, r} = c_{i_3, r} b_{i_2, r}$ (theo định nghĩa Khatri-Rao). Do đó:
+Ta chứng minh $\mathbf{X}_{(n)}=\mathbf{A}^{(n)}(\mathbf{Z}^{(n)})^\top$ bằng cách so sánh từng phần tử. Với một bộ chỉ số $(i_1,\ldots,i_N)$, mode-$n$ matricization đặt $i_n$ làm chỉ số hàng và gom các chỉ số còn lại thành một chỉ số cột $j$. Do đó
 \begin{equation}
-    [\mathbf{A}^{(1)}(\mathbf{C} \odot \mathbf{B})^\top]_{i_1, j}
-    = \sum_r A^{(1)}_{i_1,r} (\mathbf{C} \odot \mathbf{B})_{j,r}
-    = \sum_r A^{(1)}_{i_1,r} A^{(2)}_{i_2,r} A^{(3)}_{i_3,r}, \qquad
+    [\mathbf{X}_{(n)}]_{i_n,j}
+    =
+    \mathcal{X}_{i_1,\ldots,i_N}.
 \end{equation}
-trùng khớp với $[\mathbf{X}_{(1)}]_{i_1,j}$. Các mode khác chứng minh tương tự.
+Theo định nghĩa CP,
+\begin{equation}
+    \mathcal{X}_{i_1,\ldots,i_N}
+    =
+    \sum_{r=1}^{R}
+    A^{(1)}_{i_1,r}\cdots A^{(n)}_{i_n,r}\cdots A^{(N)}_{i_N,r}.
+\end{equation}
+Mặt khác, theo định nghĩa Khatri-Rao theo cột, phần tử hàng $j$, cột $r$ của $\mathbf{Z}^{(n)}$ chính là tích của các factor ở mọi mode trừ mode $n$:
+\begin{equation}
+    [\mathbf{Z}^{(n)}]_{j,r}
+    =
+    \prod_{k\neq n} A^{(k)}_{i_k,r}.
+\end{equation}
+Vì vậy phần tử $(i_n,j)$ của vế phải trong~\eqref{eq:cp-khatri-rao} là
+\begin{align}
+    [\mathbf{A}^{(n)}(\mathbf{Z}^{(n)})^\top]_{i_n,j}
+    &=
+    \sum_{r=1}^{R}
+    A^{(n)}_{i_n,r}[\mathbf{Z}^{(n)}]_{j,r} \\
+    &=
+    \sum_{r=1}^{R}
+    A^{(n)}_{i_n,r}\prod_{k\neq n} A^{(k)}_{i_k,r} \\
+    &=
+    \sum_{r=1}^{R}
+    A^{(1)}_{i_1,r}\cdots A^{(N)}_{i_N,r}
+    =
+    [\mathbf{X}_{(n)}]_{i_n,j}.
+\end{align}
+Hai ma trận có cùng mọi phần tử nên bằng nhau. Thứ tự các factor trong $\mathbf{Z}^{(n)}$ chỉ quyết định quy ước đánh số cột $j$ của matricization; khi dùng cùng một quy ước cho $\mathbf{X}_{(n)}$ và $\mathbf{Z}^{(n)}$, đẳng thức luôn đúng.
 \end{proof}
 
 \begin{figure}[h]
@@ -437,14 +454,6 @@ Xét phân rã CP của tensor bậc 3: $\mathcal{X} = \sum_{r=1}^R \mathbf{a}_r
 \end{equation}
 thì phân rã CP là \textbf{duy nhất về cơ bản} -- tức là duy nhất sai khác một hoán vị và co giãn các thành phần.
 \end{theorem}
-
-\begin{proof}[Phác thảo chứng minh]
-Giả sử tồn tại hai phân rã CP:
-\begin{equation}
-    \sum_{r=1}^{R} \mathbf{a}_r \circ \mathbf{b}_r \circ \mathbf{c}_r = \sum_{s=1}^{R} \tilde{\mathbf{a}}_s \circ \tilde{\mathbf{b}}_s \circ \tilde{\mathbf{c}}_s.
-\end{equation}
-Từ mode-1 matricization: $\mathbf{A}(\mathbf{C} \odot \mathbf{B})^\top = \tilde{\mathbf{A}}(\tilde{\mathbf{C}} \odot \tilde{\mathbf{B}})^\top$. Điều kiện $k_{\mathbf{A}} + k_{\mathbf{B}} + k_{\mathbf{C}} \geq 2R+2$ đảm bảo rằng không gian cột của $(\mathbf{C} \odot \mathbf{B})^\top$ và $(\tilde{\mathbf{C}} \odot \tilde{\mathbf{B}})^\top$ đều có hạng $R$, và từ đó suy ra hai phân rã chỉ khác nhau bởi hoán vị và co giãn. Chi tiết đầy đủ sử dụng bổ đề của Kruskal về "permutation lemma" cho tích Khatri-Rao; xem \cite{kruskal1977three, sidiropoulos2017tensor}.
-\end{proof}
 
 \begin{remark}
 Tính duy nhất của phân rã CP -- đạt được mà không cần ràng buộc trực giao -- là lợi thế lớn về \textit{khả năng diễn giải} so với SVD. Điều này giải thích tại sao CP được ưa chuộng trong phân tích dữ liệu khoa học (EEG, metabolomics), nơi các thành phần cần có ý nghĩa vật lý.
@@ -546,15 +555,6 @@ Phân rã Tucker tổng quát hóa SVD ma trận: khi $N=2$, ta có $\mathcal{X}
 \begin{proposition}[Mối quan hệ Tucker -- CP]
 Phân rã CP là trường hợp đặc biệt của Tucker với $R_1 = R_2 = \cdots = R_N = R$ và core tensor $\mathcal{G}$ là \textit{superdiagonal} (tức là $\mathcal{G}_{r_1,\ldots,r_N} = \lambda_r$ nếu $r_1 = \cdots = r_N = r$, và bằng 0 trong các trường hợp khác).
 \end{proposition}
-
-\begin{proof}
-Với $\mathcal{G}$ superdiagonal và $\lambda_r = 1$:
-\begin{equation}
-    \mathcal{X}_{i_1,\ldots,i_N} = \sum_{r_1}\cdots\sum_{r_N} \mathcal{G}_{r_1,\ldots,r_N} \prod_{n=1}^N U^{(n)}_{i_n,r_n}
-    = \sum_{r=1}^R \prod_{n=1}^N U^{(n)}_{i_n, r} = \sum_{r=1}^R \mathbf{u}^{(1)}_r \circ \cdots \circ \mathbf{u}^{(N)}_r,
-\end{equation}
-chính là phân rã CP với factor matrices $\mathbf{U}^{(n)}$.
-\end{proof}
 
 \subsubsection{HOSVD - Thuật toán tính phân rã Tucker}
 

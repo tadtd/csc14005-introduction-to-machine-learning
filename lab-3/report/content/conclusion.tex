@@ -1,1 +1,51 @@
 \section{Tổng kết}
+
+Báo cáo đã trình bày tensor factorization như một công cụ thống nhất cho ba
+hướng ứng dụng trong học máy: nén và thích nghi mô hình học sâu, suy luận hiệu
+quả với probabilistic circuits, và khai phá dữ liệu đa chiều có khả năng diễn
+giải. Phần cơ sở lý thuyết cung cấp các khái niệm chính như CP, Tucker,
+matricization, Khatri-Rao product, tensor rank và tính duy nhất của CP; các phần
+ứng dụng sau đó dùng lại cùng hệ ký hiệu này để giải thích vì sao phân rã tensor
+có ý nghĩa thực tế.
+
+Ở phần Deep Learning, thí nghiệm LoRA rank sweep cho thấy low-rank adaptation có
+thể đạt hiệu năng gần full fine-tuning với số tham số cập nhật rất nhỏ. Cụ thể,
+LoRA rank 8 đạt validation accuracy $0.7511$ trên SST-2 trong khi chỉ cập nhật
+$0.1923\%$ tổng số tham số của mô hình. Ở phần Probabilistic Circuit, demo CPJ
+circuit kiểm chứng được hai tính chất quan trọng: mô hình học gần đúng phân phối
+toy 4-bit với KL $0.0054$ và vẫn mở rộng được sang density estimation trên
+Binarized MNIST với test bpd $0.3704$ trong thiết lập nhỏ. Ở phần Data Mining,
+các thực nghiệm CP-ALS, PARAFAC2 và CMTF minh họa cách tensor factorization giữ
+lại cấu trúc đa mode, từ đó hỗ trợ diễn giải pattern tốt hơn so với việc ép dữ
+liệu về dạng ma trận.
+
+Các kết quả hiện tại chủ yếu đóng vai trò demo có kiểm soát thay vì benchmark
+đầy đủ. Một số hạn chế cần lưu ý là kích thước dataset còn nhỏ, số seed còn ít,
+thiết lập Probabilistic Circuit mới dùng width thấp và số epoch hạn chế, còn các
+thực nghiệm Data Mining thiên về minh họa pipeline hơn là kết luận miền ứng dụng
+cuối cùng. Ngoài ra, rank thấp không phải lúc nào cũng đủ biểu diễn phân phối
+hoặc cấu trúc dữ liệu phức tạp; trong các mô hình như Tucker, số tham số của core
+có thể tăng rất nhanh theo số mode và rank. Vì vậy, hướng phát triển tiếp theo
+nên mở rộng số lần chạy, so sánh thêm baseline, khảo sát rank/width có hệ thống,
+và dùng tập dữ liệu lớn hơn để đánh giá rõ hơn trade-off giữa hiệu năng, chi phí
+tính toán và khả năng diễn giải.
+
+\subsection{Bảng phân công công việc}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{p{0.16\textwidth}p{0.24\textwidth}p{0.50\textwidth}}
+\toprule
+\textbf{MSSV} & \textbf{Họ tên} & \textbf{Phần đóng góp} \\
+\midrule
+23120119 & Đỗ Tiến Đạt & Tổng hợp report, cơ sở lý thuyết, phần Probabilistic Circuit, demo CPJ circuit và phân tích kết quả thực nghiệm. \\
+23120163 & Lê Nhật Minh Tâm & Phần Deep Learning, triển khai và phân tích LoRA rank sweep, trực quan hóa kết quả. \\
+23120137 & Triệu Tuấn Kiệt & Phần Data Mining, thực nghiệm CP-ALS/CP-OPT, PARAFAC2 và phân tích khả năng diễn giải. \\
+23120134 & Nguyễn Đăng Khoa & Phần CMTF/data fusion, xử lý thực nghiệm EEG và so sánh tiếp cận tensor với ma trận. \\
+23120105 & Huỳnh Mạnh Tường & Rà soát tài liệu tham khảo, chuẩn hóa ký hiệu, kiểm tra nội dung báo cáo và hỗ trợ hoàn thiện slide/demo. \\
+\bottomrule
+\end{tabular}
+\caption{Bảng phân công công việc của nhóm.}
+\label{tab:work-allocation}
+\end{table}

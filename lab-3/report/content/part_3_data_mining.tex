@@ -5,7 +5,7 @@
 \subsubsection{Mở đầu}
 \label{sec:dm-context}
 
-Part III của tutorial tập trung vào \emph{Tensor Factorizations for Interpretable Data Mining}: dùng các phân rã tensor để rút trích pattern có thể diễn giải từ dữ liệu đa chiều, đa nguồn và thường không hoàn chỉnh \cite{chrysos2025foundationsTutorial}. Khác với phần Cơ sở lý thuyết, phần này không nhắc lại chi tiết định nghĩa tensor, matricization, CP hay Tucker; các khái niệm đó đã được trình bày ở Mục Cơ sở lý thuyết. Ở đây ta chỉ dùng lại chúng để giải thích vì sao tensor factorizations hữu ích trong khai phá dữ liệu.
+\emph{Tensor Factorizations for Interpretable Data Mining}: dùng các phân rã tensor để rút trích pattern có thể diễn giải từ dữ liệu đa chiều, đa nguồn và thường không hoàn chỉnh \cite{chrysos2025foundationsTutorial}. Khác với phần Cơ sở lý thuyết, phần này không nhắc lại chi tiết định nghĩa tensor, matricization, CP hay Tucker; các khái niệm đó đã được trình bày ở Mục Cơ sở lý thuyết. Ở đây ta chỉ dùng lại chúng để giải thích vì sao tensor factorizations hữu ích trong khai phá dữ liệu.
 
 Động lực chính là nhiều dữ liệu khoa học không tự nhiên ở dạng bảng hai chiều. Ví dụ trong tutorial, dữ liệu có thể có các mode như subject, thời gian, metabolite, electrode/voxel, microbe hoặc activity \cite{chrysos2025foundationsTutorial}. Nếu ép các mode này vào một ma trận bằng cách trải phẳng, ta vẫn có thể dùng SVD hoặc matrix factorization, nhưng thường đánh mất diễn giải riêng theo từng mode. Tensor factorization giữ lại cấu trúc đa chiều đó, nên mỗi component có thể được đọc như một pattern đồng thời trên nhiều trục của dữ liệu.
 
@@ -16,6 +16,44 @@ Mục tiêu của phần này là trình bày bốn ý chính theo tutorial:
     \item PARAFAC2 như một mở rộng linh hoạt khi một mode thay đổi qua các slice;
     \item CMTF như khung data fusion cho nhiều ma trận/tensor có mode chung.
 \end{enumerate}
+
+\begin{figure}[H]
+\centering
+\resizebox{0.9\textwidth}{!}{%
+\begin{tikzpicture}[
+    every node/.style={font=\small},
+    data/.style={draw, rounded corners=4pt, line width=0.75pt, minimum width=3.2cm, minimum height=0.95cm, align=center},
+    factor/.style={draw, rounded corners=3pt, line width=0.65pt, minimum width=1.2cm, minimum height=0.7cm, align=center},
+    arrow/.style={-{Stealth[length=2.7mm]}, line width=0.85pt, gray!70}
+]
+    \node[data, fill=orange!13, draw=orange!75!black] (tensor) at (0,0)
+      {Tensor khoa học\\subject $\times$ feature $\times$ time};
+    \node[data, fill=teal!12, draw=teal!60!black] (matrix) at (0,-1.45)
+      {Metadata\\subject $\times$ covariate};
+
+    \node[factor, fill=violet!13, draw=violet!65!black] (a) at (4.0,-0.72) {$A$\\subject};
+    \node[factor, fill=orange!13, draw=orange!70!black] (b) at (5.55,0.18) {$B$\\feature};
+    \node[factor, fill=red!10, draw=red!60!black] (c) at (5.55,-1.62) {$C$\\time};
+    \node[factor, fill=teal!12, draw=teal!60!black] (d) at (7.0,-0.72) {$D$\\covariate};
+
+    \node[data, fill=green!10, draw=green!50!black, minimum width=3.3cm] (patterns) at (10.1,-0.72)
+      {Pattern có thể diễn giải\\theo từng mode};
+
+    \draw[arrow] (tensor.east) -- (a.west);
+    \draw[arrow] (matrix.east) -- (a.west);
+    \draw[arrow] (a.east) -- (b.west);
+    \draw[arrow] (a.east) -- (c.west);
+    \draw[arrow] (a.east) -- (d.west);
+    \draw[arrow] (b.east) -- (patterns.west);
+    \draw[arrow] (c.east) -- (patterns.west);
+    \draw[arrow] (d.east) -- (patterns.west);
+
+    \node[font=\scriptsize, text=gray!70] at (3.4,-1.55) {shared factor};
+\end{tikzpicture}
+}
+\caption{Trong data mining, tensor factorization giữ riêng các mode có ý nghĩa. CMTF mở rộng ý tưởng này bằng cách ghép nhiều nguồn dữ liệu qua factor dùng chung, ví dụ subject factor.}
+\label{fig:dm-cmtf-interpretability}
+\end{figure}
 
 \subsubsection{CP decomposition và khả năng diễn giải}
 \label{sec:dm-uniqueness}

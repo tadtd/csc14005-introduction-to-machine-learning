@@ -21,27 +21,85 @@
 \]
 \end{frame}
 
-\begin{frame}{Circuit gồm những unit nào?}
-\begin{itemize}
-    \item \textbf{Input unit}: hàm cục bộ trên một scope nhỏ.
-    \[
-        c_n(x_{S_n})=f_n(x_{S_n})
-    \]
-    \item \textbf{Product unit}: nhân các nhánh con.
-    \[
-        c_n(x_{\mathrm{scope}(n)})
-        =
-        \prod_{j\in\mathrm{in}(n)}c_j(x_{\mathrm{scope}(j)})
-    \]
-    \item \textbf{Sum unit}: tổ hợp tuyến tính các nhánh con.
-    \[
-        c_n(x_{\mathrm{scope}(n)})
-        =
-        \sum_{j\in\mathrm{in}(n)}w_{n,j}c_j(x_{\mathrm{scope}(j)})
-    \]
-\end{itemize}
+\begin{frame}{Circuit là gì?}
+\begin{columns}[T,totalwidth=\textwidth]
+    \begin{column}{0.46\textwidth}
+        \centering
+        \begin{tikzpicture}[
+            node/.style={circle, draw, thick, minimum size=0.62cm, font=\small},
+            input/.style={rectangle, draw, rounded corners=3pt, fill=teal!12, minimum width=1.0cm, minimum height=0.45cm, font=\scriptsize},
+            sum/.style={node, fill=blue!12},
+            prod/.style={node, fill=orange!14},
+            arrow/.style={-{Stealth[length=2.2mm]}, thick}
+        ]
+            \node[sum] (s) at (0,0) {$+$};
+            \node[prod] (p1) at (-1.2,-1.0) {$\times$};
+            \node[prod] (p2) at (1.2,-1.0) {$\times$};
+            \node[input] (x1) at (-2.0,-2.0) {$f_1(x_1)$};
+            \node[input] (x2) at (-0.6,-2.0) {$f_2(x_2)$};
+            \node[input] (x3) at (0.6,-2.0) {$g_1(x_1)$};
+            \node[input] (x4) at (2.0,-2.0) {$g_2(x_2)$};
+            \draw[arrow] (x1) -- (p1);
+            \draw[arrow] (x2) -- (p1);
+            \draw[arrow] (x3) -- (p2);
+            \draw[arrow] (x4) -- (p2);
+            \draw[arrow] (p1) -- (s);
+            \draw[arrow] (p2) -- (s);
+        \end{tikzpicture}
+    \end{column}
+    \begin{column}{0.50\textwidth}
+        \begin{itemize}
+            \item Circuit là một DAG tham số hóa, tính hàm bằng forward pass theo thứ tự topo.
+            \item Mỗi node có \textbf{scope}: tập biến mà node phụ thuộc.
+            \item Kích thước $|c|$ thường tính bằng số node/cạnh/tham số.
+        \end{itemize}
+        \[
+            c(x)=\sum_{j\in\mathrm{in}(n)}w_{n,j}c_j(x)
+            \quad\text{hoặc}\quad
+            c(x)=\prod_{j\in\mathrm{in}(n)}c_j(x)
+        \]
+    \end{column}
+\end{columns}
 \end{frame}
 
+\begin{frame}{Circuit gồm những unit nào?}
+\small
+\begin{columns}[T,totalwidth=\textwidth]
+    \begin{column}{0.32\textwidth}
+        \textbf{Input unit}
+        \[
+            c_n(x_{S_n})=f_n(x_{S_n})
+        \]
+        \begin{itemize}
+            \item Đọc biến hoặc hàm cục bộ.
+            \item Scope nhỏ.
+        \end{itemize}
+    \end{column}
+    \begin{column}{0.32\textwidth}
+        \textbf{Product unit}
+        \[
+            c_n=\prod_{j\in\mathrm{in}(n)}c_j
+        \]
+        \begin{itemize}
+            \item Ghép các scope con.
+            \item Tractable khi decomposable.
+        \end{itemize}
+    \end{column}
+    \begin{column}{0.32\textwidth}
+        \textbf{Sum unit}
+        \[
+            c_n=\sum_{j\in\mathrm{in}(n)}w_{n,j}c_j
+        \]
+        \begin{itemize}
+            \item Mixture/tổng có trọng số.
+            \item Tractable khi smooth.
+        \end{itemize}
+    \end{column}
+\end{columns}
+\[
+    \mathrm{scope}(n)=\bigcup_{j\in\mathrm{in}(n)}\mathrm{scope}(j)
+\]
+\end{frame}
 \begin{frame}{CP decomposition như một circuit sum-product}
 \begin{columns}[T,totalwidth=\textwidth]
     \begin{column}{0.60\textwidth}
@@ -122,24 +180,98 @@ Determinism & Supports của nhánh sum rời nhau & MAP inference hiệu quả 
 \]
 \end{frame}
 
-\begin{frame}{Các truy vấn suy luận}
+\begin{frame}{Truy vấn suy luận: marginal và conditional}
+\begin{columns}[T,totalwidth=\textwidth]
+    \begin{column}{0.48\textwidth}
+        \textbf{Marginal}
+        \[
+            p(\mathbf{x}_O)
+            =
+            \sum_{\mathbf{x}_M\in\mathcal{D}_M}
+            p(\mathbf{x}_O,\mathbf{x}_M)
+        \]
+        \begin{itemize}
+            \item $O$: biến quan sát, $M$: biến bị sum-out.
+            \item Smooth + decomposable $\Rightarrow O(|c|)$.
+        \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+        \textbf{Conditional}
+        \[
+            p(\mathbf{x}_M\mid\mathbf{x}_O)
+            =
+            \frac{p(\mathbf{x}_O,\mathbf{x}_M)}
+            {\sum_{\mathbf{x}'_M}p(\mathbf{x}_O,\mathbf{x}'_M)}
+        \]
+        \begin{itemize}
+            \item Tử số: evaluate circuit tại assignment.
+            \item Mẫu số: marginalize biến missing.
+        \end{itemize}
+    \end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Truy vấn suy luận dưới góc nhìn tensor factorization}
+\[
+    c(x_1,\ldots,x_N)
+    =
+    \sum_{r=1}^{R}\prod_{n=1}^{N}V^{(n)}_{x_n,r}
+\]
+\[
+    c(\mathbf{x}_O)
+    =
+    \sum_{r=1}^{R}
+    \left(\prod_{n\in O}V^{(n)}_{x_n,r}\right)
+    \left(\prod_{m\in M}\sum_{x_m\in\mathcal{D}_m}V^{(m)}_{x_m,r}\right)
+\]
 \begin{itemize}
-    \item \textbf{Marginal}
-    \[
-        p(x_O)=\sum_{x_M}p(x_O,x_M)
-    \]
-    \item \textbf{Expectation}
-    \[
-        \mathbb{E}_{p}[f(x)]=\sum_xp(x)f(x)
-    \]
-    \item \textbf{Missing values}
-    \[
-        p(x_M\mid x_O)=
-        \frac{p(x_O,x_M)}{\sum_{x'_M}p(x_O,x'_M)}
-    \]
+    \item Marginalize một mode $m$ bằng cách thay factor $V^{(m)}_{x_m,r}$ bởi tổng theo hàng của mode đó.
+    \item Vì product node decomposable, phép cộng trên nhiều assignment được đẩy xuống từng factor matrix.
 \end{itemize}
 \end{frame}
 
+\begin{frame}{Truy vấn suy luận: expectation}
+\[
+    \mathbb{E}_{\mathbf{x}\sim p}[f(\mathbf{x})]
+    =
+    \sum_{\mathbf{x}}p(\mathbf{x})f(\mathbf{x})
+    =
+    \langle\mathcal{P},\mathcal{F}\rangle
+\]
+\begin{itemize}
+    \item Nếu $p$ và $f$ là hai circuits compatible, có thể tính bằng product circuit rồi marginalize.
+    \item Dưới góc nhìn TF: contract tensor xác suất $\mathcal{P}$ với tensor hàm $\mathcal{F}$.
+    \item Ứng dụng trong report: missing values, fairness query, adversarial robustness.
+\end{itemize}
+\[
+    \mathbb{E}[f(\mathbf{x})\mid A=0]-\mathbb{E}[f(\mathbf{x})\mid A=1]
+\]
+\end{frame}
+
+\begin{frame}{Truy vấn suy luận: MAP và sampling}
+\begin{columns}[T,totalwidth=\textwidth]
+    \begin{column}{0.48\textwidth}
+        \textbf{MAP / MPE}
+        \[
+            \mathbf{x}^{\star}
+            =
+            \arg\max_{\mathbf{x}}p(\mathbf{x}\mid\mathbf{e})
+        \]
+        \begin{itemize}
+            \item Cần thêm determinism để tối ưu tractable hơn.
+            \item Sum node chọn nhánh tốt nhất thay vì cộng tất cả nhánh.
+        \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+        \textbf{Sampling top-down}
+        \begin{itemize}
+            \item Sum node: lấy mẫu nhánh categorical theo trọng số.
+            \item Product node: đi qua tất cả nhánh con vì scope rời nhau.
+            \item Leaf/input: lấy mẫu biến quan sát cục bộ.
+        \end{itemize}
+    \end{column}
+\end{columns}
+\end{frame}
 \begin{frame}{Non-negative TF như latent variable model}
 \[
     p(x)

@@ -1,15 +1,45 @@
 %%============================================================
-\subsection{Data Mining}
+\subsection{Khai phá dữ liệu có khả năng diễn giải}
 %%============================================================
 
 \subsubsection{Mở đầu}
 \label{sec:dm-context}
 
-\emph{Tensor Factorizations for Interpretable Data Mining}: dùng các phân rã tensor để rút trích pattern có thể diễn giải từ dữ liệu đa chiều, đa nguồn và thường không hoàn chỉnh \cite{chrysos2025foundationsTutorial}. Khác với phần Cơ sở lý thuyết, phần này không nhắc lại chi tiết định nghĩa tensor, matricization, CP hay Tucker; các khái niệm đó đã được trình bày ở Mục Cơ sở lý thuyết. Ở đây ta chỉ dùng lại chúng để giải thích vì sao tensor factorizations hữu ích trong khai phá dữ liệu.
+Trong khai phá dữ liệu có khả năng diễn giải, tensor factorization được dùng để
+rút trích pattern từ dữ liệu đa chiều, đa nguồn và thường không hoàn chỉnh
+\cite{chrysos2025foundationsTutorial}. Khác với phần Cơ sở lý thuyết, phần này
+không nhắc lại chi tiết định nghĩa tensor, matricization, CP hay Tucker; các khái
+niệm đó đã được trình bày ở Mục Cơ sở lý thuyết. Ở đây ta chỉ dùng lại chúng để
+giải thích vì sao tensor factorizations hữu ích trong khai phá dữ liệu.
 
-Động lực chính là nhiều dữ liệu khoa học không tự nhiên ở dạng bảng hai chiều. Ví dụ trong tutorial, dữ liệu có thể có các mode như subject, thời gian, metabolite, electrode/voxel, microbe hoặc activity \cite{chrysos2025foundationsTutorial}. Nếu ép các mode này vào một ma trận bằng cách trải phẳng, ta vẫn có thể dùng SVD hoặc matrix factorization, nhưng thường đánh mất diễn giải riêng theo từng mode. Tensor factorization giữ lại cấu trúc đa chiều đó, nên mỗi component có thể được đọc như một pattern đồng thời trên nhiều trục của dữ liệu.
+Động lực chính là nhiều dữ liệu khoa học không tự nhiên ở dạng bảng hai chiều. Trong
+các ứng dụng khoa học, dữ liệu có thể có các mode như subject, thời gian, metabolite,
+electrode/voxel, microbe hoặc activity \cite{chrysos2025foundationsTutorial}. Nếu ép
+các mode này vào một ma trận bằng cách trải phẳng, ta vẫn có thể dùng SVD hoặc matrix
+factorization, nhưng thường đánh mất diễn giải riêng theo từng mode. Tensor
+factorization giữ lại cấu trúc đa chiều đó, nên mỗi component có thể được đọc như một
+pattern đồng thời trên nhiều trục của dữ liệu.
 
-Mục tiêu của phần này là trình bày bốn ý chính theo tutorial:
+Trong ngữ cảnh này, \textbf{interpretable data mining} không chỉ có nghĩa là
+mô hình cho kết quả trực quan hơn. Một phân rã được xem là có khả năng diễn giải
+khi các factor của nó gắn được với những mode có ý nghĩa trong miền ứng dụng.
+Chẳng hạn, một component CP trong metabolomics có thể đồng thời cho biết nhóm
+subject nào nổi bật, metabolite nào đóng góp mạnh và thời điểm nào xảy ra phản
+ứng; trong neuroscience, cùng một component có thể tách riêng pattern theo
+subject, không gian electrode/voxel và thời gian. Vì vậy, ý nghĩa của component
+không nằm ở một vector đơn lẻ, mà ở sự kết hợp nhất quán của các factor trên
+nhiều mode.
+
+Điểm làm tensor factorization đặc biệt hữu ích cho diễn giải là nó giữ được
+``ngữ pháp'' của dữ liệu: mỗi mode vẫn là một trục có tên và có ý nghĩa vật lý.
+So với SVD trên ma trận đã trải phẳng, CP thường có lợi thế nhờ tính duy nhất
+tương đối của nghiệm, giúp component ít phụ thuộc vào các phép xoay hậu xử lý và
+dễ được đối chiếu với tri thức miền ứng dụng hơn. Tuy vậy, interpretability không
+phải thuộc tính tự động: người phân tích vẫn phải chọn số component hợp lý, kiểm
+tra độ ổn định qua nhiều khởi tạo, xử lý missing data và nhiễu, đồng thời tránh
+diễn giải quá mức những mode được tạo ra chỉ bằng thao tác reshape nhân tạo.
+
+Mục tiêu của phần này là trình bày bốn ý chính:
 \begin{enumerate}[label=(\arabic*)]
     \item \textbf{CP decomposition} như mô hình nền tảng cho \textbf{pattern discovery};
     \item cách tính CP bằng CP-ALS, CP-OPT và các biến thể cho dữ liệu khuyết thiếu hoặc loss function khác;
@@ -70,7 +100,7 @@ Với dữ liệu bậc $N$, CP decomposition xấp xỉ tensor quan sát bởi 
 \end{equation}
 Ở đây mỗi cột $r$ của các factor matrices mô tả cùng một component trên các mode khác nhau. Chẳng hạn, với tensor EEG/fMRI có các mode subject, electrode/voxel và time, một component có thể được diễn giải đồng thời qua mức độ đóng góp của subject, pattern không gian và pattern thời gian.
 
-Điểm quan trọng của CP trong data mining là \textbf{tính duy nhất} (uniqueness) tương đối của nghiệm. Như đã nêu ở Định lý~\ref{thm:kruskal}, dưới điều kiện \textbf{Kruskal rank}, CP là duy nhất sai khác hoán vị và co giãn (scaling) component. Vì vậy, khác với nhiều phân rã ma trận cần ràng buộc trực giao hoặc bước xoay hậu xử lý, CP thường cho các factor có ý nghĩa trực tiếp hơn đối với bài toán ứng dụng \cite{kruskal1977three,sidiropoulos2017tensor,chrysos2025foundationsTutorial}. Tutorial nhấn mạnh chính tính chất này là lý do CP được dùng rộng rãi cho pattern discovery có khả năng tái lập và diễn giải.
+Điểm quan trọng của CP trong data mining là \textbf{tính duy nhất} (uniqueness) tương đối của nghiệm. Như đã nêu ở Định lý~\ref{thm:kruskal}, dưới điều kiện \textbf{Kruskal rank}, CP là duy nhất sai khác hoán vị và co giãn (scaling) component. Vì vậy, khác với nhiều phân rã ma trận cần ràng buộc trực giao hoặc bước xoay hậu xử lý, CP thường cho các factor có ý nghĩa trực tiếp hơn đối với bài toán ứng dụng \cite{kruskal1977three,sidiropoulos2017tensor,chrysos2025foundationsTutorial}. Chính tính chất này giải thích vì sao CP được dùng rộng rãi cho pattern discovery có khả năng tái lập và diễn giải.
 
 Tuy vậy, tính diễn giải không đến miễn phí. Người phân tích vẫn phải chọn số component $R$, xử lý nhiễu, missing data, scale giữa các mode, và kiểm tra xem component thu được có ổn định qua nhiều khởi tạo hay không. Đây là lý do các thuật toán và mở rộng bên dưới đóng vai trò thực tế quan trọng.
 
@@ -87,7 +117,7 @@ Bài toán tính CP thường được viết dưới dạng tối thiểu hóa 
     \right\|_F^2.
     \label{eq:dm-cp-objective}
 \end{equation}
-Tutorial bắt đầu từ CP-ALS vì đây là thuật toán chuẩn và dễ triển khai nhất cho CP \cite{chrysos2025foundationsTutorial}. Để thống nhất với quy ước ký hiệu ở Mục~\ref{sec:notation}, đặt
+CP-ALS là thuật toán chuẩn và dễ triển khai nhất cho CP \cite{chrysos2025foundationsTutorial}. Để thống nhất với quy ước ký hiệu ở Mục~\ref{sec:notation}, đặt
 \begin{equation}
     \mathbf{Z}^{(n)}
     =
@@ -158,7 +188,7 @@ với $\ast$ là Hadamard product theo quy ước ở Bảng~\ref{tab:notation}.
 \end{algorithmic}
 \end{algorithm}
 
-\textbf{CP-ALS} có ưu điểm là đơn giản, trực tiếp và phù hợp với nhiều ràng buộc trên factor. Tuy nhiên, đây vẫn là một bài toán tối ưu không lồi; thuật toán có thể phụ thuộc vào khởi tạo và đôi khi hội tụ chậm. Tutorial cũng nêu các hướng thay thế như \textbf{CP-OPT}, trong đó toàn bộ \textit{factor matrices} được tối ưu đồng thời bằng phương pháp \textit{gradient-based} hoặc \textit{quasi-Newton} \cite{chrysos2025foundationsTutorial}.
+\textbf{CP-ALS} có ưu điểm là đơn giản, trực tiếp và phù hợp với nhiều ràng buộc trên factor. Tuy nhiên, đây vẫn là một bài toán tối ưu không lồi; thuật toán có thể phụ thuộc vào khởi tạo và đôi khi hội tụ chậm. Một hướng thay thế là \textbf{CP-OPT}, trong đó toàn bộ \textit{factor matrices} được tối ưu đồng thời bằng phương pháp \textit{gradient-based} hoặc \textit{quasi-Newton} \cite{chrysos2025foundationsTutorial}.
 
 Với hàm mục tiêu
 \begin{equation}
@@ -202,7 +232,7 @@ với $\mathbf{M}^{(n)}$ và $\boldsymbol{\Gamma}^{(n)}$ được định nghĩa
 \end{algorithmic}
 \end{algorithm}
 
-Một điểm thực tế quan trọng trong data mining là dữ liệu thường không đầy đủ. Tutorial nhắc đến ba hướng xử lý \cite{chrysos2025foundationsTutorial}:
+Một điểm thực tế quan trọng trong data mining là dữ liệu thường không đầy đủ. Ba hướng xử lý thường gặp gồm \cite{chrysos2025foundationsTutorial}:
 \begin{itemize}[leftmargin=2em]
     \item \textbf{CP-WOPT}: đưa weight tensor $\mathcal{W}$ vào hàm mục tiêu để chỉ fit trên các entries quan sát được:
     \begin{equation}
@@ -248,7 +278,7 @@ Các biến thể này giữ nguyên tinh thần CP nhưng điều chỉnh bài 
 
 CP giả định cấu trúc đa tuyến tính nghiêm ngặt (\textbf{strict multilinearity}): mỗi component có cùng factor theo từng mode trên toàn bộ tensor. Giả định này không luôn phù hợp. Trong các dữ liệu dạng chuỗi thời gian hoặc dữ liệu theo subject, một mode có thể thay đổi qua từng slice, chẳng hạn tín hiệu bị lệch thời gian, độ dài trial khác nhau, hoặc spatial dynamics thay đổi theo time window.
 
-PARAFAC2 được tutorial giới thiệu như một mô hình linh hoạt hơn CP, cho phép factor của một mode thay đổi qua các slice nhưng vẫn giữ đủ cấu trúc để có tính duy nhất tương tự CP \cite{chrysos2025foundationsTutorial}. Với một tập ma trận $\{\mathbf{X}_k\}_{k=1}^{K}$, mô hình có dạng:
+PARAFAC2 là một mô hình linh hoạt hơn CP, cho phép factor của một mode thay đổi qua các slice nhưng vẫn giữ đủ cấu trúc để có tính duy nhất tương tự CP \cite{chrysos2025foundationsTutorial}. Với một tập ma trận $\{\mathbf{X}_k\}_{k=1}^{K}$, mô hình có dạng:
 \begin{equation}
     \mathbf{X}_k
     \approx
@@ -294,12 +324,12 @@ nên ràng buộc cross-product được thỏa mãn tự động. Thuật toán
 \end{algorithmic}
 \end{algorithm}
 
-Trong tutorial, PARAFAC2 được dùng để minh họa các tình huống như time-evolving fMRI, chemometrics, longitudinal microbiome và các dữ liệu có individual temporal profiles \cite{chrysos2025foundationsTutorial}. Điểm chung của các ví dụ này là dữ liệu vẫn có nhiều mode liên quan nhau, nhưng không nên bị ép thành một tensor hoàn toàn đều đặn trước khi phân tích.
+PARAFAC2 phù hợp với các tình huống như time-evolving fMRI, chemometrics, longitudinal microbiome và dữ liệu có individual temporal profiles \cite{chrysos2025foundationsTutorial}. Điểm chung của các ví dụ này là dữ liệu vẫn có nhiều mode liên quan nhau, nhưng không nên bị ép thành một tensor hoàn toàn đều đặn trước khi phân tích.
 
 \subsubsection{CMTF và data fusion}
 \label{sec:dm-parafac2-cmtf}
 
-Một hướng khác của Part III là phân tích kết hợp (\textbf{joint analysis}) cho nhiều nguồn dữ liệu. Trong nhiều bài toán, ta không chỉ có một tensor duy nhất mà có nhiều ma trận/tensor đo trên cùng một nhóm đối tượng hoặc cùng một tập feature. \textbf{Coupled Matrix and Tensor Factorization (CMTF)} mô hình hóa tình huống này bằng cách cho các phân rã chia sẻ một hoặc nhiều factor matrices \cite{chrysos2025foundationsTutorial}.
+Một hướng quan trọng khác là phân tích kết hợp (\textbf{joint analysis}) cho nhiều nguồn dữ liệu. Trong nhiều bài toán, ta không chỉ có một tensor duy nhất mà có nhiều ma trận/tensor đo trên cùng một nhóm đối tượng hoặc cùng một tập feature. \textbf{Coupled Matrix and Tensor Factorization (CMTF)} mô hình hóa tình huống này bằng cách cho các phân rã chia sẻ một hoặc nhiều factor matrices \cite{chrysos2025foundationsTutorial}.
 
 Ví dụ, giả sử $\mathcal{X}$ là tensor động theo subject, feature và time, còn $\mathbf{Y}$ là ma trận tĩnh theo subject và một nhóm feature khác. Một dạng CMTF đơn giản với \textbf{hard coupling} (ghép nối cứng) trên subject factor là:
 \begin{equation}
@@ -317,9 +347,9 @@ Ví dụ, giả sử $\mathcal{X}$ là tensor động theo subject, feature và 
     \right\|_F^2.
     \label{eq:dm-cmtf}
 \end{equation}
-Factor $\mathbf{A}$ đóng vai trò liên kết hai nguồn dữ liệu vì cùng mô tả subject. Nhờ coupling, mô hình có thể dùng thông tin từ một nguồn để hỗ trợ nguồn còn lại; tutorial cũng nhấn mạnh coupling có thể cải thiện uniqueness properties trong một số trường hợp \cite{chrysos2025foundationsTutorial}.
+Factor $\mathbf{A}$ đóng vai trò liên kết hai nguồn dữ liệu vì cùng mô tả subject. Nhờ coupling, mô hình có thể dùng thông tin từ một nguồn để hỗ trợ nguồn còn lại; coupling cũng có thể cải thiện uniqueness properties trong một số trường hợp \cite{chrysos2025foundationsTutorial}.
 
-CMTF không chỉ có \textbf{hard coupling}. Tutorial trình bày một phổ các quan hệ coupling, từ \textbf{hard coupling}, \textbf{linear coupling}, \textbf{shared/unshared factors}, đến \textbf{soft coupling} \cite{chrysos2025foundationsTutorial}. Cách chọn coupling phụ thuộc vào giả định miền ứng dụng: hai dữ liệu có thật sự chia sẻ cùng factor hay chỉ liên quan tuyến tính/yếu với nhau. Đây là điểm khác biệt quan trọng so với việc phân tích từng dataset riêng lẻ rồi so sánh kết quả sau.
+CMTF không chỉ có \textbf{hard coupling}. Có thể xét một phổ các quan hệ coupling, từ \textbf{hard coupling}, \textbf{linear coupling}, \textbf{shared/unshared factors}, đến \textbf{soft coupling} \cite{chrysos2025foundationsTutorial}. Cách chọn coupling phụ thuộc vào giả định miền ứng dụng: hai dữ liệu có thật sự chia sẻ cùng factor hay chỉ liên quan tuyến tính/yếu với nhau. Đây là điểm khác biệt quan trọng so với việc phân tích từng dataset riêng lẻ rồi so sánh kết quả sau.
 
 Với hard coupling như~\eqref{eq:dm-cmtf}, thuật toán ALS có thể cập nhật từng factor matrix trong khi giữ các factor còn lại cố định. Điểm khác CP-ALS là factor được chia sẻ, ví dụ $\mathbf{A}$, nhận gradient hoặc normal equation từ cả tensor $\mathcal{X}$ và ma trận $\mathbf{Y}$. Nếu đặt
 \begin{equation}
@@ -352,7 +382,7 @@ Normal equation tương ứng là
     \mathbf{Y}\mathbf{D}.
     \label{eq:dm-cmtf-a-update}
 \end{equation}
-Các factor không chia sẻ, như $\mathbf{B}$, $\mathbf{C}$ hoặc $\mathbf{D}$, được cập nhật giống least squares thông thường trên dataset mà chúng thuộc về. Với linear coupling hoặc soft coupling, bước cập nhật thường không còn đóng gọn như~\eqref{eq:dm-cmtf-a-update}; tutorial liệt kê các hướng all-at-once optimization, Gauss-Newton và alternating methods như những lựa chọn thực tế \cite{chrysos2025foundationsTutorial}.
+Các factor không chia sẻ, như $\mathbf{B}$, $\mathbf{C}$ hoặc $\mathbf{D}$, được cập nhật giống least squares thông thường trên dataset mà chúng thuộc về. Với linear coupling hoặc soft coupling, bước cập nhật thường không còn đóng gọn như~\eqref{eq:dm-cmtf-a-update}; các hướng all-at-once optimization, Gauss-Newton và alternating methods là những lựa chọn thực tế \cite{chrysos2025foundationsTutorial}.
 
 \begin{algorithm}[H]
 \caption{ALS cho CMTF với hard coupling trên $\mathbf{A}$}
@@ -387,10 +417,10 @@ Ma trận $\mathbf{Y}$ (Metadata giả lập) & $10 \times 5$ & Chứa thông ti
 \label{tab:cmtf-structure}
 \end{table}
 
-\subsubsection{Các ứng dụng trong tutorial}
+\subsubsection{Các ứng dụng tiêu biểu}
 \label{sec:dm-applications}
 
-Tutorial dùng nhiều ví dụ để nhấn mạnh vai trò của tensor factorizations trong khai phá pattern có thể diễn giải \cite{chrysos2025foundationsTutorial}. Các ví dụ này không nhằm thay thế thực nghiệm riêng của báo cáo, mà dùng để định vị ý nghĩa của các mô hình đã nêu:
+Nhiều miền ứng dụng cho thấy vai trò của tensor factorizations trong khai phá pattern có thể diễn giải \cite{chrysos2025foundationsTutorial}. Các ví dụ này không nhằm thay thế thực nghiệm riêng của báo cáo, mà dùng để định vị ý nghĩa của các mô hình đã nêu:
 \begin{itemize}[leftmargin=2em]
     \item \textbf{Metabolomics}: CP và CMTF được dùng để phân tích dữ liệu chuyển hóa theo subject, metabolite và time, qua đó tìm pattern phản ứng chuyển hóa và marker liên quan đến phenotype.
     \item \textbf{Neuroscience}: CP/PARAFAC2 hỗ trợ phân tích EEG hoặc fMRI theo các mode không gian, thời gian và subject, đặc biệt khi quan tâm đến spatial dynamics hoặc localization.
@@ -398,7 +428,24 @@ Tutorial dùng nhiều ví dụ để nhấn mạnh vai trò của tensor factor
     \item \textbf{Data fusion}: CMTF cho phép phân tích chung các nguồn dữ liệu không đồng nhất, chẳng hạn dữ liệu động và dữ liệu tĩnh trên cùng một nhóm subject.
 \end{itemize}
 
-Từ các ví dụ này, thông điệp chính của Part III là: tensor factorizations hữu ích trong data mining không chỉ vì chúng nén dữ liệu, mà vì chúng bảo toàn các mode có ý nghĩa và tạo ra component có thể diễn giải. CP cung cấp mô hình nền tảng với uniqueness properties; PARAFAC2 nới lỏng giả định đa tuyến tính khi dữ liệu thay đổi qua slice; CMTF mở rộng sang phân tích đa nguồn. Các thách thức còn lại trong tutorial gồm chọn số component, đưa prior knowledge vào mô hình, xử lý dữ liệu thiếu hoặc lệch thời gian, và cân bằng giữa interpretability/uniqueness với độ phi tuyến của mô hình \cite{chrysos2025foundationsTutorial}.
+Từ các ví dụ này, kết luận chính của phần Data Mining là: tensor factorizations hữu ích
+trong data mining không chỉ vì chúng nén dữ liệu, mà vì chúng bảo toàn các mode
+có ý nghĩa và tạo ra component có thể diễn giải. Một kết quả phân rã có giá trị
+diễn giải khi nó thỏa ba điều kiện trực giác. Thứ nhất, các mode
+phải tương ứng với những trục thật của dữ liệu như subject, time, metabolite,
+electrode/voxel hoặc microbial taxon. Thứ hai, mỗi component phải có thể đọc như
+một pattern đồng thời trên các mode đó, thay vì chỉ là một chiều ẩn không tên.
+Thứ ba, pattern thu được cần đủ ổn định và đủ nhất quán với tri thức miền ứng
+dụng để người phân tích có thể gán ý nghĩa cho nó.
+
+Nhìn dưới góc này, CP cung cấp mô hình nền tảng cho pattern discovery nhờ
+uniqueness properties; PARAFAC2 giữ tinh thần diễn giải theo component nhưng nới
+lỏng giả định đa tuyến tính khi dữ liệu thay đổi qua slice; CMTF mở rộng khả
+năng diễn giải sang phân tích đa nguồn bằng cách chia sẻ factor trên mode chung.
+Các thách thức còn lại gồm chọn số component, đưa prior knowledge
+vào mô hình, xử lý dữ liệu thiếu hoặc lệch thời gian, kiểm tra độ ổn định của
+component, và cân bằng giữa interpretability/uniqueness với độ phi tuyến của mô
+hình \cite{chrysos2025foundationsTutorial}.
 
 % \paragraph{Kết quả tổng hợp khả năng diễn giải trên EEG.}
 % Khi phân tích trực tiếp tập dữ liệu thực EEGMMIDB với CP-ALS, Bảng~\ref{tab:eeg-cp-svd} tóm lược những khác biệt về mặt diễn giải hình học khi sử dụng phương pháp ma trận và phân rã Tensor.

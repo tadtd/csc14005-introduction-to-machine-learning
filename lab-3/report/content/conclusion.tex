@@ -1,4 +1,6 @@
-\section{Tổng kết}
+\section{Kết luận}
+
+\subsection{Kết luận}
 
 Báo cáo đã trình bày tensor factorization như một công cụ thống nhất cho ba
 hướng ứng dụng trong học máy: nén và thích nghi mô hình học sâu, suy luận hiệu
@@ -19,16 +21,54 @@ các thực nghiệm CP-ALS, PARAFAC2 và CMTF minh họa cách tensor factoriza
 lại cấu trúc đa mode, từ đó hỗ trợ diễn giải pattern tốt hơn so với việc ép dữ
 liệu về dạng ma trận.
 
-Các kết quả hiện tại chủ yếu đóng vai trò demo có kiểm soát thay vì benchmark
-đầy đủ. Một số hạn chế cần lưu ý là kích thước dataset còn nhỏ, số seed còn ít,
-thiết lập Probabilistic Circuit mới dùng width thấp và số epoch hạn chế, còn các
-thực nghiệm Data Mining thiên về minh họa pipeline hơn là kết luận miền ứng dụng
-cuối cùng. Ngoài ra, rank thấp không phải lúc nào cũng đủ biểu diễn phân phối
-hoặc cấu trúc dữ liệu phức tạp; trong các mô hình như Tucker, số tham số của core
-có thể tăng rất nhanh theo số mode và rank. Vì vậy, hướng phát triển tiếp theo
-nên mở rộng số lần chạy, so sánh thêm baseline, khảo sát rank/width có hệ thống,
-và dùng tập dữ liệu lớn hơn để đánh giá rõ hơn trade-off giữa hiệu năng, chi phí
-tính toán và khả năng diễn giải.
+\subsection{Các hướng phát triển trong tương lai}
+
+Các hướng phát triển trong tương lai có thể được tổng hợp từ ba mạch chính của
+báo cáo. Trước hết, trong học sâu, vấn đề trung tâm không chỉ là áp dụng một phân
+rã cụ thể, mà là thiết kế nguyên tắc chọn mô hình và chọn rank. CP rank,
+multilinear rank, Tensor Train rank, LoRA rank, expert rank hay width của circuit
+đều điều khiển cùng một đánh đổi: biểu diễn càng gọn thì chi phí càng thấp, nhưng
+rank quá nhỏ có thể làm mô hình thiếu năng lực; rank quá lớn lại làm mất lợi thế
+nén và tăng nguy cơ overfit. Vì vậy, một hướng quan trọng là phát triển các tiêu
+chuẩn chọn rank có cơ sở hơn, kết hợp cả độ chính xác, số tham số, bộ nhớ, thời
+gian suy diễn, và độ ổn định khi thay đổi cấu trúc phân rã.
+
+Thứ hai, tensorization trong học sâu có thể mở rộng ra ngoài nén trọng số tĩnh.
+Báo cáo đã nêu nhiều đối tượng tự nhiên có cấu trúc tensor: activation, attention
+score, gradient, update khi fine-tuning, tập expert trong MoE, hoặc nhiều layer và
+head trong Transformer. Các hướng như LoRTA, TensorGRAD, tensorized convolution,
+polynomial/self-attention hiệu quả và tensor product attention cho thấy tensor
+factorization có thể trở thành một nguyên lý thiết kế kiến trúc, không chỉ là
+bước hậu xử lý sau khi mô hình đã được huấn luyện. Câu hỏi mở là xác định khi nào
+một đối tượng trong mạng có mode tự nhiên đủ rõ để factor thu được vừa tiết kiệm
+vừa có ý nghĩa, thay vì chỉ là một phép reshape nhân tạo khó diễn giải.
+
+Thứ ba, ở phía probabilistic circuits, mối liên hệ giữa circuit và non-negative
+tensor factorization mở ra nhiều câu hỏi lý thuyết. Các thuộc tính như
+smoothness và decomposability giúp suy luận chính xác trở nên khả giải, nhưng
+không tự động bảo đảm mô hình luôn biểu diễn gọn mọi phân phối. Do đó các hướng
+phát triển gồm hiểu rõ hơn quan hệ giữa expressiveness, compactness và
+tractability; học đồng thời tham số và cấu trúc circuit; nghiên cứu điều kiện
+identifiability cho deep circuits; xây dựng các thuật toán approximate inference
+dựa trên thuộc tính cấu trúc; và mở rộng circuit lên miền liên tục thông qua
+integral circuits hoặc quasi-tensors. Đây là bước nối tự nhiên từ tensor rời rạc
+sang mô hình xác suất trên hàm và biến liên tục.
+
+Cuối cùng, trong khai phá dữ liệu, hướng phát triển nổi bật là đưa tensor
+factorization vào các bài toán đa nguồn, không đầy đủ và có cấu trúc miền ứng
+dụng rõ ràng. CP cung cấp tính duy nhất tương đối cho pattern discovery,
+PARAFAC2 xử lý các slice có kích thước hoặc căn chỉnh khác nhau, còn CMTF hỗ trợ
+phân tích chung nhiều ma trận/tensor thông qua factor dùng chung. Các bài toán
+tương lai cần xử lý tốt hơn missing data, dữ liệu lệch thời gian, prior knowledge
+từ chuyên gia, ràng buộc không âm/thưa/mượt, và lựa chọn số component. Điểm then
+chốt là giữ được cân bằng giữa interpretability/uniqueness và độ linh hoạt của
+mô hình: càng thêm phi tuyến hoặc cấu trúc phức tạp, ta càng cần cơ chế kiểm tra
+độ ổn định và ý nghĩa của các factor thu được.
+
+Nhìn chung, các hướng trên cho thấy tensor factorization không chỉ là một công
+cụ giảm chiều. Nó có thể đóng vai trò như một ngôn ngữ chung để thiết kế mô hình
+gọn hơn, suy luận xác suất hiệu quả hơn, và khai phá các pattern có khả năng
+diễn giải trong dữ liệu đa chiều, đa nguồn.
 
 \subsection{Bảng phân công công việc}
 

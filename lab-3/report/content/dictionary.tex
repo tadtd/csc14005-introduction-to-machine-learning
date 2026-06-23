@@ -1,11 +1,13 @@
 %%============================================================
-\subsection{Từ điển thuật ngữ}
+\section*{Từ điển thuật ngữ}
+\phantomsection
+\addcontentsline{toc}{section}{Từ điển thuật ngữ}
 \label{sec:dictionary}
 %%============================================================
 
-Bảng~\ref{tab:dictionary} trình bày danh sách các thuật ngữ tiếng Anh gốc và thuật ngữ tiếng Việt tương đương được sử dụng trong báo cáo nhằm giúp người đọc thuận tiện đối chiếu và tra cứu.
+Bảng~\ref{tab:dictionary} trình bày danh sách các thuật ngữ tiếng Anh gốc và thuật ngữ tiếng Việt tương đương được sử dụng trong báo cáo. Cách dịch ưu tiên theo quy ước thường gặp trong tài liệu toán học Anh--Việt \cite{hoangtuy1976}. 
 
-\begin{longtable}{ll}
+\begin{longtable}{p{0.42\textwidth}p{0.48\textwidth}}
 \caption{Từ điển thuật ngữ đối chiếu Anh - Việt.}
 \label{tab:dictionary} \\
 \hline
@@ -29,58 +31,245 @@ Bảng~\ref{tab:dictionary} trình bày danh sách các thuật ngữ tiếng An
 \multicolumn{2}{c}{\textbf{I. Cơ sở lý thuyết (Tensor Fundamentals)}} \\
 \hline
 \multicolumn{2}{l}{\textit{1. Cấu trúc và Thành phần (Structure \& Elements)}} \\
+Activation & Kích hoạt \\
+Channel & Kênh \\
 Core Tensor & Tensor lõi \\
-Factor Matrix & Ma trận nhân tố \\
+Dimension & Chiều / Kích thước \\
+Entry & Phần tử \\
+Factor Matrix & Ma trận nhân tử \\
+Feature & Đặc trưng \\
 Fiber & Sợi \\
 Frontal Slice & Lát cắt đứng (mặt trước) \\
 Horizontal Slice & Lát cắt ngang \\
+Kernel & Nhân / Hạt nhân \\
 Lateral Slice & Lát cắt dọc \\
+Latent Mode & Mode tiềm ẩn \\
+Layer & Lớp \\
+Matrix & Ma trận \\
 Mode / Way / Order & Mode / Chiều / Bậc \\
+Multi-dimensional Array & Mảng đa chiều \\
+Order & Bậc \\
+Scalar & Vô hướng \\
 Slice & Lát cắt \\
+Spatial Dimension & Chiều không gian \\
 Superdiagonal & Đường chéo siêu (Siêu chéo) \\
+Temporal Dimension & Chiều thời gian \\
+Tensor Entry & Phần tử tensor \\
+Token & Token / Đơn vị từ \\
+Vector & Vector \\
 
 \multicolumn{2}{l}{\textit{2. Các phép toán (Operations)}} \\
+Columnwise Kronecker Product & Tích Kronecker theo cột \\
+Contraction & Phép co \\
+Elementwise Product & Tích từng phần tử \\
+Flattening & Trải phẳng \\
 Hadamard Product & Tích Hadamard (Tích từng phần tử) \\
+Inner Product & Tích trong \\
 Khatri-Rao Product & Tích Khatri-Rao \\
 Kronecker Product & Tích Kronecker \\
+Marginalization & Lấy biên / Biên hóa \\
 Matricization / Unfolding & Ma trận hóa / Trải phẳng \\
+Mode-$n$ Product & Tích theo mode-$n$ \\
+Norm & Chuẩn \\
 Outer Product & Tích ngoài \\
+Reshape & Đổi dạng \\
+Scaling & Co giãn / Nhân tỉ lệ \\
+Tensor Product & Tích tensor \\
+Trace & Vết \\
+Vectorization & Vector hóa \\
 
 \multicolumn{2}{l}{\textit{3. Phân rã và Thuật toán (Decompositions \& Algorithms)}} \\
+All-at-once Optimization & Tối ưu đồng thời \\
 Alternating Least Squares (ALS) & Bình phương tối thiểu luân phiên \\
+Alternating Method & Phương pháp luân phiên \\
+Approximation & Xấp xỉ \\
+Baseline & Mốc so sánh / Phương pháp nền \\
+Component & Thành phần \\
+Computational Cost & Chi phí tính toán \\
+Constraint & Ràng buộc \\
+Convergence & Sự hội tụ \\
 CP Decomposition & Phân rã CP (CANDECOMP/PARAFAC) \\
+CP-ALS & CP bằng bình phương tối thiểu luân phiên \\
+CP-OPT & Tối ưu trực tiếp phân rã CP \\
+Decomposition / Factorization & Phân rã / Nhân tử hóa \\
+Fit & Độ khớp \\
+Gauss--Newton Method & Phương pháp Gauss--Newton \\
+Gradient & Gradient / Đạo hàm \\
+Gradient-based Method & Phương pháp dựa trên gradient \\
 Higher-Order SVD (HOSVD) & Phân tích suy biến bậc cao \\
+Initialization & Khởi tạo \\
+Latent Factor & Nhân tố tiềm ẩn \\
+Least Squares & Bình phương tối thiểu \\
+Local Minimum & Cực tiểu địa phương \\
+Low-rank Approximation & Xấp xỉ hạng thấp \\
+Loss Function & Hàm mất mát \\
+Matricized Tensor Times Khatri-Rao Product (MTTKRP) & Tích tensor ma trận hóa với tích Khatri-Rao \\
+Model Selection & Lựa chọn mô hình \\
+Parameter & Tham số \\
+Non-convex Optimization & Tối ưu không lồi \\
 Objective Function & Hàm mục tiêu \\
+Optimization & Tối ưu hóa \\
+Overfit & Quá khớp \\
+Permutation & Hoán vị \\
+Pseudoinverse & Giả nghịch đảo \\
+Quasi-Newton Method & Phương pháp quasi-Newton \\
 Rank-one Tensor & Tensor hạng một \\
+Reconstruction Error & Sai số tái tạo \\
+Regularization & Chính quy hóa \\
+Singular Value Decomposition (SVD) & Phân tích giá trị suy biến \\
+Stability & Độ ổn định \\
+Structural Properties & Các thuộc tính cấu trúc \\
 Tensor Decomposition / Factorization & Phân rã Tensor \\
 Tensor Train & Phân rã Tensor Train (Chuỗi tensor) \\
 Tucker Decomposition & Phân rã Tucker \\
+Underfit & Thiếu khớp \\
+Uniqueness & Tính duy nhất \\
 
 \multicolumn{2}{l}{\textit{4. Hạng Tensor (Tensor Rank)}} \\
 Border Rank & Hạng biên \\
+CP Rank & Hạng CP \\
 Kruskal Rank (k-rank) & Hạng Kruskal \\
+Low Rank & Hạng thấp \\
 Multilinear Rank & Hạng đa tuyến tính \\
+Width & Độ rộng \\
 
 \hline
-\multicolumn{2}{c}{\textbf{II. Ứng dụng: Học sâu (Deep Learning)}} \\
+\multicolumn{2}{c}{\textbf{II. Học sâu (Deep Learning)}} \\
 \hline
+Attention & Cơ chế chú ý \\
+Bias--Variance Trade-off & Đánh đổi thiên lệch--phương sai \\
+Batch & Lô dữ liệu \\
+Cloud & Điện toán đám mây \\
+Compression & Nén \\
+Computational Efficiency & Hiệu quả tính toán \\
+Convolution & Tích chập \\
+Dense Layer & Lớp dày đặc \\
+Deep Model & Mô hình sâu \\
 Deep Learning & Học sâu \\
+Decoder & Bộ giải mã \\
+Edge Device & Thiết bị biên \\
+Encoder & Bộ mã hóa \\
+Efficient Attention & Cơ chế chú ý hiệu quả \\
+Fine Tune / Fine-tuning & Tinh chỉnh \\
+Forward Pass & Lượt truyền xuôi \\
+Frozen Encoder & Bộ mã hóa đóng băng \\
+GPU Kernel & Nhân GPU \\
+High-order Interaction & Tương tác bậc cao \\
+Input Layer & Lớp đầu vào \\
+Language Model & Mô hình ngôn ngữ \\
+Large Language Model (LLM) & Mô hình ngôn ngữ lớn \\
+LLM-scale & Quy mô mô hình ngôn ngữ lớn \\
 Low-Rank Adaptation (LoRA) & Thích ứng hạng thấp \\
+Low-Rank Tensor Adaptation (LoRTA) & Thích ứng tensor hạng thấp \\
+Memory Footprint & Dung lượng bộ nhớ chiếm dụng \\
 Mixture of Experts (MoE) & Hỗn hợp chuyên gia \\
+Model Architecture & Kiến trúc mô hình \\
+Model Compression & Nén mô hình \\
+Multilinear MoE & Hỗn hợp chuyên gia đa tuyến tính \\
+Natural Language Processing (NLP) & Xử lý ngôn ngữ tự nhiên \\
+Neural Network & Mạng nơ-ron \\
+Neural Operator & Toán tử nơ-ron \\
+Nonlinearity & Tính phi tuyến \\
+Parameter-efficient Adaptation & Thích ứng tiết kiệm tham số \\
+Pi-nets & Mạng Pi / Mạng đa thức Pi \\
+Polynomial Network & Mạng đa thức \\
+Polynomial Self-attention (Poly-SA) & Tự chú ý đa thức \\
+Projection Matrix & Ma trận chiếu \\
+Softmax Attention & Cơ chế chú ý softmax \\
+Self-attention & Tự chú ý \\
+Tensor Contraction & Phép co tensor \\
+Tensor Product Attention & Chú ý tích tensor \\
+TensorGRAD & TensorGRAD / Gradient dạng tensor \\
+Tensorization & Tensor hóa \\
+Tensorized Layer & Lớp được tensor hóa \\
+Transformer & Transformer / Mô hình Transformer \\
+Trainable Parameter & Tham số có thể huấn luyện \\
+Weight Tensor & Tensor trọng số \\
 
 \hline
-\multicolumn{2}{c}{\textbf{III. Ứng dụng: Mạch xác suất (Probabilistic Circuits)}} \\
+\multicolumn{2}{c}{\textbf{III. Mạch xác suất (Probabilistic Circuits)}} \\
 \hline
+Assignment & Phép gán giá trị \\
+Approximate Inference & Suy luận xấp xỉ \\
+Autoencoder (AE) & Bộ tự mã hóa \\
+Circuit & Mạch \\
+Compactness & Tính gọn của biểu diễn \\
+Compatible & Tương thích \\
+Conditioning & Điều kiện hóa \\
+Continuous Variable & Biến liên tục \\
+CPJ Circuit & Mạch CPJ \\
+Deep Circuit & Mạch sâu \\
+Decomposable & Phân rã được \\
+Density Estimation & Ước lượng mật độ \\
+Distribution & Phân phối \\
+Expectation & Kỳ vọng \\
+Expressiveness & Khả năng biểu diễn \\
+Identifiability & Tính định danh / Khả năng nhận dạng mô hình \\
+Imputation & Điền khuyết dữ liệu \\
+Integral Circuit & Mạch tích phân \\
+Integral Unit & Đơn vị tích phân \\
+Intractable Pipeline & Pipeline không khả giải chính xác \\
+Kullback--Leibler Divergence (KL) & Độ lệch Kullback--Leibler \\
 Latent Variable & Biến tiềm ẩn \\
+Marginal Inference & Suy luận biên \\
+Missing Mask & Mặt nạ dữ liệu khuyết \\
+Missing Value & Giá trị khuyết \\
+Missing-value Query & Truy vấn giá trị khuyết \\
+Negative Log-likelihood (NLL) & Âm log-khả năng \\
+Noise & Nhiễu \\
+Non-negative Tensor Factorization & Phân rã tensor không âm \\
+Probability Mass Function (PMF) & Hàm khối xác suất \\
+Probability Density Function (PDF) & Hàm mật độ xác suất \\
+Probability Tensor & Tensor xác suất \\
 Probabilistic Circuits & Mạch xác suất \\
-Tractable Inference & Suy luận khả giải \\
+Query & Truy vấn \\
+Quasi-tensor & Quasi-tensor / Tensor suy rộng \\
+Region Graph & Đồ thị vùng \\
+Smoothness & Tính trơn \\
+Structural Property & Thuộc tính cấu trúc \\
+Tractability & Tính khả giải / Khả năng suy luận hiệu quả \\
+Variational Autoencoder (VAE) & Bộ tự mã hóa biến phân \\
 
 \hline
-\multicolumn{2}{c}{\textbf{IV. Ứng dụng: Khai phá dữ liệu (Data Mining)}} \\
+\multicolumn{2}{c}{\textbf{IV. Khai phá dữ liệu (Data Mining)}} \\
 \hline
+Chemometrics & Hóa trắc học \\
 Coupled Matrix and Tensor Factorization (CMTF) & Phân rã kết hợp ma trận và tensor \\
+Covariate & Đồng biến \\
+Cross-product Constraint & Ràng buộc tích chéo \\
 Data Fusion & Dung hợp dữ liệu \\
 Data Mining & Khai phá dữ liệu \\
+Dataset & Tập dữ liệu \\
+Electrode & Điện cực \\
+Factor Sharing & Chia sẻ nhân tố \\
+Feature Mode & Mode đặc trưng \\
+fMRI & Chụp cộng hưởng từ chức năng \\
+Gut Microbiome & Hệ vi sinh đường ruột \\
+Hard Coupling & Ghép cứng \\
+Individual Temporal Profile & Hồ sơ thời gian cá thể \\
+Interpretable Data Mining & Khai phá dữ liệu có khả năng diễn giải \\
 Joint Analysis & Phân tích kết hợp \\
+Linear Coupling & Ghép tuyến tính \\
+Localization & Định vị \\
+Longitudinal Data & Dữ liệu theo chiều dọc / Dữ liệu theo thời gian \\
+Metadata & Siêu dữ liệu \\
+Metabolite & Chất chuyển hóa \\
+Metabolomics & Chuyển hóa học \\
+Microbe & Vi sinh vật \\
+Microbial Taxon & Nhóm phân loại vi sinh \\
+Missing Data & Dữ liệu khuyết thiếu \\
+Non-negativity Constraint & Ràng buộc không âm \\
+Orthogonality Constraint & Ràng buộc trực giao \\
+PARAFAC2 & Phân rã PARAFAC2 \\
+Pattern Discovery & Phát hiện mẫu \\
+Phenotype & Kiểu hình \\
+Prior Knowledge & Tri thức tiên nghiệm \\
+Procrustes Problem & Bài toán Procrustes \\
+Scalability & Khả năng mở rộng \\
+Shared Factor & Nhân tố dùng chung \\
+Soft Coupling & Ghép mềm \\
 Spatial-Temporal Entanglement & Sự trộn lẫn Không-Thời gian \\
+Spatial Dynamics & Động lực học không gian \\
+Sparsity Constraint & Ràng buộc thưa \\
+Subject Factor & Nhân tố chủ thể \\
 \end{longtable}

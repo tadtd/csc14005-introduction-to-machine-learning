@@ -24,3 +24,5 @@ uv run python experiments/run_mnist.py
 ```
 
 The MNIST script downloads MNIST through `torchvision`, thresholds pixels at 0.5, trains with maximum likelihood, and reports validation/test bits-per-dimension. By default it uses a small subset for quick run; pass larger `--max-train`, `--max-val`, `--max-test`, `--width`, and `--epochs` values for a heavier experiment.
+
+You can find the demo in this link: [Probabilistic Circuit Demo](https://www.kaggle.com/code/dtdat1234/demo-probabilistic-circuit)

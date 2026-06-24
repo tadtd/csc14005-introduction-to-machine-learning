@@ -33,6 +33,8 @@ train và 872 mẫu validation.
 
 \begin{table}[H]
 \centering
+\caption{Các cấu hình thực nghiệm cho demo LoRA rank sweep}
+\label{tab:lora-configs}
 \renewcommand{\arraystretch}{1.2}
 \begin{tabular}{lll}
 \toprule
@@ -45,14 +47,14 @@ train và 872 mẫu validation.
 \texttt{lora\_r8} & LoRA rank 8 & Rank cao hơn, nhiều tham số hơn \\
 \bottomrule
 \end{tabular}
-\caption{Các cấu hình thực nghiệm cho demo LoRA rank sweep.}
-\label{tab:lora-configs}
 \end{table}
 
 \subsubsection{Kết quả thực nghiệm}
 
 \begin{table}[H]
 \centering
+\caption{Kết quả LoRA rank sweep trên SST-2 với \texttt{prajjwal1/bert-tiny}}
+\label{tab:lora-results}
 \small
 \renewcommand{\arraystretch}{1.2}
 \begin{tabular}{lrrrrrr}
@@ -67,8 +69,6 @@ LoRA & 4 & 4,354 & 0.0992\% & 0.7351 & 0.5252 & 29.78 \\
 LoRA & 8 & 8,450 & 0.1923\% & 0.7511 & 0.5289 & 30.90 \\
 \bottomrule
 \end{tabular}
-\caption{Kết quả LoRA rank sweep trên SST-2 với \texttt{prajjwal1/bert-tiny}.}
-\label{tab:lora-results}
 \end{table}
 
 Kết quả cho thấy full fine-tuning đạt validation accuracy cao nhất, 0.7569,
@@ -169,6 +169,8 @@ chạy hai script \texttt{experiments/run\_toy.py} và
 
 \begin{table}[H]
 \centering
+\caption{Cấu hình môi trường Kaggle dùng cho demo Probabilistic Circuit}
+\label{tab:pc-kaggle-env}
 \renewcommand{\arraystretch}{1.2}
 \begin{tabular}{ll}
 \toprule
@@ -185,8 +187,6 @@ Python dùng cho project & CPython 3.13.14 qua \texttt{uv} \\
 Package chính & \texttt{torch==2.12.0}, \texttt{torchvision==0.27.0} \\
 \bottomrule
 \end{tabular}
-\caption{Cấu hình môi trường Kaggle dùng cho demo Probabilistic Circuit.}
-\label{tab:pc-kaggle-env}
 \end{table}
 
 Hai lệnh chính trong notebook là:
@@ -206,8 +206,10 @@ assignment để kiểm tra trực tiếp tensor xác suất học được.
 
 \begin{table}[H]
 \centering
+\caption{Kết quả huấn luyện CPJ circuit trên phân phối toy 4-bit}
+\label{tab:pc-toy-training}
 \renewcommand{\arraystretch}{1.2}
-\begin{tabular}{rrrr}
+\begin{tabular}{rrrl}
 \toprule
 \textbf{Epoch} & \textbf{Train NLL} & \textbf{KL(target $\Vert$ circuit)} & \textbf{Ghi chú} \\
 \midrule
@@ -217,8 +219,6 @@ assignment để kiểm tra trực tiếp tensor xác suất học được.
 300 & 2.5000 & 0.0054 & Hội tụ tốt trên tensor 16 entry \\
 \bottomrule
 \end{tabular}
-\caption{Kết quả huấn luyện CPJ circuit trên phân phối toy 4-bit.}
-\label{tab:pc-toy-training}
 \end{table}
 
 Tổng xác suất khi enumerate toàn bộ 16 assignment là $1.000000$, cho thấy circuit
@@ -228,8 +228,10 @@ hợp lý vì mô hình học từ mẫu hữu hạn.
 
 \begin{table}[H]
 \centering
+\caption{Một số entry của tensor xác suất toy sau khi enumerate CPJ circuit}
+\label{tab:pc-toy-entries}
 \renewcommand{\arraystretch}{1.2}
-\begin{tabular}{ccc}
+\begin{tabular}{crr}
 \toprule
 \textbf{Assignment} & \textbf{Target $p(\mathbf{x})$} & \textbf{Circuit $p(\mathbf{x})$} \\
 \midrule
@@ -241,8 +243,6 @@ hợp lý vì mô hình học từ mẫu hữu hạn.
 1111 & 0.07009 & 0.07751 \\
 \bottomrule
 \end{tabular}
-\caption{Một số entry của tensor xác suất toy sau khi enumerate CPJ circuit.}
-\label{tab:pc-toy-entries}
 \end{table}
 
 \subsubsection{Binarized MNIST density estimation}
@@ -255,6 +255,8 @@ notebook chỉ dùng subset nhỏ: 1000 ảnh train, 200 ảnh validation và 20
 
 \begin{table}[H]
 \centering
+\caption{Cấu hình chạy MNIST CPJ probabilistic circuit trong notebook Kaggle}
+\label{tab:pc-mnist-config}
 \renewcommand{\arraystretch}{1.2}
 \begin{tabular}{ll}
 \toprule
@@ -271,12 +273,12 @@ Learning rate & $10^{-2}$ \\
 Device & CUDA \\
 \bottomrule
 \end{tabular}
-\caption{Cấu hình chạy MNIST CPJ probabilistic circuit trong notebook Kaggle.}
-\label{tab:pc-mnist-config}
 \end{table}
 
 \begin{table}[H]
 \centering
+\caption{Quá trình validation của CPJ circuit trên Binarized MNIST subset}
+\label{tab:pc-mnist-val}
 \renewcommand{\arraystretch}{1.2}
 \begin{tabular}{rrrrr}
 \toprule
@@ -290,8 +292,6 @@ Device & CUDA \\
 50 & 204.571 & -199.710 & 0.3675 & 4.4s \\
 \bottomrule
 \end{tabular}
-\caption{Quá trình validation của CPJ circuit trên Binarized MNIST subset.}
-\label{tab:pc-mnist-val}
 \end{table}
 
 Checkpoint tốt nhất theo validation log-likelihood nằm ở epoch 50 với
@@ -331,8 +331,10 @@ NumPy để kiểm tra trực tiếp công thức cập nhật và gradient tron
 
 \begin{table}[H]
 \centering
+\caption{So sánh CP-ALS và CP-OPT trên tensor synthetic với noise $=0.1$}
+\label{tab:exp-dm-als-vs-opt}
 \renewcommand{\arraystretch}{1.2}
-\begin{tabular}{lccc}
+\begin{tabular}{lrrr}
 \toprule
 \textbf{Thuật toán} & \textbf{Vòng lặp} & \textbf{Sai số tái tạo} & \textbf{FMS} \\
 \midrule
@@ -340,8 +342,6 @@ CP-ALS & 6 & 0.2159 & \textbf{0.7239} \\
 CP-OPT (L-BFGS-B) & 8 & 0.9988 & 0.3723 \\
 \bottomrule
 \end{tabular}
-\caption{So sánh CP-ALS và CP-OPT trên tensor synthetic với noise $=0.1$.}
-\label{tab:exp-dm-als-vs-opt}
 \end{table}
 
 Kết quả cho thấy CP-ALS đạt Factor Match Score cao hơn rõ rệt. Điều này phù hợp
@@ -361,8 +361,10 @@ Procrustes để căn chỉnh các slice.
 
 \begin{table}[H]
 \centering
+\caption{Quá trình hội tụ của PARAFAC2-ALS với rank $R=2$}
+\label{tab:exp-dm-parafac2-fit}
 \renewcommand{\arraystretch}{1.2}
-\begin{tabular}{cc}
+\begin{tabular}{rr}
 \toprule
 \textbf{Vòng lặp} & \textbf{Fit score} \\
 \midrule
@@ -373,8 +375,6 @@ Procrustes để căn chỉnh các slice.
 47 & $>0.7277$ \\
 \bottomrule
 \end{tabular}
-\caption{Quá trình hội tụ của PARAFAC2-ALS với rank $R=2$.}
-\label{tab:exp-dm-parafac2-fit}
 \end{table}
 
 Fit score tăng dần và hội tụ sau 47 vòng lặp, cho thấy PARAFAC2 xử lý được dữ
@@ -391,8 +391,10 @@ $10 \times 5$ và chia sẻ cùng factor subject với tensor EEG.
 
 \begin{table}[H]
 \centering
+\caption{Thiết lập CMTF với hard coupling trên subject factor}
+\label{tab:exp-dm-cmtf-setup}
 \renewcommand{\arraystretch}{1.2}
-\begin{tabular}{p{0.24\textwidth}p{0.24\textwidth}p{0.36\textwidth}}
+\begin{tabular}{L{0.24\textwidth}C{0.24\textwidth}L{0.36\textwidth}}
 \toprule
 \textbf{Nguồn dữ liệu} & \textbf{Kích thước} & \textbf{Vai trò trong mô hình} \\
 \midrule
@@ -400,8 +402,6 @@ Tensor EEG $\mathcal{X}$ & $10 \times 64 \times 481$ & Nguồn dữ liệu độ
 Metadata $\mathbf{Y}$ & $10 \times 5$ & Nguồn dữ liệu tĩnh, chia sẻ factor subject với tensor EEG. \\
 \bottomrule
 \end{tabular}
-\caption{Thiết lập CMTF với hard coupling trên subject factor.}
-\label{tab:exp-dm-cmtf-setup}
 \end{table}
 
 Vì metadata được giả lập, kết quả CMTF trong báo cáo nên được xem là kiểm chứng
@@ -419,8 +419,10 @@ tách riêng.
 
 \begin{table}[H]
 \centering
+\caption{So sánh tiếp cận ma trận và tensor trên dữ liệu EEG}
+\label{tab:exp-dm-eeg-cp-svd}
 \renewcommand{\arraystretch}{1.2}
-\begin{tabular}{p{0.22\textwidth}p{0.32\textwidth}p{0.34\textwidth}}
+\begin{tabular}{L{0.22\textwidth}C{0.32\textwidth}L{0.34\textwidth}}
 \toprule
 \textbf{Phương pháp} & \textbf{Dạng dữ liệu} & \textbf{Khả năng diễn giải} \\
 \midrule
@@ -428,8 +430,6 @@ SVD/PCA & Ma trận $20 \times 30784$ & Trộn channel và time, component khó 
 CP-ALS & Tensor $20 \times 64 \times 481$ & Giữ riêng trial, channel và time, thuận lợi hơn cho diễn giải không-thời gian. \\
 \bottomrule
 \end{tabular}
-\caption{So sánh tiếp cận ma trận và tensor trên dữ liệu EEG.}
-\label{tab:exp-dm-eeg-cp-svd}
 \end{table}
 
 Kết quả này củng cố thông điệp chính của phần Data Mining: lợi ích của tensor

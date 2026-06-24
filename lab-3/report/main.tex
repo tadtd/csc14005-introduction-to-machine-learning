@@ -8,11 +8,27 @@
 \usepackage{tocloft}
 \usepackage{booktabs}
 \usepackage{longtable}
+\usepackage{array}
 \usepackage{amssymb}
 \usepackage{enumitem}
 \usepackage{amsthm}
 \usepackage{tikz}
 \usetikzlibrary{positioning, arrows.meta, calc}
+
+\renewcommand{\contentsname}{MỤC LỤC}
+\renewcommand{\listtablename}{DANH MỤC BẢNG BIỂU}
+\renewcommand{\listfigurename}{DANH MỤC HÌNH ẢNH}
+\renewcommand{\tablename}{Bảng}
+\renewcommand{\figurename}{Hình}
+
+% Kiểu cột cho bảng: văn bản căn trái và dữ liệu ngắn căn giữa.
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+
+% In đậm riêng nhãn "Bảng X" trong caption bảng.
+\makeatletter
+\renewcommand{\fnum@table}{\textbf{\tablename~\thetable}}
+\makeatother
 
 \newtheorem{definition}{Định nghĩa}[subsection]
 \newtheorem{theorem}{Định lý}[subsection]
@@ -41,9 +57,9 @@
 \newcommand{\reportname}{Project 03}
 \newcommand{\reporttitle}{Nền tảng tính toán Tensor cho Trí tuệ Nhân tạo}
 
-\renewcommand{\thesection}{Chương \arabic{section}}
+\renewcommand{\thesection}{Chương~\arabic{section}}
 \renewcommand{\thesubsection}{\arabic{section}.\arabic{subsection}}
-\setlength{\cftsecnumwidth}{6em}
+\setlength{\cftsecnumwidth}{6.5em}
 \setlength{\cftsubsecindent}{2.5em}
 \setlength{\cftsubsecnumwidth}{3.5em}
 \newcommand{\R}{\mathbb{R}}
@@ -81,7 +97,7 @@ Trường Đại học Khoa học Tự nhiên - ĐHQG HCM\\
 \pagebreak
 \pagebreak
 \input{content/dictionary}
-\pagebreak
+\clearpage
 
 \pagenumbering{arabic}
 \setcounter{page}{1}

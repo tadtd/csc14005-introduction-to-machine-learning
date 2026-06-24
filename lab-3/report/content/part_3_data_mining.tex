@@ -405,7 +405,10 @@ Các factor không chia sẻ, như $\mathbf{B}$, $\mathbf{C}$ hoặc $\mathbf{D}
 
 \begin{table}[H]
 \centering
-\begin{tabular}{lllc}
+\small
+\caption{Khung phân tích Coupled Matrix and Tensor Factorization (CMTF). Vì bộ EEG gốc thiếu thông tin metadata chi tiết, ma trận $\mathbf{Y}$ được chúng tôi giả lập một cách có chủ đích. Kết quả cho thấy Factor $\mathbf{A}$ (Subject mode) học được sự phân tách từ Metadata giả lập và truyền tải cấu trúc đó sang để điều hướng quá trình giải thích dữ liệu EEG thật}
+\label{tab:cmtf-structure}
+\begin{tabular}{L{0.18\textwidth}C{0.15\textwidth}L{0.29\textwidth}C{0.23\textwidth}}
 \toprule
 \textbf{Nguồn dữ liệu} & \textbf{Kích thước} & \textbf{Ý nghĩa thực tiễn} & \textbf{Các Factor tham gia} \\
 \midrule
@@ -413,8 +416,6 @@ Tensor $\mathcal{X}$ (EEG thật) & $10 \times 64 \times 481$ & Biểu diễn đ
 Ma trận $\mathbf{Y}$ (Metadata giả lập) & $10 \times 5$ & Chứa thông tin tĩnh (tạo nhân tạo để thử nghiệm) & $\mathbf{A}, \mathbf{D}$ \\
 \bottomrule
 \end{tabular}
-\caption{Khung phân tích Coupled Matrix and Tensor Factorization (CMTF). Vì bộ EEG gốc thiếu thông tin metadata chi tiết, ma trận $\mathbf{Y}$ được chúng tôi giả lập một cách có chủ đích. Kết quả cho thấy Factor $\mathbf{A}$ (Subject mode) học được sự phân tách từ Metadata giả lập và truyền tải cấu trúc đó sang để điều hướng quá trình giải thích dữ liệu EEG thật.}
-\label{tab:cmtf-structure}
 \end{table}
 
 \subsubsection{Các ứng dụng tiêu biểu}

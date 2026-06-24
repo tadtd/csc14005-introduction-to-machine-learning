@@ -1,40 +1,41 @@
 %%============================================================
-\section*{Từ điển thuật ngữ}
+\section*{Danh mục thuật ngữ Anh--Việt}
 \phantomsection
-\addcontentsline{toc}{section}{Từ điển thuật ngữ}
+\addcontentsline{toc}{section}{Danh mục thuật ngữ Anh--Việt}
 \label{sec:dictionary}
 %%============================================================
 
 Bảng~\ref{tab:dictionary} trình bày danh sách các thuật ngữ tiếng Anh gốc và thuật ngữ tiếng Việt tương đương được sử dụng trong báo cáo. Cách dịch ưu tiên theo quy ước thường gặp trong tài liệu toán học Anh--Việt \cite{hoangtuy1976}. 
 
-\begin{longtable}{p{0.42\textwidth}p{0.48\textwidth}}
-\caption{Từ điển thuật ngữ đối chiếu Anh - Việt.}
+\begin{longtable}{L{0.42\textwidth}L{0.48\textwidth}}
+\caption{Danh mục thuật ngữ đối chiếu Anh--Việt}
 \label{tab:dictionary} \\
-\hline
+\toprule
 \textbf{Thuật ngữ tiếng Anh} & \textbf{Thuật ngữ tiếng Việt} \\
-\hline
+\midrule
 \endfirsthead
 
 \multicolumn{2}{c}%
 {{\bfseries \tablename\ \thetable{} -- tiếp theo}} \\
-\hline
+\toprule
 \textbf{Thuật ngữ tiếng Anh} & \textbf{Thuật ngữ tiếng Việt} \\
-\hline
+\midrule
 \endhead
 
-\hline \multicolumn{2}{r}{{Tiếp tục ở trang sau...}} \\
+\midrule
+\multicolumn{2}{r}{\textit{Còn tiếp ở trang sau}} \\
 \endfoot
 
-\hline
+\bottomrule
 \endlastfoot
 
-\multicolumn{2}{c}{\textbf{I. Cơ sở lý thuyết (Tensor Fundamentals)}} \\
-\hline
-\multicolumn{2}{l}{\textit{1. Cấu trúc và Thành phần (Structure \& Elements)}} \\
+\multicolumn{2}{l}{\textbf{I. Cơ sở lý thuyết (Tensor Fundamentals)}} \\
+\addlinespace
+\multicolumn{2}{l}{\textit{1. Cấu trúc và thành phần (Structure \& Elements)}} \\
 Activation & Kích hoạt \\
 Channel & Kênh \\
 Core Tensor & Tensor lõi \\
-Dimension & Chiều / Kích thước \\
+Dimension & Kích thước của một chiều \\
 Entry & Phần tử \\
 Factor Matrix & Ma trận nhân tử \\
 Feature & Đặc trưng \\
@@ -46,18 +47,19 @@ Lateral Slice & Lát cắt dọc \\
 Latent Mode & Mode tiềm ẩn \\
 Layer & Lớp \\
 Matrix & Ma trận \\
-Mode / Way / Order & Mode / Chiều / Bậc \\
+Mode / Way & Mode / Chiều dữ liệu \\
 Multi-dimensional Array & Mảng đa chiều \\
-Order & Bậc \\
+Order & Bậc tensor \\
 Scalar & Vô hướng \\
 Slice & Lát cắt \\
 Spatial Dimension & Chiều không gian \\
 Superdiagonal & Đường chéo siêu (Siêu chéo) \\
 Temporal Dimension & Chiều thời gian \\
 Tensor Entry & Phần tử tensor \\
-Token & Token / Đơn vị từ \\
-Vector & Vector \\
+Token & Token / Đơn vị ngôn ngữ \\
+Vector & Vectơ \\
 
+\addlinespace
 \multicolumn{2}{l}{\textit{2. Các phép toán (Operations)}} \\
 Columnwise Kronecker Product & Tích Kronecker theo cột \\
 Contraction & Phép co \\
@@ -76,9 +78,10 @@ Reshape & Đổi dạng \\
 Scaling & Co giãn / Nhân tỉ lệ \\
 Tensor Product & Tích tensor \\
 Trace & Vết \\
-Vectorization & Vector hóa \\
+Vectorization & Vectơ hóa \\
 
-\multicolumn{2}{l}{\textit{3. Phân rã và Thuật toán (Decompositions \& Algorithms)}} \\
+\addlinespace
+\multicolumn{2}{l}{\textit{3. Phân rã và thuật toán (Decompositions \& Algorithms)}} \\
 All-at-once Optimization & Tối ưu đồng thời \\
 Alternating Least Squares (ALS) & Bình phương tối thiểu luân phiên \\
 Alternating Method & Phương pháp luân phiên \\
@@ -94,7 +97,7 @@ CP-OPT & Tối ưu trực tiếp phân rã CP \\
 Decomposition / Factorization & Phân rã / Nhân tử hóa \\
 Fit & Độ khớp \\
 Gauss--Newton Method & Phương pháp Gauss--Newton \\
-Gradient & Gradient / Đạo hàm \\
+Gradient & Gradient / vectơ đạo hàm \\
 Gradient-based Method & Phương pháp dựa trên gradient \\
 Higher-Order SVD (HOSVD) & Phân tích suy biến bậc cao \\
 Initialization & Khởi tạo \\
@@ -119,13 +122,14 @@ Regularization & Chính quy hóa \\
 Singular Value Decomposition (SVD) & Phân tích giá trị suy biến \\
 Stability & Độ ổn định \\
 Structural Properties & Các thuộc tính cấu trúc \\
-Tensor Decomposition / Factorization & Phân rã Tensor \\
-Tensor Train & Phân rã Tensor Train (Chuỗi tensor) \\
+Tensor Decomposition / Factorization & Phân rã tensor \\
+Tensor Train & Phân rã chuỗi tensor (Tensor Train) \\
 Tucker Decomposition & Phân rã Tucker \\
 Underfit & Thiếu khớp \\
 Uniqueness & Tính duy nhất \\
 
-\multicolumn{2}{l}{\textit{4. Hạng Tensor (Tensor Rank)}} \\
+\addlinespace
+\multicolumn{2}{l}{\textit{4. Hạng tensor (Tensor Rank)}} \\
 Border Rank & Hạng biên \\
 CP Rank & Hạng CP \\
 Kruskal Rank (k-rank) & Hạng Kruskal \\
@@ -133,9 +137,9 @@ Low Rank & Hạng thấp \\
 Multilinear Rank & Hạng đa tuyến tính \\
 Width & Độ rộng \\
 
-\hline
-\multicolumn{2}{c}{\textbf{II. Học sâu (Deep Learning)}} \\
-\hline
+\midrule
+\multicolumn{2}{l}{\textbf{II. Học sâu (Deep Learning)}} \\
+\addlinespace
 Attention & Cơ chế chú ý \\
 Bias--Variance Trade-off & Đánh đổi thiên lệch--phương sai \\
 Batch & Lô dữ liệu \\
@@ -150,10 +154,10 @@ Decoder & Bộ giải mã \\
 Edge Device & Thiết bị biên \\
 Encoder & Bộ mã hóa \\
 Efficient Attention & Cơ chế chú ý hiệu quả \\
-Fine Tune / Fine-tuning & Tinh chỉnh \\
+Fine-tune / Fine-tuning & Tinh chỉnh \\
 Forward Pass & Lượt truyền xuôi \\
-Frozen Encoder & Bộ mã hóa đóng băng \\
-GPU Kernel & Nhân GPU \\
+Frozen Encoder & Bộ mã hóa được đóng băng \\
+GPU Kernel & Hàm nhân GPU \\
 High-order Interaction & Tương tác bậc cao \\
 Input Layer & Lớp đầu vào \\
 Language Model & Mô hình ngôn ngữ \\
@@ -161,7 +165,7 @@ Large Language Model (LLM) & Mô hình ngôn ngữ lớn \\
 LLM-scale & Quy mô mô hình ngôn ngữ lớn \\
 Low-Rank Adaptation (LoRA) & Thích ứng hạng thấp \\
 Low-Rank Tensor Adaptation (LoRTA) & Thích ứng tensor hạng thấp \\
-Memory Footprint & Dung lượng bộ nhớ chiếm dụng \\
+Memory Footprint & Mức sử dụng bộ nhớ \\
 Mixture of Experts (MoE) & Hỗn hợp chuyên gia \\
 Model Architecture & Kiến trúc mô hình \\
 Model Compression & Nén mô hình \\
@@ -175,20 +179,20 @@ Pi-nets & Mạng Pi / Mạng đa thức Pi \\
 Polynomial Network & Mạng đa thức \\
 Polynomial Self-attention (Poly-SA) & Tự chú ý đa thức \\
 Projection Matrix & Ma trận chiếu \\
-Softmax Attention & Cơ chế chú ý softmax \\
+Softmax Attention & Cơ chế chú ý Softmax \\
 Self-attention & Tự chú ý \\
 Tensor Contraction & Phép co tensor \\
-Tensor Product Attention & Chú ý tích tensor \\
-TensorGRAD & TensorGRAD / Gradient dạng tensor \\
+Tensor Product Attention & Cơ chế chú ý tích tensor \\
+TensorGRAD & TensorGRAD / gradient dạng tensor \\
 Tensorization & Tensor hóa \\
 Tensorized Layer & Lớp được tensor hóa \\
-Transformer & Transformer / Mô hình Transformer \\
-Trainable Parameter & Tham số có thể huấn luyện \\
+Transformer & Mô hình Transformer \\
+Trainable Parameter & Tham số được huấn luyện \\
 Weight Tensor & Tensor trọng số \\
 
-\hline
-\multicolumn{2}{c}{\textbf{III. Mạch xác suất (Probabilistic Circuits)}} \\
-\hline
+\midrule
+\multicolumn{2}{l}{\textbf{III. Mạch xác suất (Probabilistic Circuits)}} \\
+\addlinespace
 Assignment & Phép gán giá trị \\
 Approximate Inference & Suy luận xấp xỉ \\
 Autoencoder (AE) & Bộ tự mã hóa \\
@@ -197,18 +201,18 @@ Compactness & Tính gọn của biểu diễn \\
 Compatible & Tương thích \\
 Conditioning & Điều kiện hóa \\
 Continuous Variable & Biến liên tục \\
-CPJ Circuit & Mạch CP (phân rã CP) joint \\
+CPJ Circuit & Mạch CP cho phân phối đồng thời \\
 Deep Circuit & Mạch sâu \\
 Decomposable & Phân rã được \\
 Density Estimation & Ước lượng mật độ \\
 Distribution & Phân phối \\
 Expectation & Kỳ vọng \\
 Expressiveness & Khả năng biểu diễn \\
-Identifiability & Tính định danh / Khả năng nhận dạng mô hình \\
+Identifiability & Khả năng định danh mô hình \\
 Imputation & Điền khuyết dữ liệu \\
 Integral Circuit & Mạch tích phân \\
 Integral Unit & Đơn vị tích phân \\
-Intractable Pipeline & Pipeline không khả giải chính xác \\
+Intractable Pipeline & Quy trình không thể suy luận chính xác hiệu quả \\
 Kullback--Leibler Divergence (KL) & Phân kỳ Kullback--Leibler \\
 Latent Variable & Biến tiềm ẩn \\
 Marginal Inference & Suy luận biên \\
@@ -222,16 +226,16 @@ Probability Density Function (PDF) & Hàm mật độ xác suất \\
 Probability Tensor & Tensor xác suất \\
 Probabilistic Circuits & Mạch xác suất \\
 Query & Truy vấn \\
-Quasi-tensor & Quasi-tensor / Tensor suy rộng \\
+Quasi-tensor & Tensor suy rộng (quasi-tensor) \\
 Region Graph & Đồ thị vùng \\
 Smoothness & Tính trơn \\
 Structural Property & Thuộc tính cấu trúc \\
 Tractability & Tính khả giải / Khả năng suy luận hiệu quả \\
 Variational Autoencoder (VAE) & Bộ tự mã hóa biến phân \\
 
-\hline
-\multicolumn{2}{c}{\textbf{IV. Khai phá dữ liệu (Data Mining)}} \\
-\hline
+\midrule
+\multicolumn{2}{l}{\textbf{IV. Khai phá dữ liệu (Data Mining)}} \\
+\addlinespace
 Chemometrics & Hóa trắc học \\
 Coupled Matrix and Tensor Factorization (CMTF) & Phân rã kết hợp ma trận và tensor \\
 Covariate & Đồng biến \\
@@ -241,7 +245,7 @@ Data Mining & Khai phá dữ liệu \\
 Dataset & Tập dữ liệu \\
 Electrode & Điện cực \\
 Factor Sharing & Chia sẻ nhân tố \\
-Feature Mode & Mode đặc trưng \\
+Feature Mode & Mode đặc trưng / Chiều đặc trưng \\
 fMRI & Chụp cộng hưởng từ chức năng \\
 Gut Microbiome & Hệ vi sinh đường ruột \\
 Hard Coupling & Ghép cứng \\
@@ -267,7 +271,7 @@ Procrustes Problem & Bài toán Procrustes \\
 Scalability & Khả năng mở rộng \\
 Shared Factor & Nhân tố dùng chung \\
 Soft Coupling & Ghép mềm \\
-Spatial-Temporal Entanglement & Sự trộn lẫn Không-Thời gian \\
+Spatial-Temporal Entanglement & Sự trộn lẫn không gian--thời gian \\
 Spatial Dynamics & Động lực học không gian \\
 Sparsity Constraint & Ràng buộc thưa \\
 Subject Factor & Nhân tố chủ thể \\

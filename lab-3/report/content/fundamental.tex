@@ -427,19 +427,19 @@ Hai ma trận có cùng mọi phần tử nên bằng nhau. Thứ tự các fact
 \begin{table}[H]
 \centering
 \small
-\begin{tabular}{lcc}
-\hline
+\caption{So sánh phân rã CP và SVD ma trận}
+\label{tab:cp-vs-svd}
+\begin{tabular}{lll}
+\toprule
 \textbf{Thuộc tính} & \textbf{SVD (ma trận)} & \textbf{CP (tensor)} \\
-\hline
+\midrule
 Ràng buộc trực giao & Bắt buộc ($\mathbf{U}^\top\mathbf{U}=\mathbf{I}$) & Không cần \\
 Sự tồn tại (chính xác) & Luôn tồn tại & Có thể không tồn tại trong $\mathbb{R}$ \\
 Xác định hạng & Đa thức & NP-hard \\
 Truncation tối ưu & Có (định lý Eckart-Young) & Không nói chung \\
 Tính duy nhất & Không (nói chung) & Thường duy nhất (Định lý Kruskal) \\
-\hline
+\bottomrule
 \end{tabular}
-\caption{So sánh phân rã CP và SVD ma trận.}
-\label{tab:cp-vs-svd}
 \end{table}
 
 \begin{definition}[Kruskal rank]
@@ -563,7 +563,7 @@ Thuật toán \textit{Higher-Order SVD} (HOSVD) \cite{delathauwer2000multilinear
 \begin{enumerate}
     \item Với mỗi $n = 1, \ldots, N$: tính SVD của mode-$n$ matricization:
     \begin{equation}
-        \mathbf{X}_{(n)} = \mathbf{U}^{(n)} \mathbf{\Sigma}^{(n)} (\mathbf{V}^{(n)})^\top.
+        \mathbf{X}_{(n)} = \mathbf{U}^{(n)} \boldsymbol{\Sigma}^{(n)} (\mathbf{V}^{(n)})^\top.
     \end{equation}
     Lấy $R_n$ cột đầu của $\mathbf{U}^{(n)}$ làm factor matrix.
     \item Tính core tensor:

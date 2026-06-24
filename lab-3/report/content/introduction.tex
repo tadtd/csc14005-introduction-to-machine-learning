@@ -27,46 +27,46 @@ Bảng~\ref{tab:notation} tóm tắt toàn bộ quy ước ký hiệu được s
 
 \begin{table}[H]
 \centering
+\caption{Quy ước ký hiệu sử dụng trong toàn bộ báo cáo}
+\label{tab:notation}
 \renewcommand{\arraystretch}{1.35}
-\begin{tabular}{clp{7.2cm}}
-\hline
+\begin{tabular}{clL{7.2cm}}
+\toprule
 \textbf{Ký hiệu} & \textbf{Kiểu đối tượng} & \textbf{Mô tả và ví dụ} \\
-\hline
+\midrule
 $a,\, \alpha$ & Vô hướng & Chữ thường in nghiêng: $\lambda \in \mathbb{R}$, $n \in \mathbb{N}$ \\
 $\mathbf{a},\, \mathbf{x}$ & Vector & Chữ thường in đậm: $\mathbf{a} \in \mathbb{R}^I$ \\
 $\mathbf{A},\, \mathbf{X}$ & Ma trận & Chữ hoa in đậm: $\mathbf{A} \in \mathbb{R}^{I \times J}$ \\
 $\mathcal{X},\, \mathcal{G}$ & Tensor bậc $\geq 3$ & Chữ hoa nét thư pháp (calligraphic): $\mathcal{X} \in \mathbb{R}^{I_1 \times \cdots \times I_N}$ \\
-\hline
+\addlinespace
 $\mathbf{X}_{(n)}$ & Ma trận & Mode-$n$ matricization (unfolding) của tensor $\mathcal{X}$ \\
 $\mathcal{X}_{i_1,\ldots,i_N}$ & Vô hướng & Phần tử tại vị trí $(i_1,\ldots,i_N)$ \\
 $\mathcal{X}_{:,j,k}$ & Vector & Mode-1 fiber (dấu ``:'' là chỉ số tự do) \\
 $\mathcal{X}_{:,:,k}$ & Ma trận & Frontal slice thứ $k$ \\
-\hline
+\addlinespace
 $\mathbf{a}^{(n)}$ & Vector & Cột / vector gắn với mode $n$ \\
 $\mathbf{A}^{(n)}$ & Ma trận & Factor matrix của mode $n$ trong phân rã tensor \\
 $\mathcal{G}$ & Tensor & Core tensor trong phân rã Tucker \\
-\hline
+\addlinespace
 $\circ$ & Phép toán & Tích ngoài (outer product): $\mathbf{a} \circ \mathbf{b} \in \mathbb{R}^{I \times J}$ \\
 $\times_n$ & Phép toán & Tích mode-$n$: $\mathcal{X} \times_n \mathbf{U}$ \\
 $\otimes$ & Phép toán & Tích Kronecker: $\mathbf{A} \otimes \mathbf{B} \in \mathbb{R}^{mp \times nq}$ \\
 $\odot$ & Phép toán & Tích Khatri-Rao (columnwise Kronecker): $\mathbf{A} \odot \mathbf{B} \in \mathbb{R}^{IJ \times R}$ \\
 $\ast$ & Phép toán & Tích Hadamard (elementwise): $(\mathbf{A} \ast \mathbf{B})_{ij} = A_{ij} B_{ij}$ \\
-\hline
+\addlinespace
 $[\![\mathbf{A}^{(1)},\ldots,\mathbf{A}^{(N)}]\!]$ & Tensor & Ký hiệu rút gọn phân rã CP \\
 $[\![\mathcal{G};\,\mathbf{U}^{(1)},\ldots,\mathbf{U}^{(N)}]\!]$ & Tensor & Ký hiệu rút gọn phân rã Tucker \\
-\hline
+\addlinespace
 $\mathrm{rank}(\mathcal{X})$ & Số nguyên & Hạng CP của tensor $\mathcal{X}$ \\
 $(R_1,\ldots,R_N)$ & Bộ số nguyên & Multilinear rank (Tucker ranks) \\
 $k_{\mathbf{A}}$ & Số nguyên & Kruskal rank của ma trận $\mathbf{A}$ \\
-\hline
+\addlinespace
 $I_n$ & Số nguyên & Kích thước mode $n$: $\mathcal{X} \in \mathbb{R}^{I_1 \times \cdots \times I_N}$ \\
 $N$ & Số nguyên & Bậc (order) của tensor \\
 $R$ & Số nguyên & Số thành phần trong phân rã CP \\
 $\mathcal{O}(\cdot)$ & Độ phức tạp & Ký hiệu độ phức tạp tiệm cận, ví dụ $\mathcal{O}(R(o+nd))$ \\
-\hline
+\bottomrule
 \end{tabular}
-\caption{Quy ước ký hiệu sử dụng trong toàn bộ báo cáo.}
-\label{tab:notation}
 \end{table}
 
 Ngoài ra, một số quy ước bổ sung được áp dụng nhất quán:

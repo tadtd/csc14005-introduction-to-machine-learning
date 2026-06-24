@@ -151,6 +151,9 @@ $latexPatterns = @(
     '*.blg',
     '*.brf',
     '*.fls',
+    '*.xdv',
+    '*.nav',
+    '*.snm',
     '*.fdb_latexmk',
     '*.synctex.gz',
     '*.synctex(busy)'
@@ -169,19 +172,11 @@ foreach ($base in $latexBases) {
 }
 
 if ($IncludeVirtualEnvs) {
-    $virtualEnvDirs = @(
-        '.venv',
-        'venv',
-        'env',
-        'ENV',
-        'deep-learning/.venv',
-        'data-mining/.venv',
-        'probabilistic-circuit/.venv'
-    )
+    $virtualEnvDirectoryNames = @('.venv', 'venv', 'env', 'ENV')
 
-    foreach ($relativePath in $virtualEnvDirs) {
-        Remove-ArtifactPath (Join-Path $RootFull $relativePath)
-    }
+    Get-ChildItem -LiteralPath $RootFull -Directory -Recurse -Force -ErrorAction SilentlyContinue |
+        Where-Object { $virtualEnvDirectoryNames -contains $_.Name } |
+        ForEach-Object { Remove-ArtifactPath $_.FullName }
 }
 
 if ($IncludeData) {

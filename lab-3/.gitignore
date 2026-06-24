@@ -13,6 +13,7 @@
 *.synctex.gz
 *.snm
 *.nav
+*.xdv
 
 notes/
 *.synctex(busy)

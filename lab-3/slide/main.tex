@@ -1,11 +1,21 @@
 \documentclass[aspectratio=169,xcolor=dvipsnames]{beamer}
+% !TeX program = xelatex
 
 \usepackage{theme/beamerthemeSimpleDarkBlue}
 
 \usepackage{fontspec}
-\setsansfont{Arial}
-\setmainfont{Times New Roman}
-\setmonofont{Consolas}
+\usepackage{array}
+\IfFontExistsTF{Arial}
+  {\setsansfont{Arial}}
+  {\setsansfont{Liberation Sans}}
+\IfFontExistsTF{Times New Roman}
+  {\setmainfont{Times New Roman}}
+  {\setmainfont{Liberation Serif}}
+\IfFontExistsTF{Consolas}
+  {\setmonofont{Consolas}}
+  {\IfFontExistsTF{DejaVu Sans Mono}
+    {\setmonofont{DejaVu Sans Mono}}
+    {\setmonofont{Courier New}}}
 \usepackage{amsmath,amssymb,mathtools}
 \usepackage{booktabs}
 \usepackage{graphicx}
@@ -79,12 +89,12 @@
 }
 
 
-\title{Foundations of Tensor Computations for AI}
+\title{Nền tảng tính toán Tensor cho Trí tuệ Nhân tạo}
 % \subtitle{Tensor factorizations, circuits, và interpretable data mining}
-\author{Đỗ Tiến Đạt -- Lê Nhật Minh Tâm -- Triệu Tuấn Kiệt\\Nguyễn Đăng Khoa -- Huỳnh Mạnh Tường}
+\author{\texorpdfstring{Đỗ Tiến Đạt -- Lê Nhật Minh Tâm -- Triệu Tuấn Kiệt\\Nguyễn Đăng Khoa -- Huỳnh Mạnh Tường}{Đỗ Tiến Đạt -- Lê Nhật Minh Tâm -- Triệu Tuấn Kiệt; Nguyễn Đăng Khoa -- Huỳnh Mạnh Tường}}
 \institute{Nhập môn học máy -- CSC14005\\Trường Đại học Khoa học Tự nhiên, ĐHQG-HCM}
 \date{\today}
-\titlegraphic{\includegraphics[height=1.15cm]{hcmus-logo.png}}
+\titlegraphic{\includegraphics[height=0.8cm]{hcmus-logo.png}}
 
 \AtBeginSection[]{
     \begin{frame}{Mục lục}
@@ -111,6 +121,14 @@
     \item CP/Tucker là nền tảng chung cho LoRA, probabilistic circuits và khai phá dữ liệu đa mode.
     \item Các demo cho thấy cùng một ý tưởng low-rank xuất hiện ở cả tham số mô hình, tensor xác suất và dữ liệu EEG.
 \end{itemize}
+\end{frame}
+
+\begin{frame}[allowframebreaks,t]{Tài liệu tham khảo}
+\tiny
+\setbeamertemplate{bibliography item}[text]
+\nocite{kolda2009tensor,chrysos2025foundationsTutorial,choi2021probabilistic,panagakis2021tensor,chrysos2025tensor,chrysos2020pi,hu2022lora,vaswani2017attention,oldfield2024multilinear,loconte2025relationship,vergari2021compositional}
+\bibliographystyle{plain}
+\bibliography{ref/ref}
 \end{frame}
 
 \begin{frame}

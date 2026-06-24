@@ -59,9 +59,10 @@
 \end{frame}
 
 \begin{frame}{Outer product và tensor hạng 1}
-\begin{columns}[T,totalwidth=\textwidth]
+\begin{columns}[c,totalwidth=\textwidth]
     \begin{column}{0.52\textwidth}
         \centering
+        \vspace{0.75cm}
         \begin{tikzpicture}[scale=0.68, every node/.style={font=\small}]
             \pgfmathsetmacro{\opCy}{-1.15}
             \drawtfgveccy{4}{0.00}{\opCy}{teal!28}{teal!55!black}
@@ -91,8 +92,9 @@
 \end{frame}
 
 \begin{frame}{CP decomposition: tổng các tensor hạng 1}
+\small
 \centering
-\begin{tikzpicture}[scale=0.86, every node/.style={font=\small}]
+\begin{tikzpicture}[scale=0.80, every node/.style={font=\small}]
   \drawtfgtensor{4}{3}{3}{0}{0}{violet!18}{violet!60!black}
   \node[above=6pt, font=\footnotesize\bfseries] at (0.65,0.3)
     {$\mathcal{X}\in\mathbb{R}^{I\times J\times K}$};
@@ -121,23 +123,26 @@
   \end{scope}
 \end{tikzpicture}
 
-\vspace{0.2cm}
+\vspace{0.08cm}
 \[
     \mathcal{X}
     \approx
     \sum_{r=1}^{R}
-    \mathbf{a}_r^{(1)}\circ\mathbf{a}_r^{(2)}\circ\mathbf{a}_r^{(3)},
+    \mathbf{a}_r^{(1)}\circ\mathbf{a}_r^{(2)}\circ\mathbf{a}_r^{(3)} := \cp{A^{(1)}, A^{(2)}, A^{(3)}},
     \qquad
     x_{ijk}\approx\sum_{r=1}^{R}A^{(1)}_{ir}A^{(2)}_{jr}A^{(3)}_{kr}
 \]
 \begin{itemize}
     \item $R$ là số component/rank; mỗi component là một pattern đồng thời trên các mode.
+    \item CP nén tham số từ $IJK$ xuống khoảng $R(I+J+K)$ và giữ diễn giải theo từng mode.
+    \item Thường được học bằng ALS hoặc tối ưu gradient trên các factor matrices.
 \end{itemize}
 \end{frame}
 
 \begin{frame}{Tucker decomposition: core tensor và factor matrices}
+\small
 \centering
-\begin{tikzpicture}[scale=0.64, every node/.style={font=\small}]
+\begin{tikzpicture}[scale=0.58, every node/.style={font=\small}]
   \begin{scope}[xshift=0cm]
     \drawtfgtensor{4}{4}{2}{0}{0}{violet!18}{violet!60!black}
     \node[above=6pt, font=\footnotesize\bfseries] at (0.7,0.35) {$\mathcal{X}$};
@@ -173,7 +178,7 @@
   \end{scope}
 \end{tikzpicture}
 
-\vspace{0.2cm}
+\vspace{0.06cm}
 \[
     \mathcal{X}\approx
     \mathcal{G}\times_1 U^{(1)}\times_2 U^{(2)}\times_3 U^{(3)},
@@ -182,6 +187,8 @@
 \]
 \begin{itemize}
     \item Core $\mathcal{G}$ mô tả tương tác giữa latent dimensions; Tucker trở về CP khi core là superdiagonal.
+    \item Tucker cho phép rank riêng theo từng mode $(R_1,R_2,R_3)$, linh hoạt hơn CP.
+    \item Factor matrices học subspace của từng mode, còn core quyết định cách các subspace tương tác.
 \end{itemize}
 \end{frame}
 \begin{frame}{Rank, uniqueness và độ khó}

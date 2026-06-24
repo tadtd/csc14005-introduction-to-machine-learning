@@ -62,6 +62,11 @@ Trường Đại học Khoa học Tự nhiên - ĐHQG HCM\\
 % Footer
 
 
+% Make plain style same as fancy
+\makeatletter
+\let\ps@plain\ps@fancy
+\makeatother
+
 % ============ DOCUMENT ============
 \begin{document}
 
@@ -76,6 +81,7 @@ Trường Đại học Khoa học Tự nhiên - ĐHQG HCM\\
 \pagebreak
 \pagebreak
 \input{content/dictionary}
+\pagebreak
 
 \pagenumbering{arabic}
 \setcounter{page}{1}
